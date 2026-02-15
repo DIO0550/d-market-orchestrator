@@ -1,0 +1,10 @@
+{
+  "name": "tmux-orchestrator-plugin",
+  "version": "1.0.0",
+  "description": "tmuxベースのマルチCLIオーケストレーター（tmuxペインで複数のAI CLIエージェントを並列実行し、ファイルベースIPCで連携する）",
+  "author": {
+    "name": "DIO0550"
+  },
+  "repository": "https://github.com/DIO0550/d-market",
+  "license": "MIT"
+}

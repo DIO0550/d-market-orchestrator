@@ -8,6 +8,11 @@
       "name": "orchestrator-plugin",
       "source": "./plugins/orchestrator-plugin",
       "description": "オーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
+    },
+    {
+      "name": "tmux-orchestrator-plugin",
+      "source": "./plugins/tmux-orchestrator-plugin",
+      "description": "tmuxベースのマルチCLIオーケストレーター（Claude Code / Copilot / Codex 対応）"
     }
   ]
 }
