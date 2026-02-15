@@ -14,7 +14,7 @@ Copilot 用。サブエージェントネスト不可のため、Phase 2 はフ�
 ---
 name: orchestrator
 description: "オーケストレーションの司令塔。タスクを受け取り、適切なエージェントを起動して全体フローを制御する。タスク状態を監視し、適切なタイミングでエージェントを起動する。"
-tools: ["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "terminalLastCommand", "agent"]
+tools: ["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "terminalLastCommand", "execute", "agent"]
 ---
 
 # Orchestrator エージェント
@@ -76,6 +76,60 @@ Copilot ではサブエージェントからサブエージェントを呼び出
    b. **rejected** → Implementer を再起動し Step 3 に戻る（最大2回リトライ）
    c. **needs refactoring** → **Refactorer** を起動 → Step 6 に戻り Code Reviewer で再レビュー（最大2レビューサイクル）
 9. 全タスク完了まで繰り返し
+
+#### 並列レーンモード（レーン数 > 1 の場合）
+
+並列レーンが設定されている場合、独立したタスク（blockedBy が空の pending タスク）を最大 N 個同時に処理する。各レーンには専用のサフィックス付きエージェントセット（-a, -b, -c, -d）を使用する。
+
+**Copilot の制約**: 同名のサブエージェントは同時に1つしか起動できない。そのため、並列実行にはサフィックス付きの別名エージェントが必要。
+
+##### 並列実行フロー
+
+1. タスク一覧から依存関係のない pending タスクを最大 N 個取得（N = レーン数）
+2. 各タスクにレーン（a, b, c, d）を割り当て
+3. 各レーンのタスクディレクトリを初期化
+4. 全レーンの **Implementer-{suffix}** を同時にバックグラウンド起動
+5. 各 Implementer 完了後、そのレーンの **Test Runner-{suffix}** と **Linter-{suffix}** を並列起動
+6. テスト/Lint 成功後、そのレーンの **Code Reviewer-{suffix}** を起動
+7. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（Task Manager は1つで十分、直列で判定）
+8. 判定に基づく分岐:
+   a. **completed** → タスクを完了にして、レーンを解放
+   b. **rejected** → そのレーンの Implementer-{suffix} を再起動
+   c. **needs refactoring** → そのレーンの **Refactorer-{suffix}** を起動
+9. 空いたレーンに次の pending タスクを割り当て
+10. 全タスク完了まで繰り返し
+
+##### 並列起動の例（2レーン）
+
+```
+# レーン A: タスク1を処理
+#tool:agent/runSubagent を使って実装処理をサブエージェントで実行してください。
+- prompt: |
+    セッションパス: .orchestrator/{SESSION_ID}
+    以下の1つのタスクのみを実装してください。
+    - タスクID: 1
+    - 件名: ...
+- description: "Implementer-A起動"
+- agentName: implementer-a
+
+# レーン B: タスク2を同時に処理
+#tool:agent/runSubagent を使って実装処理をサブエージェントで実行してください。
+- prompt: |
+    セッションパス: .orchestrator/{SESSION_ID}
+    以下の1つのタスクのみを実装してください。
+    - タスクID: 2
+    - 件名: ...
+- description: "Implementer-B起動"
+- agentName: implementer-b
+```
+
+##### レーン管理ルール
+
+- 各レーンは独立して動作し、他のレーンの完了を待たない
+- レーンが完了したら、次の未着手タスクがあれば即座に再利用
+- あるレーンでリトライが発生しても、他のレーンには影響しない
+- 全レーンが完了（pending タスクなし）で Phase 2 終了
+- Phase 3 以降のテスト/Lint は通常のエージェント（サフィックスなし）を使用
 
 ### Phase 3: 検証
 
@@ -155,7 +209,9 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 
 ## サブエージェント結果の活用（パス渡し方式）
 
-各サブエージェントはセッションフォルダ内の所定パスに結果を書き出す。Orchestrator はファイル内容をプロンプトに含めず、パスだけを渡す。各エージェントが自分で Read する:
+各サブエージェントはセッションフォルダ内の所定パスに結果を書き出す。Orchestrator はファイル内容をプロンプトに含めず、パスだけを渡す。各エージェントが自分で Read する。
+
+**並列レーン時の注意**: 結果のパスはタスクID（`task-{id}`）で区別されるため、レーンのサフィックスによるパスの変更は不要。implementer-a も implementer-b も同じ `{SESSION_DIR}/task-{taskId}/implementer/result-{round}.md` に書き出す。
 
 | パス | ソース | 渡し先 |
 |------|--------|--------|

@@ -11,6 +11,7 @@ description: "オーケストレーターフロー用のエージェント定義
 
 ```
 1. ターゲットツール確認 → Claude Code / Copilot / Codex
+1.5. 並列レーン数確認 → Copilot のみ、1〜4レーン（デフォルト: 1）
 2. エージェント選択 → カタログから必要なものを選ぶ
 3. テンプレート参照 → 個別ファイルから詳細を確認
 4. ツール別の調整 → 操作名をツール固有の形式に変換
@@ -32,6 +33,46 @@ description: "オーケストレーターフロー用のエージェント定義
 - [claude-code-format.md](references/claude-code-format.md)
 - [copilot-format.md](references/copilot-format.md)
 - [codex-format.md](references/codex-format.md)
+
+## Step 1.5: 並列レーン数確認（Copilot のみ）
+
+ターゲットが GitHub Copilot の場合、並列レーン数を確認する。Claude Code / Codex の場合はこのステップをスキップ。
+
+### 背景
+
+Copilot では同名のサブエージェントを同時に複数起動できない。Phase 2 で独立したタスクを並列実行するには、実行系エージェントの複製が必要。
+
+### 確認事項
+
+ユーザーに並列レーン数（1〜4）を確認:
+
+| レーン数 | 説明 | 生成されるエージェント |
+|---------|------|---------------------|
+| 1（デフォルト） | 逐次実行、複製なし | 通常の1セットのみ |
+| 2 | 2タスク並列 | 各実行エージェントに -a, -b サフィックス |
+| 3 | 3タスク並列 | 各実行エージェントに -a, -b, -c サフィックス |
+| 4 | 4タスク並列 | 各実行エージェントに -a, -b, -c, -d サフィックス |
+
+### 複製対象エージェント
+
+以下の6種類のみ複製する（制御系・計画系・Git系は複製しない）:
+
+| エージェント | 理由 |
+|-------------|------|
+| Implementer | タスクごとに独立した実装 |
+| Test Runner | タスク単位のテスト実行 |
+| Linter | タスク単位のLint実行 |
+| Code Reviewer | タスク単位のレビュー |
+| Debugger | タスク単位のデバッグ |
+| Refactorer | タスク単位のリファクタリング |
+
+### 複製ルール
+
+- ファイル名: `{agent-name}-{suffix}.agent.md`（例: `implementer-a.agent.md`）
+- フロントマターの `name:` を `{agent-name}-{suffix}` に変更（例: `name: implementer-a`）
+- 本文中の自己参照名を更新（例: 「あなたは **implementer-a** エージェントです」）
+- それ以外の内容（指示、tools、description 等）は元のエージェントと同一
+- レーン数が1の場合はサフィックスなしの通常エージェントのみ生成（現行動作）
 
 ## Step 2: エージェント選択
 
@@ -98,6 +139,20 @@ description: "オーケストレーターフロー用のエージェント定義
 | Claude Code | `plugins/.../agents/{name}.md` または `.claude/agents/{name}.md` |
 | Copilot | `.github/agents/{name}.agent.md` |
 | Codex | `{name}/AGENTS.md` または ルート追記 |
+
+### 並列レーン対応（Copilot、レーン数 > 1 の場合）
+
+Step 1.5 で指定されたレーン数に応じて、複製対象の各エージェントを N 個生成する。
+
+例: レーン数 = 2 の場合
+- `implementer-a.agent.md`, `implementer-b.agent.md`
+- `test-runner-a.agent.md`, `test-runner-b.agent.md`
+- `linter-a.agent.md`, `linter-b.agent.md`
+- `code-reviewer-a.agent.md`, `code-reviewer-b.agent.md`
+- `debugger-a.agent.md`, `debugger-b.agent.md`
+- `refactorer-a.agent.md`, `refactorer-b.agent.md`
+
+各ファイルの内容は、`name:` フィールドと自己参照名のみ異なり、残りは元テンプレートと同一。
 
 ## エージェント間の結果受け渡し
 
@@ -195,3 +250,5 @@ chmod +x .orchestrator/scripts/init-session.sh .orchestrator/scripts/init-task.s
 - [ ] 操作がツール固有の形式に変換されている
 - [ ] サブエージェント呼び出しが正しい形式
 - [ ] 入出力フォーマットが一貫している
+- [ ] Copilot + 並列レーン時: 複製エージェントファイルが正しい数だけ生成されている
+- [ ] 複製エージェントの `name:` フィールドにサフィックスが付与されている

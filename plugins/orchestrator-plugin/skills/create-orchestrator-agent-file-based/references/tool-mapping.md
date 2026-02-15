@@ -11,7 +11,7 @@
 | ファイル編集 | `Edit` | エディタ | ファイル編集 |
 | ファイルパターン検索 | `Glob` | `#file` パターン | ファイル検索 |
 | コード内容検索 | `Grep` | `#codebase` | コード検索 |
-| コマンド実行 | `Bash` | ターミナル | シェル実行 |
+| コマンド実行 | `Bash` | `execute`（GitHub.com）/ `terminalLastCommand`（VS Code） | シェル実行 |
 | タスク作成 | `TaskCreate` | GitHub Issues | マークダウンリスト |
 | タスク更新 | `TaskUpdate` | Issues更新 | リスト更新 |
 | タスク一覧取得 | `TaskList` | Issues一覧 | リスト参照 |
@@ -221,3 +221,63 @@ tools: ["read", "edit", "search", "agent"]
 |---------|------|
 | コマンド実行 | gh/git コマンド実行 |
 | ファイル読み込み | 計画・ログ確認 |
+
+## フロントマター `tools:` の変換
+
+エージェント定義の YAML フロントマターに `tools:` を記載する。各プラットフォームで値が異なる。
+
+### 汎用操作 → tools 値の対応
+
+| 汎用操作 | Claude Code | GitHub Copilot |
+|---------|-------------|----------------|
+| ファイル読み込み | `read` | `search` |
+| ファイル編集・作成 | `edit` | `editFiles` |
+| ファイル・コード検索 | `search` | `search`, `codebase`, `usages` |
+| コマンド実行 | `execute` | `execute`（GitHub.com）, `terminalLastCommand`（VS Code） |
+| サブエージェント起動 | `agent` | `agent` |
+| タスク管理 | `todo` | （GitHub Issues） |
+| Web検索・URL取得 | `web` | `fetch`, `githubRepo` |
+
+### エージェント別の推奨 tools（Claude Code）
+
+| エージェント | tools |
+|-------------|-------|
+| orchestrator | `["read", "search", "execute", "agent", "todo"]` |
+| explorer | `["read", "search", "web"]` |
+| planner | `["read", "search", "todo", "web", "ask"]` |
+| plan-reviewer | `["read", "search", "todo"]` |
+| implementer | `["read", "edit", "search", "execute", "todo"]` |
+| task-manager | `["read", "agent", "todo"]` |
+| code-reviewer | `["read", "search"]` |
+| test-runner | `["read", "search", "execute"]` |
+| linter | `["read", "search", "execute"]` |
+| security-scanner | `["read", "search", "execute"]` |
+| debugger | `["read", "search", "edit", "execute"]` |
+| refactorer | `["read", "edit", "search"]` |
+| committer | `["read", "execute"]` |
+| pr-creator | `["read", "execute"]` |
+
+**重要**: `execute` がないとエージェントはコマンドを実行できない。テスト実行（test-runner）、Lint（linter）、git操作（committer, pr-creator）、デバッグ（debugger）、監査（security-scanner）、TDDサイクル（implementer）には `execute` が必須。
+
+### エージェント別の推奨 tools（GitHub Copilot）
+
+GitHub.com Coding Agent と VS Code の両方で動作させるため、`execute` と `terminalLastCommand` の両方を含めること。親エージェント（Orchestrator）のツール設定がサブエージェントに継承されるため、親で `execute` が漏れるとサブエージェントもコマンドを実行できなくなる。
+
+**並列レーン時のサフィックス付きエージェント**: `implementer-a`, `test-runner-b` 等のサフィックス付きエージェントは、対応する元エージェント（`implementer`, `test-runner`）と同じ `tools` 設定を使用する。
+
+| エージェント | tools |
+|-------------|-------|
+| orchestrator | `["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "terminalLastCommand", "execute", "agent"]` |
+| explorer | `["search", "codebase", "fetch", "githubRepo", "usages"]` |
+| planner | `["search", "codebase", "fetch", "githubRepo", "usages", "editFiles"]` |
+| plan-reviewer | `["search", "codebase"]` |
+| implementer | `["search", "codebase", "usages", "editFiles", "terminalLastCommand", "execute"]` |
+| task-manager | `["search", "codebase", "editFiles"]` |
+| code-reviewer | `["search", "codebase", "usages"]` |
+| test-runner | `["search", "codebase", "terminalLastCommand", "execute", "editFiles"]` |
+| linter | `["search", "codebase", "terminalLastCommand", "execute", "editFiles"]` |
+| security-scanner | `["search", "codebase", "terminalLastCommand", "execute"]` |
+| debugger | `["search", "codebase", "usages", "editFiles", "terminalLastCommand", "execute"]` |
+| refactorer | `["search", "codebase", "usages", "editFiles"]` |
+| committer | `["search", "terminalLastCommand", "execute"]` |
+| pr-creator | `["search", "terminalLastCommand", "execute"]` |
