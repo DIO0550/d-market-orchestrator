@@ -174,7 +174,7 @@ Explorer ──→ Planner ──→ Plan Reviewer
 | Explorer | ✅ | ✅ | ⚠️ | ファイル検索能力が必要 |
 | Planner | ✅ | ✅ | ⚠️ | 複雑な分析能力が必要 |
 | Plan Reviewer | ✅ | ✅ | ⚠️ | 判断能力が必要 |
-| Task Manager | ✅ | ⚠️ | ❌ | サブエージェント管理が必要 |
+| Task Manager | ✅ | ⚠️ | ❌ | ペインでのエージェント管理が必要 |
 | Implementer | ✅ | ✅ | ⚠️ | ファイル編集能力が必要 |
 | Code Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
 | Test Runner | ✅ | ✅ | ⚠️ | コマンド実行能力が必要 |

@@ -1,4 +1,4 @@
-# 汎用 CLI エージェント定義フォーマット
+# 汎用 CLI 指示ファイルフォーマット
 
 Claude Code / Codex / Copilot 以外の AI CLI ツールを使用する場合のガイド。
 
@@ -70,6 +70,6 @@ my-ai-tool --no-confirm --input ".orchestrator/0001/.prompts/implementer-prompt.
 
 ## 制限事項
 
-- サブエージェント起動は不可（Orchestrator が直接管理）
+- エージェント起動は Orchestrator が tmux ペインで管理
 - CLI 固有の機能（VS Code 連携等）は使用不可
 - プロンプトのサイズ制限はCLIツールに依存

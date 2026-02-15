@@ -47,7 +47,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │   ├── task-manager プロンプト生成
     │   └── tmux-agent-launch.sh で起動（独立タスクは並列）
     │
-    │   task-manager 内部（CLIがサブエージェント対応の場合）:
+    │   task-manager 内部（CLIがペインでのエージェント管理に対応する場合）:
     │     1. implementer 起動 → 実装
     │     2. test-runner + linter 起動 → テスト・Lint
     │     3. code-reviewer 起動 → レビュー

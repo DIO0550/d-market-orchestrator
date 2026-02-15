@@ -11,7 +11,7 @@ tmux-orchestrator が対応する AI CLI ツールのプロファイル一覧。
 | 自律実行モード | `--dangerously-skip-permissions` | `--approval-mode full-auto` | N/A | 設定による |
 | ファイル編集 | 可能（Write/Edit ツール） | 可能（内蔵） | エディタ連携 | 設定による |
 | コマンド実行 | 可能（Bash ツール） | 可能（内蔵） | `execute` | 設定による |
-| サブエージェント | 可能（Task ツール） | 不可 | 不可 | 不可 |
+| エージェント管理 | 可能（Task ツール） | 不可 | 不可 | 不可 |
 | 出力モード | `--print`（標準出力） | `--quiet` | 対話的 | 設定による |
 
 ## Claude Code CLI
@@ -42,7 +42,7 @@ claude --print --prompt-file "{PROMPT_FILE}" --dangerously-skip-permissions
 - ファイル読み書き: Read, Write, Edit ツール
 - コマンド実行: Bash ツール
 - ファイル検索: Glob, Grep ツール
-- サブエージェント: Task ツール（tmux版では不使用）
+- エージェント管理: Task ツール（tmux版では不使用）
 - Web検索: WebSearch, WebFetch ツール
 
 ### tmux での使用上の注意
@@ -82,7 +82,7 @@ codex --approval-mode full-auto "{PROMPT}"
 - ファイル読み書き: 内蔵機能
 - コマンド実行: 内蔵シェル
 - ファイル検索: 内蔵機能
-- サブエージェント: 不可（AGENTS.md による指示のみ）
+- エージェント管理: 不可（AGENTS.md による指示のみ）
 
 ### tmux での使用上の注意
 
@@ -116,7 +116,7 @@ echo "{PROMPT}" | gh copilot explain
 
 - ファイル読み書き: エディタ連携（VS Code）
 - コマンド実行: `execute` / `terminalLastCommand`
-- サブエージェント: `#tool:agent/runSubagent`（VS Code内）
+- エージェント管理: `#tool:agent/runSubagent`（VS Code内）
 
 ### tmux での使用上の注意
 
@@ -196,7 +196,7 @@ echo "{PROMPT}" | gh copilot explain
 | Planner | claude | 複雑な判断力 |
 | Plan Reviewer | claude | 高度なレビュー能力 |
 | Implementer | claude / codex | コード生成能力 |
-| Task Manager | claude | サブエージェント管理 |
+| Task Manager | claude | ペインでのエージェント管理 |
 | Code Reviewer | claude | 詳細なレビュー |
 | Test Runner | claude / codex | コマンド実行 |
 | Linter | claude / codex | コマンド実行 |

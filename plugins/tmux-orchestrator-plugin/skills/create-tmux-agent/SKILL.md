@@ -1,11 +1,11 @@
 ---
 name: create-tmux-agent
-description: "tmuxベースのオーケストレーターフロー用エージェント定義ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。14種類のエージェントテンプレートから必要なものを選択し、tmux実行コンテキスト付きで生成可能。「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
+description: "tmuxベースのオーケストレーターフロー用指示ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。14種類の指示テンプレートから必要なものを選択し、tmux実行コンテキスト付きで生成可能。「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
 ---
 
 # Create tmux Orchestrator Agent
 
-tmuxベースのオーケストレーターフローで使用するエージェント定義ファイルを作成するスキル。
+tmuxベースのオーケストレーターフローで使用する指示ファイルを作成するスキル。
 
 ## ワークフロー
 
@@ -14,7 +14,7 @@ tmuxベースのオーケストレーターフローで使用するエージェ�
 2. エージェント選択 → カタログから必要なものを選ぶ
 3. テンプレート参照 → 個別ファイルから詳細を確認
 4. CLI別の調整 → 操作名をCLI固有の形式に変換
-5. エージェント定義の生成 → 適切なディレクトリに配置
+5. 指示ファイルの生成 → 適切なディレクトリに配置
 6. テンプレート・スクリプトの配置 → .orchestrator/ にコピー
 ```
 
@@ -24,7 +24,7 @@ tmuxベースのオーケストレーターフローで使用するエージェ�
 
 | CLI ツール | エージェント形式 | 配置先 | 実行方法 |
 |-----------|----------------|--------|---------|
-| Claude Code | YAML + Markdown | `.claude/agents/` | `claude --print --prompt-file` |
+| Claude Code | YAML + Markdown | `.claude/instructions/` | `claude --print --prompt-file` |
 | GitHub Copilot | YAML + Markdown | `.github/agents/` | `gh copilot suggest` |
 | OpenAI Codex | 純粋 Markdown | `AGENTS.md` | `codex --approval-mode full-auto` |
 | 汎用 CLI | Markdown | 任意 | CLI固有コマンド |
@@ -51,17 +51,17 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 ### 個別選択
 
-**制御**: [Orchestrator](references/agents/orchestrator.md)
+**制御**: [Orchestrator](references/instructions/orchestrator.md)
 
-**計画**: [Explorer](references/agents/explorer.md), [Planner](references/agents/planner.md), [Plan Reviewer](references/agents/plan-reviewer.md)
+**計画**: [Explorer](references/instructions/explorer.md), [Planner](references/instructions/planner.md), [Plan Reviewer](references/instructions/plan-reviewer.md)
 
-**実装**: [Implementer](references/agents/implementer.md), [Task Manager](references/agents/task-manager.md)
+**実装**: [Implementer](references/instructions/implementer.md), [Task Manager](references/instructions/task-manager.md)
 
-**検証**: [Code Reviewer](references/agents/code-reviewer.md), [Test Runner](references/agents/test-runner.md), [Linter](references/agents/linter.md), [Security Scanner](references/agents/security-scanner.md)
+**検証**: [Code Reviewer](references/instructions/code-reviewer.md), [Test Runner](references/instructions/test-runner.md), [Linter](references/instructions/linter.md), [Security Scanner](references/instructions/security-scanner.md)
 
-**修正**: [Debugger](references/agents/debugger.md), [Refactorer](references/agents/refactorer.md)
+**修正**: [Debugger](references/instructions/debugger.md), [Refactorer](references/instructions/refactorer.md)
 
-**Git**: [Committer](references/agents/committer.md), [PR Creator](references/agents/pr-creator.md)
+**Git**: [Committer](references/instructions/committer.md), [PR Creator](references/instructions/pr-creator.md)
 
 ### モデル選択
 
@@ -74,7 +74,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 ## Step 3: テンプレート参照
 
 各テンプレートには以下が含まれる:
-- エージェント定義（フロントマター + 本文）
+- 指示内容（フロントマター + 本文）
 - tmux実行コンテキスト（ファイルベースIPCの使い方）
 - 実行手順
 - CLI別の注意事項
@@ -90,13 +90,13 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 - プロンプト渡し方式
 - 自律実行モードの設定
 
-## Step 5: エージェント定義の生成
+## Step 5: 指示ファイルの生成
 
 ### 配置先
 
 | CLI ツール | ディレクトリ |
 |-----------|-------------|
-| Claude Code | `plugins/.../agents/{name}.md` または `.claude/agents/{name}.md` |
+| Claude Code | `plugins/.../instructions/{name}.md` または `.claude/instructions/{name}.md` |
 | Copilot | `.github/agents/{name}.agent.md` |
 | Codex | `{name}/AGENTS.md` または ルート追記 |
 

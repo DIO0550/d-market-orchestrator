@@ -1,4 +1,4 @@
-# Claude Code エージェント定義フォーマット
+# Claude Code 指示ファイルフォーマット
 
 ## 配置先
 
@@ -55,8 +55,8 @@ color: {magenta|cyan|green|yellow|red|blue}
 | ファイル検索 | `Glob` |
 | コード検索 | `Grep` |
 | コマンド実行 | `Bash` |
-| サブエージェント起動 | `Task` |
-| サブエージェント結果取得 | `TaskOutput` |
+| エージェント起動 | `Task` |
+| エージェント結果取得 | `TaskOutput` |
 | タスク管理 | `TaskCreate`, `TaskUpdate`, `TaskList` |
 | ユーザー質問 | `AskUserQuestion` |
 | Web検索 | `WebSearch` |
@@ -65,7 +65,7 @@ color: {magenta|cyan|green|yellow|red|blue}
 ## tmux版での特記事項
 
 tmux版では Orchestrator が `Bash` ツールを使って tmux コマンドを実行し、他のエージェントを起動する。
-各エージェントは独立した `claude` プロセスとして tmux ペインで動作するため、`Task` ツールによるサブエージェント起動は不要。
+各エージェントは独立した `claude` プロセスとして tmux ペインで動作するため、`Task` ツールによるエージェント起動は不要。
 
 代わりに以下のパターンを使用:
 

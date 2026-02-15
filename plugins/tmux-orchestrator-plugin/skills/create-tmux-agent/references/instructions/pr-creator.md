@@ -1,4 +1,4 @@
-# PR Creator（PR作成者）テンプレート
+# PR Creator（PR作成者）指示テンプレート
 
 GitHub Pull Requestを作成するエージェント。
 
@@ -7,7 +7,7 @@ GitHub Pull Requestを作成するエージェント。
 
 ---
 
-## エージェント定義
+## 指示内容
 
 ```markdown
 ---

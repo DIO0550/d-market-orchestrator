@@ -1,4 +1,4 @@
-# GitHub Copilot エージェント定義フォーマット
+# GitHub Copilot 指示ファイルフォーマット
 
 ## 配置先
 
@@ -52,7 +52,7 @@ tools:
 | ファイル書き込み | `editFiles` |
 | ファイル編集 | `editFiles` |
 | コマンド実行 | `execute` |
-| サブエージェント起動 | `#tool:agent/runSubagent` |
+| エージェント起動 | `#tool:agent/runSubagent` |
 | コンテキスト参照 | `@workspace` |
 
 ## tmux版での特記事項

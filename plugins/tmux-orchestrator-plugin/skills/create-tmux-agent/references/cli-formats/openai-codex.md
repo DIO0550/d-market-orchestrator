@@ -1,4 +1,4 @@
-# OpenAI Codex CLI エージェント定義フォーマット
+# OpenAI Codex CLI 指示ファイルフォーマット
 
 ## 配置先
 
