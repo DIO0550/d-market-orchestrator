@@ -59,11 +59,18 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```bash
    bash .orchestrator/scripts/init-session.sh .orchestrator/{SESSION_ID}
    ```
-5. tmux セッションを作成:
+5. チーム設定を確認（`.orchestrator/team-config.json` が存在する場合）:
+   ```bash
+   TEAM_CONFIG=".orchestrator/team-config.json"
+   if [ -f "$TEAM_CONFIG" ]; then
+     TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG")
+   fi
+   ```
+6. tmux セッションを作成（チーム名があればプレフィックスに使用）:
    ```bash
    bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}"
    ```
-6. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
+7. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
 ### Phase 1: 探索・計画・レビュー
 
@@ -137,6 +144,24 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 ## プロンプトファイル生成
 
 各エージェントの起動前に `.orchestrator/templates/agent-prompt.md` を参考にプロンプトファイルを生成する。
+
+### チーム設定の反映
+
+`.orchestrator/team-config.json` が存在する場合、プロンプトの冒頭を以下のように変更する:
+
+```markdown
+# {member_name}（{agent-id}）エージェント指示
+
+あなたは **{team_name}** の **{member_name}**（{agent-id}）エージェントです。
+```
+
+team-config.json がない場合は従来通り:
+
+```markdown
+# {agent-id} エージェント指示
+
+あなたは {agent-id} エージェントです。
+```
 
 ### プロンプトファイルの例（Explorer 用）
 

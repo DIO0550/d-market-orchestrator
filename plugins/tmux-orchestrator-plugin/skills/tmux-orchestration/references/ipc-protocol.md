@@ -16,6 +16,9 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 ## ディレクトリ構成
 
 ```
+.orchestrator/
+├── team-config.json              # チーム名・メンバー名設定（プロジェクト単位）
+│
 .orchestrator/{SESSION_ID}/
 ├── .config/                     # ランタイム設定
 │   └── cli-assignments.json     # エージェント→CLI割り当て
@@ -155,6 +158,85 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
 1. **Orchestrator は結果ファイルを Read しない**: 分岐判断は `.judgment` ファイルのみで行う
 2. **パス渡し方式**: Orchestrator は次のエージェントのプロンプトにファイルパスだけを記載する。内容は渡し先のエージェントが自分で Read する
 3. **マーカーファイルは最小限**: `.judgment` ファイルは判定値の1行のみ。詳細は結果ファイルに書く
+
+## チーム設定（team-config.json）
+
+プロジェクトルートの `.orchestrator/team-config.json` に配置する任意の設定ファイル。
+チーム名やメンバー名をカスタマイズし、tmux セッション名・ペインタイトル・プロンプトに反映する。
+
+**ファイルが存在しない場合は全てデフォルト動作**（完全後方互換）。
+
+### スキーマ
+
+```json
+{
+  "team_name": "Alpha",
+  "members": {
+    "orchestrator": { "name": "Commander" },
+    "explorer": { "name": "Scout" },
+    "planner": { "name": "Architect" },
+    "plan-reviewer": { "name": "Critic" },
+    "implementer": { "name": "Builder" },
+    "task-manager": { "name": "Captain" },
+    "code-reviewer": { "name": "Inspector" },
+    "test-runner": { "name": "Tester" },
+    "linter": { "name": "Checker" },
+    "security-scanner": { "name": "Guardian" },
+    "debugger": { "name": "Medic" },
+    "refactorer": { "name": "Polisher" },
+    "committer": { "name": "Recorder" },
+    "pr-creator": { "name": "Messenger" }
+  }
+}
+```
+
+### フィールド
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `team_name` | string \| null | No | チーム名。tmux セッション名のプレフィックスとプロンプトに使用 |
+| `members` | object | No | エージェント内部識別子→表示名のマッピング |
+| `members.{id}.name` | string | No | そのエージェントの表示名 |
+
+### デフォルト動作
+
+| 設定状態 | tmux セッション名 | ペインタイトル | プロンプト |
+|---------|------------------|--------------|----------|
+| ファイルなし | `orch-{SESSION_ID}` | `{agent-id}` | `あなたは {agent-id} エージェントです` |
+| team_name 設定あり | `{team_name}-{SESSION_ID}` | `{member-name}` | `あなたは {team_name} の {member-name}（{agent-id}）エージェントです` |
+| member 未定義 | — | `{agent-id}` | `あなたは {agent-id} エージェントです` |
+
+### 影響範囲
+
+表示レイヤーのみに影響。以下は一切変更されない:
+- 内部識別子（explorer, planner 等）
+- ファイルパス（`.status/explorer.done`, `explorer/result.md` 等）
+- IPC プロトコル（`.done`, `.exit`, `.judgment`）
+- Phase シーケンス
+
+### 読み込み方法
+
+```bash
+# team-config.json からチーム名を取得（jq 使用）
+TEAM_CONFIG=".orchestrator/team-config.json"
+if [ -f "$TEAM_CONFIG" ]; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG")
+fi
+
+# エージェントの表示名を取得
+get_member_name() {
+  local agent_id="$1"
+  if [ -f "$TEAM_CONFIG" ]; then
+    local name
+    name=$(jq -r ".members.\"${agent_id}\".name // empty" "$TEAM_CONFIG")
+    if [ -n "$name" ]; then
+      echo "$name"
+      return
+    fi
+  fi
+  echo "$agent_id"
+}
+```
 
 ## データフロー図
 

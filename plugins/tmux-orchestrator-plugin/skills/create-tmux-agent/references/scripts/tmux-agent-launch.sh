@@ -60,8 +60,18 @@ else
   TARGET_PANE=$(tmux list-panes -t "${SESSION}:${WINDOW}" -F '#{pane_id}' | tail -1)
 fi
 
+# チーム設定からメンバー表示名を取得
+DISPLAY_NAME="$AGENT_NAME"
+TEAM_CONFIG=".orchestrator/team-config.json"
+if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+  MEMBER_NAME=$(jq -r ".members.\"${AGENT_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
+  if [ -n "$MEMBER_NAME" ]; then
+    DISPLAY_NAME="${MEMBER_NAME} (${AGENT_NAME})"
+  fi
+fi
+
 # ペインのタイトルを設定
-tmux select-pane -t "$TARGET_PANE" -T "$AGENT_NAME"
+tmux select-pane -t "$TARGET_PANE" -T "$DISPLAY_NAME"
 
 # CLIツールに応じたコマンドを構築
 PROMPT_FILE_ABS=$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FILE")

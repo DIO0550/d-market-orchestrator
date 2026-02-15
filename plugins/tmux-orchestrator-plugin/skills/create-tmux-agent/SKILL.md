@@ -204,6 +204,49 @@ mkdir -p .orchestrator/scripts
 chmod +x .orchestrator/scripts/*.sh
 ```
 
+## チーム設定のカスタマイズ（任意）
+
+`.orchestrator/team-config.json` を作成すると、チーム名やメンバー名をカスタマイズできる。
+このファイルがなくても全て従来通り動作する（完全後方互換）。
+
+```json
+{
+  "team_name": "Alpha",
+  "members": {
+    "orchestrator": { "name": "Commander" },
+    "explorer": { "name": "Scout" },
+    "planner": { "name": "Architect" },
+    "plan-reviewer": { "name": "Critic" },
+    "implementer": { "name": "Builder" },
+    "task-manager": { "name": "Captain" },
+    "code-reviewer": { "name": "Inspector" },
+    "test-runner": { "name": "Tester" },
+    "linter": { "name": "Checker" },
+    "security-scanner": { "name": "Guardian" },
+    "debugger": { "name": "Medic" },
+    "refactorer": { "name": "Polisher" },
+    "committer": { "name": "Recorder" },
+    "pr-creator": { "name": "Messenger" }
+  }
+}
+```
+
+### 反映される箇所
+
+| 項目 | デフォルト | カスタマイズ時 |
+|------|----------|-------------|
+| tmux セッション名 | `orch-{SESSION_ID}` | `{team_name}-{SESSION_ID}` |
+| tmux ペインタイトル | `explorer` | `Scout (explorer)` |
+| プロンプト冒頭 | `あなたは explorer エージェントです` | `あなたは **Alpha** の **Scout**（explorer）エージェントです` |
+| ステータスモニター | `[RUNNING] explorer` | `[RUNNING] Scout (explorer)` |
+
+### 影響しない箇所
+
+内部識別子・ファイルパス・IPC プロトコルは一切変更されない:
+- `.status/explorer.done` — 変わらない
+- `explorer/result.md` — 変わらない
+- `.prompts/explorer-prompt.md` — 変わらない
+
 ## 生成後チェックリスト
 
 - [ ] `.orchestrator/templates/` に9ファイルが配置されている

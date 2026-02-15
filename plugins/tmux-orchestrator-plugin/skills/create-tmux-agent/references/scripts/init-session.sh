@@ -30,4 +30,13 @@ mkdir -p "$SESSION_DIR"/{explorer,planner,plan-reviewer}
 mkdir -p "$SESSION_DIR"/{test-runner,linter,debugger,security-scanner}
 mkdir -p "$SESSION_DIR"/{committer,pr-creator}
 
+# チーム設定の読み込み（team-config.json が存在する場合）
+TEAM_CONFIG=".orchestrator/team-config.json"
+if [ -f "$TEAM_CONFIG" ]; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+  if [ -n "$TEAM_NAME" ]; then
+    echo "Team: ${TEAM_NAME}"
+  fi
+fi
+
 echo "Session directory initialized: $SESSION_DIR"

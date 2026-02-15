@@ -18,6 +18,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
 ```
 [Phase 0: 初期化] ──────────────────────────────
     │
+    ├── チーム設定読み込み（team-config.json、存在する場合）
     ├── tmuxセッション作成（tmux-session-create.sh）
     ├── セッションディレクトリ初期化（init-session.sh）
     └── CLI割り当て設定（cli-assignments.json）
@@ -81,6 +82,7 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 
 | ディレクトリ | 内容 | 用途 |
 |------------|------|------|
+| `.orchestrator/` | `team-config.json` | チーム名・メンバー名設定（プロジェクト単位、任意） |
 | `.config/` | `cli-assignments.json` | エージェント→CLI割り当て |
 | `.status/` | `{agent}.done`, `{agent}.exit`, `{agent}.judgment` | 完了マーカー・終了コード・判定値 |
 | `.prompts/` | `{agent}-prompt.md` | CLIに渡すプロンプトファイル |

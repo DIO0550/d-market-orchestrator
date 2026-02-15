@@ -18,9 +18,34 @@ if [ -z "$SESSION_DIR" ]; then
 fi
 
 OUTPUT="${SESSION_DIR}/implementation-log.md"
+TEAM_CONFIG=".orchestrator/team-config.json"
+
+# エージェント内部識別子から表示名を取得
+get_display_name() {
+  local agent_id="$1"
+  if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+    local name
+    name=$(jq -r ".members.\"${agent_id}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
+    if [ -n "$name" ]; then
+      echo "${name} (${agent_id})"
+      return
+    fi
+  fi
+  echo "$agent_id"
+}
+
+# チーム名の取得
+TEAM_NAME=""
+if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+fi
 
 {
-  echo "# Implementation Log"
+  if [ -n "$TEAM_NAME" ]; then
+    echo "# ${TEAM_NAME} - Implementation Log"
+  else
+    echo "# Implementation Log"
+  fi
   echo ""
   echo "Session: $(basename "$SESSION_DIR")"
   echo "Generated: $(date '+%Y-%m-%d %H:%M:%S')"
@@ -32,7 +57,7 @@ OUTPUT="${SESSION_DIR}/implementation-log.md"
 
   for dir in explorer planner plan-reviewer; do
     if [ -d "${SESSION_DIR}/${dir}" ]; then
-      echo "### ${dir}"
+      echo "### $(get_display_name "$dir")"
       echo ""
       for file in "${SESSION_DIR}/${dir}"/*.md; do
         if [ -f "$file" ]; then
@@ -60,9 +85,10 @@ OUTPUT="${SESSION_DIR}/implementation-log.md"
       for agent_dir in "${task_dir}"/*/; do
         if [ -d "$agent_dir" ]; then
           AGENT=$(basename "$agent_dir")
+          AGENT_DISPLAY=$(get_display_name "$AGENT")
           for file in "${agent_dir}"*.md; do
             if [ -f "$file" ]; then
-              echo "#### ${AGENT}: $(basename "$file")"
+              echo "#### ${AGENT_DISPLAY}: $(basename "$file")"
               echo ""
               echo '```'
               head -20 "$file"
@@ -81,7 +107,7 @@ OUTPUT="${SESSION_DIR}/implementation-log.md"
 
   for dir in test-runner linter security-scanner debugger; do
     if [ -d "${SESSION_DIR}/${dir}" ]; then
-      echo "### ${dir}"
+      echo "### $(get_display_name "$dir")"
       echo ""
       for file in "${SESSION_DIR}/${dir}"/*.md; do
         if [ -f "$file" ]; then
@@ -102,7 +128,7 @@ OUTPUT="${SESSION_DIR}/implementation-log.md"
 
   for dir in committer pr-creator; do
     if [ -d "${SESSION_DIR}/${dir}" ]; then
-      echo "### ${dir}"
+      echo "### $(get_display_name "$dir")"
       echo ""
       for file in "${SESSION_DIR}/${dir}"/*.md; do
         if [ -f "$file" ]; then

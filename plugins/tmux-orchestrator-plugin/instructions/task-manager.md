@@ -83,7 +83,9 @@ round = 1  # 初期値
 
 ### 3. Implementer の起動
 
-Implementer のプロンプトファイルを `.prompts/task-{taskId}-implementer-prompt.md` に生成し、tmux ペインで起動:
+Implementer のプロンプトファイルを `.prompts/task-{taskId}-implementer-prompt.md` に生成し、tmux ペインで起動する。
+
+`.orchestrator/team-config.json` が存在する場合は、プロンプトの冒頭にチーム名・メンバー名を反映する（Orchestrator と同様）。
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \

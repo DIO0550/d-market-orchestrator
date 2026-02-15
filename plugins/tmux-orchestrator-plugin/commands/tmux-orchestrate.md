@@ -20,7 +20,8 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
    - `.orchestrator/` 内の `????-*` パターンをスキャンし最大連番を取得
    - セッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
    - `init-session.sh` でディレクトリ構造を初期化
-   - `tmux-session-create.sh` でtmuxセッションを作成
+   - `.orchestrator/team-config.json` が存在すればチーム名・メンバー名を読み込み
+   - `tmux-session-create.sh` でtmuxセッションを作成（チーム名があればセッション名に反映）
    - `cli-assignments.json` をデフォルト設定で作成
 
 1. **Phase 1: 探索・計画・レビュー**
@@ -72,7 +73,13 @@ SESSION_ID="${NEXT_ID}-${FEATURE_NAME}"
 # ディレクトリ初期化
 bash .orchestrator/scripts/init-session.sh ".orchestrator/${SESSION_ID}"
 
-# tmuxセッション作成
+# チーム設定の読み込み（存在する場合）
+TEAM_CONFIG=".orchestrator/team-config.json"
+if [ -f "$TEAM_CONFIG" ]; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG")
+fi
+
+# tmuxセッション作成（チーム名があればセッション名プレフィックスに反映）
 bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}"
 
 # CLI割り当て設定（デフォルト）

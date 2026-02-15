@@ -15,11 +15,21 @@
 set -euo pipefail
 
 SESSION_NAME="${1:-}"
+TEAM_CONFIG="${2:-.orchestrator/team-config.json}"
 
 if [ -z "$SESSION_NAME" ]; then
-  echo "Usage: tmux-session-create.sh <session-name>"
+  echo "Usage: tmux-session-create.sh <session-name> [team-config-path]"
   echo "Example: tmux-session-create.sh orch-0001-user-auth"
   exit 1
+fi
+
+# チーム設定からセッション名プレフィックスを上書き
+if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+  if [ -n "$TEAM_NAME" ]; then
+    # "orch-" プレフィックスをチーム名に置換
+    SESSION_NAME=$(echo "$SESSION_NAME" | sed "s/^orch-/${TEAM_NAME}-/")
+  fi
 fi
 
 # tmux がインストールされているか確認

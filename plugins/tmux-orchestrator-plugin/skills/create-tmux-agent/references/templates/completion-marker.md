@@ -68,6 +68,18 @@ JUDGMENT=$(cat {SESSION_DIR}/.status/plan-reviewer.judgment 2>/dev/null | sed 's
 
 Orchestrator はこの値のみで分岐判断を行い、結果ファイルの中身を Read する必要がない。
 
+## チーム設定との関係
+
+`team-config.json` でメンバー名をカスタマイズしても、マーカーファイル名は**常に内部識別子**を使用する。
+表示名はスクリプト（status-monitor, result-collector 等）が team-config.json から動的に解決する。
+
+```
+# 内部識別子: explorer → 表示名: Scout
+# ファイル名は常に内部識別子
+.status/explorer.done       ← 変わらない
+.status/explorer.exit       ← 変わらない
+```
+
 ## 命名規則
 
 | エージェント | .done | .exit | .judgment |
