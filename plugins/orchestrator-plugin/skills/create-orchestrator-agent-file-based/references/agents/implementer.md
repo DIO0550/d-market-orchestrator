@@ -74,6 +74,17 @@ Orchestrator/Task Manager からプロンプトで渡されるセッションパ
 - CLAUDE.md に記載されたコーディング規約、禁止事項、ワークフローを順守すること
 - プロジェクト固有のルールは計画書より優先される
 
+#### パッケージマネージャーの検出（Node.js プロジェクトの場合）
+
+TDDサイクルでテストを実行する際に正しいコマンドを使うため、ロックファイルでパッケージマネージャーを検出する:
+
+| ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
+|--------------|-----|--------------|---------|-------------|
+| `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
+| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
+| `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
 ### 5. t-wada式TDDで実装
 
 **Red-Green-Refactor** サイクルに従って実装する:

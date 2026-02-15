@@ -46,6 +46,17 @@ color: green
 
 **重要**: `package.json` の `scripts` に `test` がない、または `echo \"Error: no test specified\"` のような未設定状態であれば「テストスクリプトが未設定」と報告する。存在しないコマンドを実行しない。
 
+3. Node.js プロジェクトの場合、ロックファイルでパッケージマネージャーを検出し、以降のコマンドに使用する:
+
+| ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
+|--------------|-----|--------------|---------|-------------|
+| `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
+| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
+| `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
+ロックファイルが見つからない場合は `package.json` の `packageManager` フィールドを確認する。
+
 ### 2. 変更ファイルの特定（Phase 2 のみ）
 
 呼び出し元のプロンプトにタスクIDが含まれる場合（Phase 2）:
@@ -58,9 +69,21 @@ color: green
 
 変更ファイルに対応するテストファイルを特定し、そのテストのみを実行する:
 
+**スクリプト経由**（`{pm} run test` にファイルパスを渡す）:
+
+| PM | 単一ファイル指定の例 |
+|----|---------------------|
+| pnpm | `pnpm run test path/to/file.test.ts` |
+| yarn | `yarn test path/to/file.test.ts` |
+| npm | `npm run test -- path/to/file.test.ts`（`--` 必須） |
+| bun | `bun run test path/to/file.test.ts` |
+
+**直接実行**（テストランナーを直接呼び出す）:
+
 | ツール | スコープ指定の例 |
 |-------|-----------------|
-| Jest / Vitest | `npx jest --testPathPattern="path/to/test"` |
+| Jest | `{pm} exec jest path/to/file.test.ts` |
+| Vitest | `{pm} exec vitest path/to/file.test.ts` |
 | pytest | `pytest path/to/test_file.py` |
 | cargo test | `cargo test module_name` |
 | go test | `go test ./path/to/package` |

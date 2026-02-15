@@ -59,6 +59,17 @@ Read: .claude/settings.json（存在する場合）
 - プロジェクト固有のルール（使用ツール、命名規則、ディレクトリ構成など）を把握すること
 - 指示書のルールは計画書より優先される
 
+#### パッケージマネージャーの検出（Node.js プロジェクトの場合）
+
+TDDサイクルでテストを実行する際に正しいコマンドを使うため、ロックファイルでパッケージマネージャーを検出する:
+
+| ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
+|--------------|-----|--------------|---------|-------------|
+| `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
+| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
+| `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
 ### 5. t-wada式TDDで実装
 
 **Red-Green-Refactor** サイクルに従って実装する：

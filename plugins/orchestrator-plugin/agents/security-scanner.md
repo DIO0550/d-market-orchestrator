@@ -56,7 +56,7 @@ Read: CLAUDE.md（プロジェクトルート）
 
 | プロジェクト | コマンド |
 |-------------|---------|
-| Node.js (package.json) | `npm audit` |
+| Node.js (package.json) | `{pm} audit`（ロックファイルでパッケージマネージャーを検出: pnpm-lock.yaml→pnpm, yarn.lock→yarn, package-lock.json→npm） |
 | Rust (Cargo.toml) | `cargo audit` |
 | Python (pyproject.toml) | `pip-audit` |
 

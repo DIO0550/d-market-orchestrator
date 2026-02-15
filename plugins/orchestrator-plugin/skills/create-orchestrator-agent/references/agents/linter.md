@@ -44,7 +44,18 @@ Lint と型チェックを実行する。
 | `pyproject.toml` | `[tool.ruff]`, `[tool.mypy]` セクション |
 | `go.mod` | `go vet` が使用可能 |
 
-**重要**: `package.json` の `scripts` に `lint` がなければ「Lintスクリプトが未設定」と報告する。`npx eslint .` や `npx biome check .` のように推測でコマンドを実行しない。
+**重要**: `package.json` の `scripts` に `lint` がなければ「Lintスクリプトが未設定」と報告する。推測でコマンドを実行しない。
+
+3. Node.js プロジェクトの場合、ロックファイルでパッケージマネージャーを検出し、以降のコマンドに使用する:
+
+| ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
+|--------------|-----|--------------|---------|-------------|
+| `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
+| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
+| `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
+ロックファイルが見つからない場合は `package.json` の `packageManager` フィールドを確認する。
 
 ### 2. 変更ファイルの特定（Phase 2 のみ）
 
@@ -55,12 +66,23 @@ Lint と型チェックを実行する。
 
 #### Phase 2（タスクIDあり）: 変更ファイルのみ対象
 
-変更されたファイルのみを対象に実行する:
+変更されたファイルのみを対象に実行する。
+
+**スクリプト経由**（`{pm} run lint` にファイルパスを渡す）:
+
+| PM | ファイル指定の例 |
+|----|-----------------|
+| pnpm | `pnpm run lint path/to/file.ts` |
+| yarn | `yarn lint path/to/file.ts` |
+| npm | `npm run lint -- path/to/file.ts`（`--` 必須） |
+| bun | `bun run lint path/to/file.ts` |
+
+**直接実行**（Lintツールを直接呼び出す）:
 
 | ツール | スコープ指定の例 |
 |-------|-----------------|
-| ESLint | `npx eslint path/to/file1.ts path/to/file2.ts` |
-| Biome | `npx biome check path/to/file1.ts path/to/file2.ts` |
+| ESLint | `{pm} exec eslint path/to/file1.ts path/to/file2.ts` |
+| Biome | `{pm} exec biome check path/to/file1.ts path/to/file2.ts` |
 | ruff | `ruff check path/to/file1.py path/to/file2.py` |
 | clippy | `cargo clippy`（Rust はファイル指定不可、全体実行） |
 

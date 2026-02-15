@@ -51,7 +51,7 @@ color: red
 
 | ツール | コマンド |
 |--------|---------|
-| npm | `npm audit` |
+| npm / pnpm / yarn | `{pm} audit`（ロックファイルでパッケージマネージャーを検出: pnpm-lock.yaml→pnpm, yarn.lock→yarn, package-lock.json→npm） |
 | cargo | `cargo audit` |
 | pip | `pip-audit` |
 
