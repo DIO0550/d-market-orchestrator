@@ -84,21 +84,39 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 
 ##### 並列実行フロー
 
-1. タスク一覧から依存関係のない pending タスクを最大 N 個取得（N = レーン数）
-2. 各タスクにレーン（a, b, c, d）を割り当て
-3. 各レーンのタスクディレクトリを初期化
-4. 全レーンの **Implementer-{suffix}** を同時にバックグラウンド起動
-5. 各 Implementer 完了後、そのレーンの **Test Runner-{suffix}** と **Linter-{suffix}** を並列起動
-6. テスト/Lint 成功後、そのレーンの **Refactorer-{suffix}** を起動
-7. Refactorer 完了後、そのレーンの **Code Reviewer-{suffix}** を起動
-8. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（Task Manager は1つで十分、直列で判定）
-9. 判定に基づく分岐:
-   a. **completed** → タスクを完了にして、レーンを解放
-   b. **rejected** → そのレーンの Implementer-{suffix} を再起動
-10. 空いたレーンに次の pending タスクを割り当て
-11. 全タスク完了まで繰り返し
+**重要**: 各レーンは独立したパイプラインとして動作する。他のレーンの完了を待たずに、自レーンの次のステップに即座に進むこと。
 
-##### 並列起動の例（2レーン）
+###### 初期化
+
+1. タスク一覧から依存関係のない pending タスクを最大 N 個取得（N = レーン数）
+2. 各タスクにレーン（a, b, c, d）を割り当て、タスクディレクトリを初期化
+3. 全レーンの **Implementer-{suffix}** をバックグラウンド起動
+
+###### 各レーンのライフサイクル（レーンごとに独立実行）
+
+各レーンの Implementer が完了次第、**他のレーンの完了を待たずに**即座にそのレーンの次のステップを開始する:
+
+```
+Implementer-{suffix} 完了
+  ↓ 即座に
+Test Runner-{suffix} + Linter-{suffix} 並列起動
+  ↓ 両方完了
+  ├─ 失敗 → Implementer-{suffix} を再起動（リトライ）
+  └─ 成功 ↓
+Refactorer-{suffix} 起動
+  ↓ 完了
+Code Reviewer-{suffix} 起動
+  ↓ 完了
+Task Manager 起動（判定）
+  ├─ completed → タスク完了、レーンを解放
+  └─ rejected → Implementer-{suffix} を再起動
+```
+
+###### レーン解放後
+
+空いたレーンに次の pending タスクを割り当て、そのレーンのライフサイクルを再開する。全タスク完了まで繰り返し。
+
+##### 並列起動の例（2レーン: Implementer の同時起動）
 
 ```
 # レーン A: タスク1を処理
@@ -122,11 +140,14 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 - agentName: implementer-b
 ```
 
+→ Implementer-A が先に完了した場合、**Implementer-B の完了を待たずに** Test Runner-A + Linter-A を即座に起動する。
+
 ##### レーン管理ルール
 
-- 各レーンは独立して動作し、他のレーンの完了を待たない
+- **各レーンは独立パイプライン** — 他のレーンの完了を絶対に待たない
 - レーンが完了したら、次の未着手タスクがあれば即座に再利用
 - あるレーンでリトライが発生しても、他のレーンには影響しない
+- Task Manager は1つのみ（判定は直列で実行、レーンごとに別インスタンスは不要）
 - 全レーンが完了（pending タスクなし）で Phase 2 終了
 - Phase 3 以降のテスト/Lint は通常のエージェント（サフィックスなし）を使用
 
