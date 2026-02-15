@@ -36,14 +36,13 @@ tools: ["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "ter
 
 ### Phase 0: セッション初期化
 
-1. `.orchestrator/` 内の `????-*` パターンをスキャンし最大連番を取得（なければ 0000）
-2. ユーザーのタスクから feature 名を生成（英小文字ハイフン区切り、例: `user-auth`）
-3. 新しいセッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
-4. セッション初期化スクリプトを実行:
+1. ユーザーのタスクから feature 名を生成（英小文字ハイフン区切り、例: `user-auth`）
+2. セッション初期化スクリプトを実行（連番の採番とディレクトリ作成を一括で行う）:
    ```
-   bash .orchestrator/scripts/init-session.sh .orchestrator/{SESSION_ID}
+   SESSION_DIR=$(bash .orchestrator/scripts/init-session.sh {feature名})
    ```
-5. 以降すべてのサブエージェント起動プロンプトに `セッションパス: .orchestrator/{SESSION_ID}/` を含める
+   スクリプトが SESSION_DIR（例: `.orchestrator/0001-user-auth`）を標準出力に返す
+3. 以降すべてのサブエージェント起動プロンプトに `セッションパス: {SESSION_DIR}/` を含める
 
 ### Phase 1: 探索・計画・レビュー
 
@@ -69,13 +68,13 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 3. 各タスクに対して **Implementer** を直接サブエージェントとして起動
 4. Implementer 完了後、**Test Runner** と **Linter** を並列起動（TDD検証）
 5. テスト/Lint 失敗 → 失敗情報を含めて Implementer を再起動（Step 3 に戻る、リトライ回数に含む）
-6. テスト/Lint 成功後、**Code Reviewer** を直接起動
-7. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（実装結果・テスト結果・レビュー結果のパスを渡す）
-8. Task Manager の判定に基づく分岐:
+6. テスト/Lint 成功後、**Refactorer** を起動（実装コードのリファクタリング）
+7. Refactorer 完了後、**Code Reviewer** を直接起動
+8. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（実装結果・テスト結果・レビュー結果のパスを渡す）
+9. Task Manager の判定に基づく分岐:
    a. **completed** → タスクを完了にして次のタスクへ
    b. **rejected** → Implementer を再起動し Step 3 に戻る（最大2回リトライ）
-   c. **needs refactoring** → **Refactorer** を起動 → Step 6 に戻り Code Reviewer で再レビュー（最大2レビューサイクル）
-9. 全タスク完了まで繰り返し
+10. 全タスク完了まで繰り返し
 
 #### 並列レーンモード（レーン数 > 1 の場合）
 
@@ -90,14 +89,14 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 3. 各レーンのタスクディレクトリを初期化
 4. 全レーンの **Implementer-{suffix}** を同時にバックグラウンド起動
 5. 各 Implementer 完了後、そのレーンの **Test Runner-{suffix}** と **Linter-{suffix}** を並列起動
-6. テスト/Lint 成功後、そのレーンの **Code Reviewer-{suffix}** を起動
-7. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（Task Manager は1つで十分、直列で判定）
-8. 判定に基づく分岐:
+6. テスト/Lint 成功後、そのレーンの **Refactorer-{suffix}** を起動
+7. Refactorer 完了後、そのレーンの **Code Reviewer-{suffix}** を起動
+8. Code Reviewer 完了後、**Task Manager** を起動し判定を委譲（Task Manager は1つで十分、直列で判定）
+9. 判定に基づく分岐:
    a. **completed** → タスクを完了にして、レーンを解放
    b. **rejected** → そのレーンの Implementer-{suffix} を再起動
-   c. **needs refactoring** → そのレーンの **Refactorer-{suffix}** を起動
-9. 空いたレーンに次の pending タスクを割り当て
-10. 全タスク完了まで繰り返し
+10. 空いたレーンに次の pending タスクを割り当て
+11. 全タスク完了まで繰り返し
 
 ##### 並列起動の例（2レーン）
 
@@ -252,8 +251,7 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 - **サブエージェント結果取得**: エージェントの完了を待ち結果を取得
 - **タスク一覧取得**: 現在のタスク状態を確認
 - **タスク状態更新**: タスクのステータスを変更
-- **ディレクトリ作成**: セッションフォルダの初期化
-- **ファイルパターン検索**: セッション連番の取得
+- **スクリプト実行**: セッション初期化（`init-session.sh`）、タスクディレクトリ初期化（`init-task.sh`）
 ## 完了条件
 
 1. 全タスクが完了になっている

@@ -1,7 +1,7 @@
 # Task Manager（タスクライフサイクル管理者）テンプレート
 
 タスクのライフサイクルを管理するミニオーケストレーター。
-Implementer起動 → Test Runner + Linter → Code Reviewer起動 → Refactorer起動 → 完了判定を一貫して行う。
+Implementer起動 → Test Runner + Linter → Refactorer起動 → Code Reviewer起動 → 完了判定を一貫して行う。
 Claude Code / Codex 用。Copilot 版は [task-manager-copilot.md](task-manager-copilot.md) を参照。
 
 **推奨モデル**: ⚡ 中程度（sonnet相当）
@@ -14,7 +14,7 @@ Claude Code / Codex 用。Copilot 版は [task-manager-copilot.md](task-manager-
 ```markdown
 ---
 name: task-manager
-description: "タスクライフサイクル管理エージェント。Implementer起動→Test Runner + Linter→Code Reviewer起動→Refactorer起動→完了判定を一貫して管理する。コードの変更は自分では行わず、サブエージェントに委譲する。"
+description: "タスクライフサイクル管理エージェント。Implementer起動→Test Runner + Linter→Refactorer起動→Code Reviewer起動→完了判定を一貫して管理する。コードの変更は自分では行わず、サブエージェントに委譲する。"
 model: sonnet  # 中程度モデル
 tools: ["read", "agent", "todo"]
 color: yellow
@@ -27,7 +27,7 @@ color: yellow
 ## 指示
 
 あなたは **task-manager** エージェントです。割り当てられた**1つのタスク**のライフサイクルを管理してください。
-Implementer の起動、Test Runner + Linter による検証、Code Reviewer の起動、Refactorer の起動、完了判定を順番に実行し、結果を Orchestrator に返します。
+Implementer の起動、Test Runner + Linter による検証、Refactorer の起動、Code Reviewer の起動、完了判定を順番に実行し、結果を Orchestrator に返します。
 
 **コードの変更は自分では行わないこと。サブエージェントに委譲する。**
 
@@ -105,41 +105,12 @@ Implementer の実装完了後、TDD の検証として Test Runner と Linter �
 
 ### 6. 検証結果の確認
 
-- 両方 PASS → Step 7（Code Reviewer）へ進む
+- 両方 PASS → Step 7（Refactorer）へ進む
 - 失敗がある場合 → `round += 1` し、失敗情報を含めて Implementer を再起動（Step 3 に戻る、リトライ回数に含む）
 
-### 7. Code Reviewer の起動
+### 7. Refactorer の起動
 
-Implementer の実装結果を渡して Code Reviewer を起動する。
-
-```yaml
-サブエージェント起動:
-  エージェント: code-reviewer
-  タスク: |
-    セッションパス: {SESSION_DIR}
-    ラウンド: {round}
-    Implementerの実装結果をレビューしてください。
-    - タスクID: {taskId}
-    - 実装結果: {SESSION_DIR}/task-{taskId}/implementer/result-{round}.md
-```
-
-### 8. Code Reviewer の完了待ち
-
-```yaml
-サブエージェント結果取得:
-  対象: code-reviewer
-```
-
-### 9. レビュー結果に基づく分岐
-
-#### a. Request Changes の場合
-
-`round += 1` し、差し戻し理由を記録して Implementer を再起動し、**Step 3 に戻る**（最大2回リトライ）。
-再起動後は再び Test Runner + Linter → Code Reviewer でレビューを実施する。
-
-#### b. Approved + 推奨対応ありの場合
-
-Refactorer を起動してコード品質を改善する。
+テスト/Lint 成功後、実装コードのリファクタリングを行う。
 
 ```yaml
 サブエージェント起動:
@@ -147,19 +118,46 @@ Refactorer を起動してコード品質を改善する。
   タスク: |
     セッションパス: {SESSION_DIR}
     ラウンド: {round}
-    コードレビューの指摘に基づいてコードを改善してください。
+    実装されたコードをリファクタリングしてください。
     - タスクID: {taskId}
     - 実装結果: {SESSION_DIR}/task-{taskId}/implementer/result-{round}.md
-    - レビュー結果: {SESSION_DIR}/task-{taskId}/code-reviewer/review-{round}.md
 ```
 
-`round += 1` し、Refactorer 完了後、**Step 7 に戻り Code Reviewer で再レビュー**を実施する（最大2レビューサイクル）。
+### 8. Code Reviewer の起動
 
-#### c. Approved + 指摘なしの場合
+Refactorer 完了後、リファクタリング済みのコードをレビューする。
 
-Step 10 の完了判定に進む。
+```yaml
+サブエージェント起動:
+  エージェント: code-reviewer
+  タスク: |
+    セッションパス: {SESSION_DIR}
+    ラウンド: {round}
+    リファクタリング済みの実装結果をレビューしてください。
+    - タスクID: {taskId}
+    - 実装結果: {SESSION_DIR}/task-{taskId}/implementer/result-{round}.md
+    - リファクタリング結果: {SESSION_DIR}/task-{taskId}/refactorer/result-{round}.md
+```
 
-### 10. 完了判定
+### 9. Code Reviewer の完了待ち
+
+```yaml
+サブエージェント結果取得:
+  対象: code-reviewer
+```
+
+### 10. レビュー結果に基づく分岐
+
+#### a. Approved の場合
+
+Step 11 の完了判定に進む。
+
+#### b. Request Changes の場合
+
+`round += 1` し、差し戻し理由を記録して Implementer を再起動し、**Step 3 に戻る**（最大2回リトライ）。
+再起動後は再び Test Runner + Linter → Refactorer → Code Reviewer でレビューを実施する。
+
+### 11. 完了判定
 
 #### チェック項目
 
@@ -195,7 +193,7 @@ Step 10 の完了判定に進む。
     {元のタスク説明}
 ```
 
-### 11. 結果の出力
+### 12. 結果の出力
 
 `.orchestrator/templates/task-lifecycle-result.md` を Read してフォーマットに従って `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` に結果を書き出す。
 

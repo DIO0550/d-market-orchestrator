@@ -37,14 +37,13 @@ color: magenta
 
 ### Phase 0: セッション初期化
 
-1. `.orchestrator/` 内の `????-*` パターンをスキャンし最大連番を取得（なければ 0000）
-2. ユーザーのタスクから feature 名を生成（英小文字ハイフン区切り、例: `user-auth`）
-3. 新しいセッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
-4. セッション初期化スクリプトを実行:
+1. ユーザーのタスクから feature 名を生成（英小文字ハイフン区切り、例: `user-auth`）
+2. セッション初期化スクリプトを実行（連番の採番とディレクトリ作成を一括で行う）:
    ```
-   bash .orchestrator/scripts/init-session.sh .orchestrator/{SESSION_ID}
+   SESSION_DIR=$(bash .orchestrator/scripts/init-session.sh {feature名})
    ```
-5. 以降すべてのサブエージェント起動プロンプトに `セッションパス: .orchestrator/{SESSION_ID}/` を含める
+   スクリプトが SESSION_DIR（例: `.orchestrator/0001-user-auth`）を標準出力に返す
+3. 以降すべてのサブエージェント起動プロンプトに `セッションパス: {SESSION_DIR}/` を含める
 
 ### Phase 1: 探索・計画・レビュー
 
@@ -66,7 +65,7 @@ color: magenta
    bash .orchestrator/scripts/init-task.sh {SESSION_DIR} {taskId}
    ```
 3. **Task Manager** を起動（独立タスクは並列）
-4. Task Manager が内部で Implementer → Test Runner + Linter → Code Reviewer → Refactorer → 完了判定を管理
+4. Task Manager が内部で Implementer → Test Runner + Linter → Refactorer → Code Reviewer → 完了判定を管理
 5. 全タスク完了まで繰り返し
 
 ### Phase 3: 検証
@@ -192,8 +191,7 @@ Task ツール:
 - **サブエージェント結果取得**: エージェントの完了を待ち結果を取得
 - **タスク一覧取得**: 現在のタスク状態を確認
 - **タスク状態更新**: タスクのステータスを変更
-- **ディレクトリ作成**: セッションフォルダの初期化
-- **ファイルパターン検索**: セッション連番の取得
+- **スクリプト実行**: セッション初期化（`init-session.sh`）、タスクディレクトリ初期化（`init-task.sh`）
 ## 完了条件
 
 1. 全タスクが完了になっている

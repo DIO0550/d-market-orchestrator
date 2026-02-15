@@ -51,23 +51,24 @@ Orchestrator からプロンプトで以下が渡される：
 
 ### 3. 判定
 
-「判定ガイドライン」に従い、以下の3つから判定を決定する：
+「判定ガイドライン」に従い、以下の2つから判定を決定する：
 
 | 判定 | 意味 | Orchestrator の次のアクション |
 |------|------|------------------------------|
 | **completed** | 完了条件を満たしている | タスクを完了にして次へ |
 | **rejected** | 重大な問題がある | Implementer を再起動 |
-| **needs refactoring** | 軽微な改善が必要 | Refactorer を起動 |
+
+**注意**: リファクタリングは Code Review の前に必ず実施されるため、判定に「needs refactoring」は含まない。
 
 ### 4. 結果の出力
 
 `.orchestrator/templates/task-lifecycle-result.md` を Read してフォーマットに従い、`{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` に判定結果を書き出す。
 
 含める内容：
-- 判定結果（completed / rejected / needs refactoring）
+- 判定結果（completed / rejected）
 - 判定理由
 - 各結果ファイルの要約
-- rejected/needs refactoring の場合は具体的な問題点
+- rejected の場合は具体的な問題点
 
 ## 判定ガイドライン
 
@@ -84,11 +85,6 @@ Orchestrator からプロンプトで以下が渡される：
 - 指定されたファイルが変更されていない
 - 明らかに間違った実装がされている
 - Code Reviewer から致命的な指摘がある
-
-### needs refactoring にする基準
-- 完了条件は満たしているが、コード品質に改善の余地がある
-- Code Reviewer から推奨対応の指摘がある
-- リファクタリングで改善可能な問題
 
 ### 迷った場合
 - 軽微な問題は completed + 注意事項として記録
@@ -108,7 +104,7 @@ Orchestrator からプロンプトで以下が渡される：
 
 ## 完了条件
 
-1. 判定結果が決定されている（completed / rejected / needs refactoring）
+1. 判定結果が決定されている（completed / rejected）
 2. `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` に判定結果が書き出されている
 ```
 
