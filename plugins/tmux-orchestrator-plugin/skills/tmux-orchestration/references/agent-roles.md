@@ -1,6 +1,6 @@
 # エージェント役割定義
 
-tmux-orchestrator で使用する14エージェントの役割・責務・実行フェーズの詳細。
+tmux-orchestrator で使用する18エージェントの役割・責務・実行フェーズの詳細。
 
 ## 役割マトリックス
 
@@ -12,7 +12,11 @@ tmux-orchestrator で使用する14エージェントの役割・責務・実行
 | Plan Reviewer | Phase 1 | 計画検証 | 🧠 opus | 計画 | レビュー結果 |
 | Task Manager | Phase 2 | タスク管理 | ⚡ sonnet | タスク詳細 | ライフサイクル |
 | Implementer | Phase 2 | コード実装 | ⚡ sonnet | 計画+タスク | 実装結果 |
-| Code Reviewer | Phase 2 | コードレビュー | 🧠 opus | 実装結果 | レビュー結果 |
+| Code Reviewer | Phase 2 | リードレビュー・統合判定 | 🧠 opus | 実装結果 | 統合レビュー結果 |
+| Quality Reviewer | Phase 2 | コード品質レビュー | ⚡ sonnet | 実装結果 | 品質レビュー結果 |
+| Bug Reviewer | Phase 2 | バグリスク検出 | ⚡ sonnet | 実装結果 | バグレビュー結果 |
+| Performance Reviewer | Phase 2 | パフォーマンスレビュー | ⚡ sonnet | 実装結果 | パフォーマンスレビュー結果 |
+| Security Reviewer | Phase 2 | セキュリティレビュー | ⚡ sonnet | 実装結果 | セキュリティレビュー結果 |
 | Test Runner | Phase 2/3 | テスト実行 | 💨 haiku | 対象コード | テスト結果 |
 | Linter | Phase 2/3 | Lint実行 | 💨 haiku | 対象コード | Lint結果 |
 | Security Scanner | Phase 3 | セキュリティ検査 | ⚡ sonnet | 実装結果 | 脆弱性レポート |
@@ -40,7 +44,12 @@ Task Manager（タスクごとに1つ）
   │
   ├── Implementer → 実装
   ├── Test Runner + Linter → テスト・Lint（並列）
-  ├── Code Reviewer → レビュー
+  ├── Code Reviewer (Lead) → スペシャリスト統合レビュー
+  │     ├── Quality Reviewer ─┐
+  │     ├── Bug Reviewer ─────┤ 並列起動
+  │     ├── Performance Reviewer ┤
+  │     └── Security Reviewer ─┘
+  │     └── 統合判定
   ├── Refactorer → 推奨対応の適用
   └── 完了判定（rejected → Implementer 再起動、最大2回）
 ```
@@ -73,4 +82,4 @@ Committer → PR Creator
 - コードの直接的な調査・探索（→ Explorer）
 - 実装・編集（→ Implementer）
 - テスト実行（→ Test Runner）
-- レビュー判断（→ Code Reviewer / Plan Reviewer）
+- レビュー判断（→ Code Reviewer / Plan Reviewer / スペシャリストレビュアー）

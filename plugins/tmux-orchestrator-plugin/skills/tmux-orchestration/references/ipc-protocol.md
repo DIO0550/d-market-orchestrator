@@ -143,6 +143,8 @@ Orchestrator:
 | Test Runner | `PASS` / `FAIL` |
 | Linter | `PASS` / `FAIL` |
 
+> **注意**: スペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は `.judgment` ファイルを書き出さない。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+
 ### リトライ時
 ```bash
 # マーカーを削除してから再起動
@@ -179,6 +181,10 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
     "implementer": { "name": "Builder" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
+    "quality-reviewer": { "name": "Stylist" },
+    "bug-reviewer": { "name": "Detective" },
+    "performance-reviewer": { "name": "Speedster" },
+    "security-reviewer": { "name": "Sentinel" },
     "test-runner": { "name": "Tester" },
     "linter": { "name": "Checker" },
     "security-scanner": { "name": "Guardian" },

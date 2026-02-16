@@ -1,6 +1,6 @@
 # エージェントカタログ
 
-tmux-orchestrator で使用可能な14種類のエージェント一覧。
+tmux-orchestrator で使用可能な18種類のエージェント一覧。
 
 ## エージェント一覧
 
@@ -24,7 +24,11 @@ tmux-orchestrator で使用可能な14種類のエージェント一覧。
 |-------------|------|--------|------|
 | [Task Manager](agents/task-manager.md) | 推奨 | ⚡ sonnet | タスクライフサイクル管理（実装→レビュー→判定） |
 | [Implementer](agents/implementer.md) | 必須 | ⚡ sonnet | コードの実装・変更の適用 |
-| [Code Reviewer](agents/code-reviewer.md) | 推奨 | 🧠 opus | コード品質レビュー・バグ検出 |
+| [Code Reviewer](agents/code-reviewer.md) | 推奨 | 🧠 opus | リードレビュー・スペシャリスト統合・最終判定 |
+| [Quality Reviewer](agents/quality-reviewer.md) | 任意 | ⚡ sonnet | コード品質レビュー（可読性・保守性・DRY・一貫性） |
+| [Bug Reviewer](agents/bug-reviewer.md) | 任意 | ⚡ sonnet | バグリスク検出（エッジケース・null/undefined・エラーハンドリング） |
+| [Performance Reviewer](agents/performance-reviewer.md) | 任意 | ⚡ sonnet | パフォーマンスレビュー（アルゴリズム効率・N+1クエリ・メモリリーク） |
+| [Security Reviewer](agents/security-reviewer.md) | 任意 | ⚡ sonnet | セキュリティレビュー（入力検証・機密情報・インジェクション脆弱性） |
 
 ### 検証フェーズ（Phase 2/3）
 
@@ -53,7 +57,7 @@ tmux-orchestrator で使用可能な14種類のエージェント一覧。
 | クラス | 記号 | 用途 | コスト | エージェント |
 |--------|-----|------|--------|-------------|
 | 🧠 高性能 | opus | 複雑な判断・設計・レビュー | 高 | Orchestrator, Planner, Plan Reviewer, Code Reviewer, Debugger |
-| ⚡ 中程度 | sonnet | 分析・コード生成・探索 | 中 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner |
+| ⚡ 中程度 | sonnet | 分析・コード生成・探索 | 中 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer |
 | 💨 軽量 | haiku | 定型作業・コマンド実行 | 低 | Test Runner, Linter, Committer, PR Creator |
 
 ## プリセット構成
@@ -88,7 +92,7 @@ tmux-orchestrator で使用可能な14種類のエージェント一覧。
 
 | エージェント | モデル |
 |-------------|--------|
-| 全14エージェント | 各推奨モデル |
+| 全18エージェント | 各推奨モデル |
 
 ### Review-Heavy（レビュー重視）
 
@@ -126,11 +130,14 @@ tmux-orchestrator で使用可能な14種類のエージェント一覧。
 Explorer ──→ Planner ──→ Plan Reviewer
                 │
                 ▼
-          Task Manager ──→ Implementer ──→ Code Reviewer
+          Task Manager ──→ Implementer ──→ Code Reviewer (Lead)
                 │              │                │
-                │              ▼                ▼
-                │         Test Runner      Refactorer
-                │         Linter
+                │              ▼                ├── Quality Reviewer
+                │         Test Runner           ├── Bug Reviewer
+                │         Linter                ├── Performance Reviewer
+                │              │                ├── Security Reviewer
+                │              │                ▼
+                │              │           Refactorer
                 │              │
                 │              ▼
                 │         Debugger（失敗時）
@@ -150,7 +157,11 @@ Explorer ──→ Planner ──→ Plan Reviewer
 ├── planner/tasks.md                            ← Planner
 ├── plan-reviewer/review-{round}.md             ← Plan Reviewer
 ├── task-{id}/implementer/result-{round}.md     ← Implementer
-├── task-{id}/code-reviewer/review-{round}.md   ← Code Reviewer
+├── task-{id}/code-reviewer/review-{round}.md              ← Code Reviewer (Lead)
+├── task-{id}/code-reviewer/quality-review-{round}.md      ← Quality Reviewer
+├── task-{id}/code-reviewer/bug-review-{round}.md          ← Bug Reviewer
+├── task-{id}/code-reviewer/performance-review-{round}.md  ← Performance Reviewer
+├── task-{id}/code-reviewer/security-review-{round}.md     ← Security Reviewer
 ├── task-{id}/test-runner/result-{round}.md     ← Test Runner（Phase 2）
 ├── task-{id}/linter/result-{round}.md          ← Linter（Phase 2）
 ├── task-{id}/refactorer/result-{round}.md      ← Refactorer
@@ -176,7 +187,11 @@ Explorer ──→ Planner ──→ Plan Reviewer
 | Plan Reviewer | ✅ | ✅ | ⚠️ | 判断能力が必要 |
 | Task Manager | ✅ | ⚠️ | ❌ | ペインでのエージェント管理が必要 |
 | Implementer | ✅ | ✅ | ⚠️ | ファイル編集能力が必要 |
-| Code Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Code Reviewer | ✅ | ⚠️ | ❌ | tmux管理にBashツールが必要 |
+| Quality Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Bug Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Performance Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Security Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
 | Test Runner | ✅ | ✅ | ⚠️ | コマンド実行能力が必要 |
 | Linter | ✅ | ✅ | ⚠️ | コマンド実行能力が必要 |
 | Security Scanner | ✅ | ✅ | ⚠️ | コード分析能力が必要 |

@@ -176,6 +176,10 @@ echo "{PROMPT}" | gh copilot explain
     "implementer": "codex",
     "task-manager": "claude",
     "code-reviewer": "claude",
+    "quality-reviewer": "claude",
+    "bug-reviewer": "claude",
+    "performance-reviewer": "claude",
+    "security-reviewer": "claude",
     "test-runner": "codex",
     "linter": "codex",
     "security-scanner": "claude",
@@ -197,7 +201,11 @@ echo "{PROMPT}" | gh copilot explain
 | Plan Reviewer | claude | 高度なレビュー能力 |
 | Implementer | claude / codex | コード生成能力 |
 | Task Manager | claude | ペインでのエージェント管理 |
-| Code Reviewer | claude | 詳細なレビュー |
+| Code Reviewer | claude | tmux管理+統合判断 |
+| Quality Reviewer | claude | コード品質分析 |
+| Bug Reviewer | claude | バグリスク分析 |
+| Performance Reviewer | claude | パフォーマンス分析 |
+| Security Reviewer | claude | セキュリティ分析 |
 | Test Runner | claude / codex | コマンド実行 |
 | Linter | claude / codex | コマンド実行 |
 | Security Scanner | claude | セキュリティ知識 |

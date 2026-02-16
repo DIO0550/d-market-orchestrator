@@ -57,7 +57,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 **実装**: [Implementer](references/instructions/implementer.md), [Task Manager](references/instructions/task-manager.md)
 
-**検証**: [Code Reviewer](references/instructions/code-reviewer.md), [Test Runner](references/instructions/test-runner.md), [Linter](references/instructions/linter.md), [Security Scanner](references/instructions/security-scanner.md)
+**検証**: [Code Reviewer](references/instructions/code-reviewer.md), [Quality Reviewer](references/instructions/quality-reviewer.md), [Bug Reviewer](references/instructions/bug-reviewer.md), [Performance Reviewer](references/instructions/performance-reviewer.md), [Security Reviewer](references/instructions/security-reviewer.md), [Test Runner](references/instructions/test-runner.md), [Linter](references/instructions/linter.md), [Security Scanner](references/instructions/security-scanner.md)
 
 **修正**: [Debugger](references/instructions/debugger.md), [Refactorer](references/instructions/refactorer.md)
 
@@ -68,7 +68,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 | クラス | 記号 | エージェント | 用途 |
 |--------|-----|-------------|------|
 | 🧠 高性能 | opus相当 | Orchestrator, Planner, Plan Reviewer, Code Reviewer, Debugger | 判断・設計・レビュー |
-| ⚡ 中程度 | sonnet相当 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner | 分析・コード生成 |
+| ⚡ 中程度 | sonnet相当 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer | 分析・コード生成 |
 | 💨 軽量 | haiku相当 | Test Runner, Linter, Committer, PR Creator | 定型作業・コマンド実行 |
 
 ## Step 3: テンプレート参照
@@ -175,6 +175,7 @@ mkdir -p .orchestrator/scripts
 | 1 | [exploration-result.md](references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
 | 2 | [implementation-plan.md](references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
 | 3 | [code-review-result.md](references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
+| 3.5 | [specialist-review-result.md](references/templates/specialist-review-result.md) | `.orchestrator/templates/specialist-review-result.md` |
 | 4 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
 | 5 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
 | 6 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
@@ -220,6 +221,10 @@ chmod +x .orchestrator/scripts/*.sh
     "implementer": { "name": "Builder" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
+    "quality-reviewer": { "name": "Stylist" },
+    "bug-reviewer": { "name": "Detective" },
+    "performance-reviewer": { "name": "Speedster" },
+    "security-reviewer": { "name": "Sentinel" },
     "test-runner": { "name": "Tester" },
     "linter": { "name": "Checker" },
     "security-scanner": { "name": "Guardian" },

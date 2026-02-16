@@ -45,6 +45,12 @@ Orchestrator がステータスモニターを表示するための専用ウィ�
 - 2つ目以降は `split-window` で新しいペインを追加
 - 各ペインのタイトルにエージェント名を設定
 
+### サブエージェントパターン（Phase 2）
+
+Task Manager や Code Reviewer (Lead) は自身もエージェントを tmux ペインで起動するミニオーケストレーターとして動作する。
+Code Reviewer (Lead) は Phase 2 ウィンドウ内で4つのスペシャリストレビュアー（quality/bug/performance/security）を並列起動する。
+スペシャリストは既にプロセスが完了した他のペイン（implementer, test-runner 等）と同じウィンドウに追加される。
+
 ## ペイン管理
 
 ### ペインの作成

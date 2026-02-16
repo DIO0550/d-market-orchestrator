@@ -90,6 +90,10 @@ Orchestrator はこの値のみで分岐判断を行い、結果ファイルの�
 | Task Manager | `task-{id}-task-manager.done` | `task-{id}-task-manager.exit` | `task-{id}-task-manager.judgment` |
 | Implementer | `task-{id}-implementer.done` | `task-{id}-implementer.exit` | — |
 | Code Reviewer | `task-{id}-code-reviewer.done` | `task-{id}-code-reviewer.exit` | `task-{id}-code-reviewer.judgment` |
+| Quality Reviewer | `task-{id}-quality-reviewer.done` | `task-{id}-quality-reviewer.exit` | — |
+| Bug Reviewer | `task-{id}-bug-reviewer.done` | `task-{id}-bug-reviewer.exit` | — |
+| Performance Reviewer | `task-{id}-performance-reviewer.done` | `task-{id}-performance-reviewer.exit` | — |
+| Security Reviewer | `task-{id}-security-reviewer.done` | `task-{id}-security-reviewer.exit` | — |
 | Test Runner | `task-{id}-test-runner.done` | `task-{id}-test-runner.exit` | `task-{id}-test-runner.judgment` |
 | Linter | `task-{id}-linter.done` | `task-{id}-linter.exit` | `task-{id}-linter.judgment` |
 | Phase 3 Test Runner | `test-runner.done` | `test-runner.exit` | `test-runner.judgment` |
@@ -131,6 +135,19 @@ implementer.done → test-runner.judgment + linter.judgment を確認
 → code-reviewer.judgment を確認
   → "Approved" → 完了判定
   → "Request Changes" → implementer 再起動
+```
+
+### Code Reviewer (Lead) 内部フロー
+```
+code-reviewer が起動される
+→ 前回のスペシャリストマーカーを削除
+→ 4つのスペシャリストを並列起動:
+  quality-reviewer + bug-reviewer + performance-reviewer + security-reviewer
+→ 全4つの .done を待機
+→ 各スペシャリストの結果ファイルを Read（.judgment は使用しない）
+→ 統合レビュー結果を review-{round}.md に書き出し
+→ code-reviewer.judgment を書き出し
+→ code-reviewer.done（自動作成）
 ```
 
 ## リトライ時の扱い
