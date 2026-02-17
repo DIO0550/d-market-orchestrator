@@ -42,7 +42,7 @@ color: yellow
   - 変更されたファイル
   - 参照されている仕様書
 - **出力**: `{SESSION_DIR}/task-{taskId}/code-reviewer/review-{round}.md` — 統合レビュー結果
-- **判定マーカー**: 結果出力後に `.status/task-{taskId}-code-reviewer.judgment` を書き出す
+- **完了マーカー**: 結果出力後に `.status/task-{taskId}-code-reviewer.done` に状態値を書き出す
 - **完了通知**: CLI プロセス終了時に `.status/task-{taskId}-code-reviewer.done` が自動作成される
 
 ### セッション情報
@@ -90,7 +90,7 @@ wait-for-completion.sh で全4つの .done を待機する。
 code-review-result.md テンプレートに従って統合結果を出力する。
 
 ### 9. 判定マーカーの書き出し
-`.status/task-{taskId}-code-reviewer.judgment` に判定値を書き出す。
+`.status/task-{taskId}-code-reviewer.done` に状態値を書き出す。
 
 ### 判定基準
 

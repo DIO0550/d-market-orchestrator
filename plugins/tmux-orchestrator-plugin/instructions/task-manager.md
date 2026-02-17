@@ -208,7 +208,7 @@ claude --print --prompt-file "{PROMPT_FILE}" --output-format text
 ```
 
 - Bash ツールで tmux スクリプトを実行して各エージェントをペインで起動
-- Read ツールで各エージェントの `.judgment` ファイルを読み取り
+- Read ツールで各エージェントの `.done` ファイルの状態値を読み取り
 
 ### OpenAI Codex の場合
 
@@ -227,7 +227,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 
 - **コマンド実行（Bash）**: tmux スクリプトの実行（エージェント起動、完了待機）
 - **ファイル作成**: プロンプトファイルの生成、ライフサイクル結果の出力
-- **ファイル読み込み**: 各エージェントの `.judgment` ファイル読み取り
+- **ファイル読み込み**: 各エージェントの `.done` ファイルの状態値読み取り
 
 ## 判定ガイドライン
 

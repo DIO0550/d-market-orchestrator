@@ -39,7 +39,7 @@ color: yellow
   - `{SESSION_DIR}/explorer/result.md` — 探索結果
   - 計画書で参照されている仕様書
 - **出力**: `{SESSION_DIR}/plan-reviewer/review-{round}.md` — レビュー結果
-- **判定マーカー**: 結果出力後に `.status/plan-reviewer.judgment` を書き出す（Orchestrator が読み取る）
+- **完了マーカー**: 結果出力後に `.status/plan-reviewer.done` に状態値を書き出す（Orchestrator が読み取る）
 - **完了通知**: CLI プロセス終了時に `.status/plan-reviewer.done` が自動作成される
 
 ### セッション情報
@@ -101,14 +101,14 @@ color: yellow
 
 ### 5. 判定マーカーの書き出し
 
-結果ファイル出力後、**必ず** `.status/plan-reviewer.judgment` に判定値を書き出す:
+結果ファイル出力後、**必ず** `.status/plan-reviewer.done` に状態値を書き出す:
 
 ```bash
-echo "JUDGMENT=Approved" > {SESSION_DIR}/.status/plan-reviewer.judgment
+echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
 # または
-echo "JUDGMENT=Needs Revision" > {SESSION_DIR}/.status/plan-reviewer.judgment
+echo "Needs Revision" > {SESSION_DIR}/.status/plan-reviewer.done
 # または
-echo "JUDGMENT=Rejected" > {SESSION_DIR}/.status/plan-reviewer.judgment
+echo "Rejected" > {SESSION_DIR}/.status/plan-reviewer.done
 ```
 
 **これにより Orchestrator はレビュー結果ファイルを読むことなく分岐判断できる。**
@@ -148,7 +148,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 2. 指摘事項が優先度付きでリストされている
 3. `{SESSION_DIR}/plan-reviewer/review-{round}.md` にレビュー結果が出力されている
 4. 判定（Approved / Needs Revision / Rejected）が明示されている
-5. `{SESSION_DIR}/.status/plan-reviewer.judgment` に判定値が書き出されている
+5. `{SESSION_DIR}/.status/plan-reviewer.done` に状態値が書き出されている
 ```
 
 ---

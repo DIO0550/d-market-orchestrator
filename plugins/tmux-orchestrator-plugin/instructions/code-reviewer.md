@@ -195,16 +195,16 @@ bash .orchestrator/scripts/wait-for-completion.sh \
 3. **優先度再評価**: プロジェクトの文脈に基づいてスペシャリストが付けた重要度を再評価する（例: 内部APIのみで使用されるコードのセキュリティ指摘は重要度を下げる等）
 4. **仕様適合性の反映**: Step 7 のチェック結果を統合結果に含める
 
-### 9. 判定マーカーの書き出し
+### 9. 完了マーカーの書き出し
 
-統合レビュー結果に基づき `.status/task-{taskId}-code-reviewer.judgment` に判定値を書き出す:
+統合レビュー結果に基づき `.status/task-{taskId}-code-reviewer.done` に状態値を書き出す:
 
 ```bash
-echo "JUDGMENT=Approved" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.judgment
+echo "Approved" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.done
 # または
-echo "JUDGMENT=Approved with Suggestions" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.judgment
+echo "Approved with Suggestions" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.done
 # または
-echo "JUDGMENT=Request Changes" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.judgment
+echo "Request Changes" > {SESSION_DIR}/.status/task-{taskId}-code-reviewer.done
 ```
 
 ### 判定基準
@@ -254,4 +254,4 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 3. 仕様適合性チェックが実施されている
 4. `{SESSION_DIR}/task-{taskId}/code-reviewer/review-{round}.md` に統合レビュー結果が出力されている
 5. 判定（Approved / Approved with Suggestions / Request Changes）が明示されている
-6. `{SESSION_DIR}/.status/task-{taskId}-code-reviewer.judgment` に判定値が書き出されている
+6. `{SESSION_DIR}/.status/task-{taskId}-code-reviewer.done` に状態値が書き出されている

@@ -43,7 +43,7 @@ color: cyan
   - 計画: `{SESSION_DIR}/planner/plan.md`
   - 探索結果: `{SESSION_DIR}/explorer/result.md`
 - **出力**: `{SESSION_DIR}/task-{id}/task-manager/lifecycle.md` — ライフサイクル結果
-- **判定マーカー**: 結果出力後に `.status/task-{id}-task-manager.judgment` を書き出す（Orchestrator が読み取る）
+- **完了マーカー**: 結果出力後に `.status/task-{id}-task-manager.done` に状態値を書き出す（Orchestrator が読み取る）
 - **完了通知**: CLI プロセス終了時に `.status/task-{id}-task-manager.done` が自動作成される
 
 ### エージェントの起動方式
@@ -137,21 +137,21 @@ bash .orchestrator/scripts/wait-for-completion.sh \
   ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" 300
 ```
 
-### 6. 検証結果の確認（.judgment ファイルで判定）
+### 6. 検証結果の確認（.done ファイルの状態値で判定）
 
-`.judgment` ファイルを読んで分岐判断する（結果ファイル本体は読まない）:
+`.done` ファイルの状態値を読んで分岐判断する（結果ファイル本体は読まない）:
 
 ```bash
-TR_JUDGMENT=$(cat ${SESSION_DIR}/.status/task-{taskId}-test-runner.judgment 2>/dev/null | sed 's/JUDGMENT=//')
-LT_JUDGMENT=$(cat ${SESSION_DIR}/.status/task-{taskId}-linter.judgment 2>/dev/null | sed 's/JUDGMENT=//')
+TR_STATUS=$(cat ${SESSION_DIR}/.status/task-{taskId}-test-runner.done 2>/dev/null)
+LT_STATUS=$(cat ${SESSION_DIR}/.status/task-{taskId}-linter.done 2>/dev/null)
 ```
 
 - 両方 `PASS` → Step 7（Code Reviewer）へ進む
-- いずれかが `FAIL` → リトライ時は既存の `.done`、`.exit`、`.judgment` を削除:
+- いずれかが `FAIL` → リトライ時は既存の `.done`、`.exit` を削除:
   ```bash
-  rm -f ${SESSION_DIR}/.status/task-{taskId}-implementer.{done,exit,judgment}
-  rm -f ${SESSION_DIR}/.status/task-{taskId}-test-runner.{done,exit,judgment}
-  rm -f ${SESSION_DIR}/.status/task-{taskId}-linter.{done,exit,judgment}
+  rm -f ${SESSION_DIR}/.status/task-{taskId}-implementer.{done,exit}
+  rm -f ${SESSION_DIR}/.status/task-{taskId}-test-runner.{done,exit}
+  rm -f ${SESSION_DIR}/.status/task-{taskId}-linter.{done,exit}
   ```
   `round += 1` し、失敗情報を含めて Implementer を再起動（Step 3 に戻る）
 
@@ -173,22 +173,22 @@ bash .orchestrator/scripts/wait-for-completion.sh \
   ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" 300
 ```
 
-### 9. レビュー結果に基づく分岐（.judgment ファイルで判定）
+### 9. レビュー結果に基づく分岐（.done ファイルの状態値で判定）
 
-`.judgment` ファイルを読んで分岐判断する（レビュー結果ファイル本体は読まない）:
+`.done` ファイルの状態値を読んで分岐判断する（レビュー結果ファイル本体は読まない）:
 
 ```bash
-CR_JUDGMENT=$(cat ${SESSION_DIR}/.status/task-{taskId}-code-reviewer.judgment 2>/dev/null | sed 's/JUDGMENT=//')
+CR_STATUS=$(cat ${SESSION_DIR}/.status/task-{taskId}-code-reviewer.done 2>/dev/null)
 ```
 
 #### a. `Request Changes` の場合
 
-リトライ時は `.done`、`.exit`、`.judgment` を削除:
+リトライ時は `.done`、`.exit` を削除:
 ```bash
-rm -f ${SESSION_DIR}/.status/task-{taskId}-implementer.{done,exit,judgment}
-rm -f ${SESSION_DIR}/.status/task-{taskId}-code-reviewer.{done,exit,judgment}
-rm -f ${SESSION_DIR}/.status/task-{taskId}-test-runner.{done,exit,judgment}
-rm -f ${SESSION_DIR}/.status/task-{taskId}-linter.{done,exit,judgment}
+rm -f ${SESSION_DIR}/.status/task-{taskId}-implementer.{done,exit}
+rm -f ${SESSION_DIR}/.status/task-{taskId}-code-reviewer.{done,exit}
+rm -f ${SESSION_DIR}/.status/task-{taskId}-test-runner.{done,exit}
+rm -f ${SESSION_DIR}/.status/task-{taskId}-linter.{done,exit}
 ```
 
 `round += 1` し、差し戻し理由を含めて Implementer を再起動（**Step 3 に戻る**、最大2回リトライ）。
@@ -225,12 +225,12 @@ Step 10 の完了判定に進む。
 
 ### 12. 判定マーカーの書き出し
 
-結果ファイル出力後、**必ず** `.status/task-{id}-task-manager.judgment` に判定値を書き出す:
+結果ファイル出力後、**必ず** `.status/task-{id}-task-manager.done` に状態値を書き出す:
 
 ```bash
-echo "JUDGMENT=completed" > {SESSION_DIR}/.status/task-{taskId}-task-manager.judgment
+echo "completed" > {SESSION_DIR}/.status/task-{taskId}-task-manager.done
 # または
-echo "JUDGMENT=rejected" > {SESSION_DIR}/.status/task-{taskId}-task-manager.judgment
+echo "rejected" > {SESSION_DIR}/.status/task-{taskId}-task-manager.done
 ```
 
 **これにより Orchestrator は lifecycle.md を読むことなくタスクの成否を判断できる。**
@@ -244,7 +244,7 @@ claude --print --prompt-file "{PROMPT_FILE}" --output-format text
 ```
 
 - Bash ツールで tmux スクリプトを実行してエージェントを起動
-- Read ツールで各エージェントの `.judgment` ファイルを読み取り
+- Read ツールで各エージェントの `.done` ファイルの状態値を読み取り
 
 ### OpenAI Codex の場合
 
@@ -263,7 +263,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 
 - **コマンド実行（Bash）**: tmux スクリプトの実行（エージェント起動、完了待機）
 - **ファイル作成**: プロンプトファイルの生成、ライフサイクル結果の出力
-- **ファイル読み込み**: 各エージェントの `.judgment` ファイル読み取り（結果ファイル本体は読まない）
+- **ファイル読み込み**: 各エージェントの `.done` ファイルの状態値読み取り（結果ファイル本体は読まない）
 
 ## 判定ガイドライン
 
@@ -295,7 +295,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 
 1. タスクのステータスが判定されている（completed / rejected）
 2. `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` にライフサイクル結果が書き出されている
-3. `{SESSION_DIR}/.status/task-{taskId}-task-manager.judgment` に判定値が書き出されている
+3. `{SESSION_DIR}/.status/task-{taskId}-task-manager.done` に状態値が書き出されている
 ```
 
 ---

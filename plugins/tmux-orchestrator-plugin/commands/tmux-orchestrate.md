@@ -32,7 +32,7 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
    - `tmux-agent-launch.sh` で Planner を起動、完了を待機
    - Plan Reviewer のプロンプトファイルを生成
    - `tmux-agent-launch.sh` で Plan Reviewer を起動、完了を待機
-   - `.status/plan-reviewer.judgment` を確認し分岐:
+   - `.status/plan-reviewer.done` の状態値を確認し分岐:
      - `Approved` → Phase 2 に進む
      - `Needs Revision` → Planner を再起動（最大2回）
      - `Rejected` → ユーザーに報告
@@ -45,10 +45,10 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
      - `tmux-agent-launch.sh` で phase2 ウィンドウに起動（独立タスクは並列）
    - Task Manager が内部で implementer → test-runner + linter → code-reviewer → refactorer → 完了判定を管理
    - `wait-for-completion.sh` で全 Task Manager の完了を待機
-   - 各 Task Manager の `.status/task-{id}-task-manager.judgment` を確認
+   - 各 Task Manager の `.status/task-{id}-task-manager.done` の状態値を確認
    - 新たにブロック解除されたタスクがあれば繰り返し
    - 全タスク完了後、`tmux-result-collector.sh` で結果を集約
-   - 結果をユーザーに報告（Orchestrator は結果ファイルを読まず、判定マーカーのみで報告）
+   - 結果をユーザーに報告（Orchestrator は結果ファイルを読まず、.done の状態値のみで報告）
    - **ここで自動実行は停止**
 
 ### ユーザー指示フェーズ（Phase 3-4）
@@ -119,14 +119,14 @@ Explorer 完了後、Planner を起動:
 ```
 1. Plan Reviewer のプロンプトファイルを生成
 2. tmux ペインで起動・完了待機
-3. .status/plan-reviewer.judgment を読んで分岐:
-   JUDGMENT=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.judgment" | sed 's/JUDGMENT=//')
+3. .status/plan-reviewer.done の状態値を読んで分岐:
+   STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.done")
    a. "Approved" → Step 5 へ
    b. "Needs Revision" → マーカー削除 → Planner 再起動（最大2回）→ Plan Reviewer 再実行
    c. "Rejected" → ユーザーに報告
 ```
 
-**重要**: Orchestrator は `plan-reviewer/review-{round}.md` を Read しない。判定は `.judgment` ファイルのみで行う。
+**重要**: Orchestrator は `plan-reviewer/review-{round}.md` を Read しない。判定は `.done` ファイルの状態値のみで行う。
 
 ### Step 5: Phase 2 - 実装ループ
 
@@ -138,12 +138,12 @@ while (pendingタスクが残っている):
      b. Task Manager のプロンプト生成
      c. tmux-agent-launch.sh で起動
   3. wait-for-completion.sh で全 Task Manager の完了を待機
-  4. 各 .status/task-{id}-task-manager.judgment を確認（completed / rejected）
+  4. 各 .status/task-{id}-task-manager.done の状態値を確認（completed / rejected）
   5. tasks.json のステータスを更新
   6. 新たに実行可能なタスクがあれば 1 に戻る
 ```
 
-**重要**: Orchestrator は `task-manager/lifecycle.md` を Read しない。タスクの成否は `.judgment` ファイルのみで判断する。
+**重要**: Orchestrator は `task-manager/lifecycle.md` を Read しない。タスクの成否は `.done` ファイルの状態値のみで判断する。
 
 ### Step 6: Phase 2 完了・報告
 

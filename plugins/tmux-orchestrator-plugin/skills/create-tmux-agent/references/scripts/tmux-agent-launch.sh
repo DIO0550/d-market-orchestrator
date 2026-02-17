@@ -79,19 +79,19 @@ STATUS_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DIR
 
 case "$CLI_TOOL" in
   claude)
-    CMD="cd '${WORKING_DIR}' && claude --print --prompt-file '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; touch '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && claude --print --prompt-file '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
     ;;
   codex)
     # Codex はプロンプトを引数として受け取る
-    CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; touch '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
     ;;
   copilot)
     # GitHub Copilot CLI
-    CMD="cd '${WORKING_DIR}' && cat '${PROMPT_FILE_ABS}' | gh copilot suggest -t shell 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; touch '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && cat '${PROMPT_FILE_ABS}' | gh copilot suggest -t shell 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
     ;;
   *)
     # 汎用CLI: コマンドをそのまま使用
-    CMD="cd '${WORKING_DIR}' && ${CLI_TOOL} '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; touch '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && ${CLI_TOOL} '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
     ;;
 esac
 

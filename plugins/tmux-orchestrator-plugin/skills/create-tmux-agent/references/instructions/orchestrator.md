@@ -38,8 +38,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 1. **プロンプトファイル**: `.prompts/` ディレクトリにエージェントごとのプロンプトファイルを生成し、起動時に渡す
 2. **完了マーカー**: 各エージェントは終了時に `.status/{agent-name}.done` ファイルが自動作成される
 3. **終了コード**: `.status/{agent-name}.exit` に `AGENT_EXIT_CODE={code}` が記録される
-4. **判定マーカー**: 判定を出すエージェントは `.status/{agent-name}.judgment` に判定値（1行）を書き出す
-5. **結果ファイル**: 各エージェントは所定パスに結果ファイルを書き出す（Orchestrator は直接読まない）
+4. **結果ファイル**: 各エージェントは所定パスに結果ファイルを書き出す（Orchestrator は直接読まない）
 
 ### 使用するシェルスクリプト
 
@@ -57,7 +56,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 - **自分で調査・探索を行わない**: URL取得、コード検索、ファイル内容の調査など、情報収集に類する作業はすべて Explorer に委譲すること
 - **ユーザーが URL（GitHub Issue、仕様書リンク等）を提示した場合**: その URL を含めて Explorer のプロンプトファイルに渡し、Explorer に取得・分析させること。Orchestrator 自身が WebFetch や Read で内容を確認してはならない
 - **Orchestrator の役割は指揮・監視・報告のみ**: エージェントの起動、進捗の監視、結果のユーザーへの報告に専念すること
-- **結果ファイルを Read しない**: 他エージェントの結果ファイル（plan.md, lifecycle.md, review.md 等）は**絶対に読まない**。分岐判断は `.status/{agent}.judgment` ファイルのみで行う
+- **結果ファイルを Read しない**: 他エージェントの結果ファイル（plan.md, lifecycle.md, review.md 等）は**絶対に読まない**。分岐判断は `.status/{agent}.done` の状態値のみで行う
 - **自律実行**: Phase 1〜2 はユーザー確認なしで自動完了する
 - **tmux コマンドのみで制御**: Task ツールは使用せず、Bash ツールで tmux スクリプトを実行する
 
@@ -95,9 +94,9 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```
 4. **Planner** のプロンプトファイルを生成し、起動・完了待機
 5. **Plan Reviewer** のプロンプトファイルを生成し、起動・完了待機
-6. `.status/plan-reviewer.judgment` を読んで分岐:
+6. `.status/plan-reviewer.done` の状態値を読んで分岐:
    ```bash
-   JUDGMENT=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.judgment" 2>/dev/null | sed 's/JUDGMENT=//')
+   STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.done" 2>/dev/null)
    ```
    - `Approved` → Phase 2 に進む
    - `Needs Revision` → Plan Reviewer の指摘パスを含めて Planner のプロンプトを再生成し起動。マーカーを削除して Plan Reviewer を再実行（最大2回リトライ）
@@ -134,10 +133,10 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 
 1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動
 2. 両方の `.done` を待機
-3. `.judgment` ファイルを確認:
+3. `.done` ファイルの状態値を確認:
    ```bash
-   TR_JUDGMENT=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.judgment" 2>/dev/null | sed 's/JUDGMENT=//')
-   LT_JUDGMENT=$(cat ".orchestrator/{SESSION_ID}/.status/linter.judgment" 2>/dev/null | sed 's/JUDGMENT=//')
+   TR_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.done" 2>/dev/null)
+   LT_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/linter.done" 2>/dev/null)
    ```
 4. 両方 `PASS` → Phase 4 へ
 5. いずれか `FAIL` → **Debugger** を起動（分析+修正）。マーカーを削除して再実行（最大10回リトライ）
@@ -210,9 +209,8 @@ Orchestrator はコンテキストウィンドウの肥大化を防ぐため、*
 
 | ファイル | 用途 | 確認方法 |
 |---------|------|---------|
-| `.status/{agent}.done` | 完了検知 | `wait-for-completion.sh` が自動待機 |
+| `.status/{agent}.done` | 完了検知 + 分岐判断 | `wait-for-completion.sh` で待機 → `cat` で状態値読み取り |
 | `.status/{agent}.exit` | エラー検知 | `AGENT_EXIT_CODE` の値を確認 |
-| `.status/{agent}.judgment` | 分岐判断 | `cat` で1行読み取り |
 
 ## エージェント間のパス渡し
 
@@ -233,7 +231,7 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 
 - **コマンド実行（Bash）**: tmux スクリプトの実行（セッション作成、エージェント起動、完了待機、依存関係チェック）
 - **ファイル作成**: プロンプトファイルの生成（`.prompts/` ディレクトリ）
-- **ファイル読み込み**: `.status/` のマーカーファイル（`.done`、`.exit`、`.judgment`）のみ
+- **ファイル読み込み**: `.status/` のマーカーファイル（`.done`、`.exit`）のみ
 - **ファイルパターン検索**: セッション連番の取得
 - **ディレクトリ作成**: セッションフォルダの初期化
 

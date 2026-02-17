@@ -8,10 +8,9 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 各エージェントは独立したCLIプロセスとして動作し、以下の仕組みで情報を共有する:
 
 1. **結果ファイル**: エージェントが処理結果を所定パスに書き出す
-2. **完了マーカー**: エージェントの完了を `.done` ファイルで通知
-3. **判定マーカー**: 判定を出すエージェントが `.judgment` ファイルに判定値を書き出す
-4. **プロンプトファイル**: 次のエージェントへの入力をプロンプトファイルに記載
-5. **依存グラフ**: タスクの実行順序を `tasks.json` で管理
+2. **完了マーカー**: エージェントの完了を `.done` ファイルで通知（状態値を含む）
+3. **プロンプトファイル**: 次のエージェントへの入力をプロンプトファイルに記載
+4. **依存グラフ**: タスクの実行順序を `tasks.json` で管理
 
 ## ディレクトリ構成
 
@@ -24,15 +23,14 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 │   └── cli-assignments.json     # エージェント→CLI割り当て
 │
 ├── .status/                     # マーカーファイル（同期メカニズム）
-│   ├── explorer.done            # 完了時に touch される空ファイル
+│   ├── explorer.done            # 完了マーカー（状態値: "done"）
 │   ├── explorer.exit            # 終了コード: AGENT_EXIT_CODE={code}
 │   ├── planner.done
 │   ├── planner.exit
-│   ├── plan-reviewer.done
+│   ├── plan-reviewer.done       # 状態値: "Approved" / "Needs Revision" / "Rejected"
 │   ├── plan-reviewer.exit
-│   ├── plan-reviewer.judgment   # 判定値: JUDGMENT={Approved|Needs Revision|Rejected}
-│   ├── task-1-task-manager.done
-│   ├── task-1-task-manager.judgment  # 判定値: JUDGMENT={completed|rejected}
+│   ├── task-1-task-manager.done # 状態値: "completed" / "rejected"
+│   ├── task-1-task-manager.exit
 │   └── ...
 │
 ├── .prompts/                    # CLI に渡すプロンプトファイル
@@ -121,45 +119,55 @@ Orchestrator:
 ## マーカーファイル仕様
 
 ### .done ファイル
-- `tmux-agent-launch.sh` がCLIプロセスの終了を検知して自動作成
-- `touch` で作成される空ファイル
-- ファイルの存在のみが意味を持つ
+- **ファイルの存在** = エージェントが完了したことを示す
+- **ファイルの中身** = 状態値（1行のみ）
+- 判定を出すエージェントは、プロセス終了前に自分で `.done` ファイルに状態値を書き出す
+- 判定を出さないエージェントの場合、`tmux-agent-launch.sh` がCLIプロセス終了後に `done` をデフォルト書き込みする
 
-### .exit ファイル
-- フォーマット: `AGENT_EXIT_CODE={終了コード}`
-- 0 = 正常終了
-- それ以外 = エラー
-
-### .judgment ファイル
-- **エージェント自身が**プロセス終了前に書き出す（自動生成ではない）
-- フォーマット: `JUDGMENT={判定値}`（1行のみ）
-- Orchestrator / Task Manager が結果ファイルを Read せずに分岐判断するためのメカニズム
-
-| エージェント | 判定値 |
+| エージェント | 状態値 |
 |-------------|--------|
+| Explorer, Planner, Implementer 等 | `done`（デフォルト） |
 | Plan Reviewer | `Approved` / `Needs Revision` / `Rejected` |
 | Task Manager | `completed` / `rejected` |
 | Code Reviewer | `Approved` / `Approved with Suggestions` / `Request Changes` |
 | Test Runner | `PASS` / `FAIL` |
 | Linter | `PASS` / `FAIL` |
 
-> **注意**: スペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は `.judgment` ファイルを書き出さない。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+> **注意**: スペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は状態値を書き出さない（デフォルトの `done`）。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+
+#### 書き出し例
+
+```bash
+# エージェント内での書き出し（判定を出すエージェント）
+echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
+```
+
+#### 読み取り例
+
+```bash
+# 状態値の取得
+STATUS=$(cat {SESSION_DIR}/.status/plan-reviewer.done 2>/dev/null)
+```
+
+### .exit ファイル
+- フォーマット: `AGENT_EXIT_CODE={終了コード}`
+- 0 = 正常終了
+- それ以外 = エラー
 
 ### リトライ時
 ```bash
 # マーカーを削除してから再起動
 rm -f .orchestrator/{SESSION_ID}/.status/{agent}.done
 rm -f .orchestrator/{SESSION_ID}/.status/{agent}.exit
-rm -f .orchestrator/{SESSION_ID}/.status/{agent}.judgment
 ```
 
 ## コンテキスト保護の原則
 
 Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以下の原則を厳守する:
 
-1. **Orchestrator は結果ファイルを Read しない**: 分岐判断は `.judgment` ファイルのみで行う
+1. **Orchestrator は結果ファイルを Read しない**: 分岐判断は `.done` ファイルの状態値のみで行う
 2. **パス渡し方式**: Orchestrator は次のエージェントのプロンプトにファイルパスだけを記載する。内容は渡し先のエージェントが自分で Read する
-3. **マーカーファイルは最小限**: `.judgment` ファイルは判定値の1行のみ。詳細は結果ファイルに書く
+3. **マーカーファイルは最小限**: `.done` ファイルは状態値の1行のみ。詳細は結果ファイルに書く
 
 ## チーム設定（team-config.json）
 
@@ -217,7 +225,7 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
 表示レイヤーのみに影響。以下は一切変更されない:
 - 内部識別子（explorer, planner 等）
 - ファイルパス（`.status/explorer.done`, `explorer/result.md` 等）
-- IPC プロトコル（`.done`, `.exit`, `.judgment`）
+- IPC プロトコル（`.done`, `.exit`）
 - Phase シーケンス
 
 ### 読み込み方法

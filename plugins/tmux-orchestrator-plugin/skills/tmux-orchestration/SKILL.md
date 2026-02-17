@@ -36,9 +36,9 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     ▼ (wait-for-completion.sh で完了待ち)
     │
     ├── plan-reviewer プロンプト生成 → tmux-agent-launch.sh で起動
-    │   └── 計画の妥当性を検証 → .judgment に判定値を書き出し
+    │   └── 計画の妥当性を検証 → .done に状態値を書き出し
     │
-    ▼ (完了待ち → .judgment で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
+    ▼ (完了待ち → .done の状態値で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
     │
 [Phase 2: 実装（タスクごと）] ─────────────────
     │
@@ -53,11 +53,11 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │     2. test-runner + linter 起動 → テスト・Lint
     │     3. code-reviewer 起動 → レビュー
     │     4. refactorer 起動 → コード改善（推奨対応時）
-    │     5. completed/rejected 判定 → .judgment に書き出し
+    │     5. completed/rejected 判定 → .done に状態値を書き出し
     │     6. rejected → implementer 再起動（最大2回）
     │
     ├── wait-for-completion.sh で全 task-manager の完了待ち
-    ├── 各 task-manager の .judgment を確認（completed / rejected）
+    ├── 各 task-manager の .done の状態値を確認（completed / rejected）
     ├── 新たにブロック解除されたタスクがあれば繰り返し
     │
     ▼ (全タスク completed → 結果をユーザーに報告 ※結果ファイルは読まない)
@@ -67,7 +67,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
 [Phase 3: 検証] ─────────────── ユーザー指示で実行
     │
     ├── test-runner + linter を並列で tmux ペインに起動
-    ├── .judgment で PASS/FAIL を確認
+    ├── .done の状態値で PASS/FAIL を確認
     ├── FAIL 時 → debugger 起動 → 再実行（最大10回）
     │
 [Phase 4: Git操作] ──────────── ユーザー指示で実行
@@ -84,7 +84,7 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 |------------|------|------|
 | `.orchestrator/` | `team-config.json` | チーム名・メンバー名設定（プロジェクト単位、任意） |
 | `.config/` | `cli-assignments.json` | エージェント→CLI割り当て |
-| `.status/` | `{agent}.done`, `{agent}.exit`, `{agent}.judgment` | 完了マーカー・終了コード・判定値 |
+| `.status/` | `{agent}.done`, `{agent}.exit` | 完了マーカー（状態値含む）・終了コード |
 | `.prompts/` | `{agent}-prompt.md` | CLIに渡すプロンプトファイル |
 | `.deps/` | `tasks.json` | タスク依存グラフ |
 | `{agent}/` | `result.md`, `plan.md` 等 | エージェント結果出力 |
@@ -165,7 +165,7 @@ done
 - **自分で調査・探索を行わない**: 情報収集はすべて Explorer に委譲
 - **ユーザーが URL を提示した場合**: Explorer のプロンプトに含めて委譲
 - **Orchestrator の役割は指揮・監視・報告のみ**: tmux コマンドによるエージェント起動、.status/ の監視、結果のユーザーへの報告に専念
-- **結果ファイルを Read しない**: 分岐判断は `.status/{agent}.judgment` ファイルのみで行う。plan.md, lifecycle.md, review.md 等の中身は読まない
+- **結果ファイルを Read しない**: 分岐判断は `.status/{agent}.done` の状態値のみで行う。plan.md, lifecycle.md, review.md 等の中身は読まない
 - **自律実行**: Phase 1〜2 はユーザー確認なしで自動完了
 
 ## エラーハンドリング
@@ -188,7 +188,6 @@ done
    ```bash
    rm -f .orchestrator/{SESSION_ID}/.status/{agent}.done
    rm -f .orchestrator/{SESSION_ID}/.status/{agent}.exit
-   rm -f .orchestrator/{SESSION_ID}/.status/{agent}.judgment
    ```
 2. 新しいプロンプトファイルを生成（エラー情報を含める）
 3. `tmux-agent-launch.sh` で再起動

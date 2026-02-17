@@ -35,7 +35,7 @@ color: blue
 
 - **入力**: Orchestrator がプロンプトファイル経由でセッションパス・タスク情報を渡す
 - **出力**: 所定のパスに結果ファイルを書き出す
-- **判定マーカー**: 結果出力後に `.status/{agent-name}.judgment` を書き出す（上位エージェントが読み取る）
+- **完了マーカー**: 結果出力後に `.status/{agent-name}.done` に状態値を書き出す（上位エージェントが読み取る）
 - **完了通知**: CLIプロセス終了時に `tmux-agent-launch.sh` が `.status/{agent-name}.done` を自動作成する
 
 ## 実行手順
@@ -92,13 +92,13 @@ color: blue
 
 ### 5. 判定マーカーの書き出し
 
-結果ファイル出力後、**必ず** `.status/{agent-name}.judgment` に判定値を書き出す:
+結果ファイル出力後、**必ず** `.status/{agent-name}.done` に状態値を書き出す:
 
 ```bash
 # agent-name はプロンプトで渡される（例: task-1-test-runner, test-runner）
-echo "JUDGMENT=PASS" > {SESSION_DIR}/.status/{agent-name}.judgment
+echo "PASS" > {SESSION_DIR}/.status/{agent-name}.done
 # または
-echo "JUDGMENT=FAIL" > {SESSION_DIR}/.status/{agent-name}.judgment
+echo "FAIL" > {SESSION_DIR}/.status/{agent-name}.done
 ```
 
 ## 完了条件
@@ -106,5 +106,5 @@ echo "JUDGMENT=FAIL" > {SESSION_DIR}/.status/{agent-name}.judgment
 1. テストが実行されている
 2. 成功/失敗が判定されている
 3. 結果が所定のパスに出力されている
-4. `.status/{agent-name}.judgment` に判定値が書き出されている
+4. `.status/{agent-name}.done` に状態値が書き出されている
 ```
