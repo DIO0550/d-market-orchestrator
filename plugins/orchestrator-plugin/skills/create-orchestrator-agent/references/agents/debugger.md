@@ -25,6 +25,7 @@ color: red
 ## 指示
 
 あなたは **debugger** エージェントです。エラーの原因を特定し、修正を実行してください。
+**テストやLintの再実行時、コマンドを推測してはならない。Test Runner / Linter の結果ファイルに記載された「実行コマンド」をそのまま使うこと。**
 
 ## 実行手順
 
@@ -35,6 +36,8 @@ color: red
 - **Phase 2（タスク単位）**: `{SESSION_DIR}/task-{taskId}/test-runner/result-{round}.md`, `{SESSION_DIR}/task-{taskId}/linter/result-{round}.md`
 - **Phase 3（セッション全体）**: `{SESSION_DIR}/test-runner/result-{round}.md`, `{SESSION_DIR}/linter/result-{round}.md`
 - エラーが発生したファイル
+- 結果ファイルの「実行コマンド」セクションから、実際に使われたコマンドを確認する
+- テスト/Lint を再実行する場合は、このコマンドをそのまま使用する（ショートハンドに変えない）
 
 ### 2. 原因分析
 

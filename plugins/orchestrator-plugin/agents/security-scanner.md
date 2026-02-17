@@ -7,6 +7,7 @@
 
 あなたは **security-scanner** エージェントです。コードのセキュリティ問題を検出してください。
 **コードの修正は行わない。脆弱性の検出と報告のみ行う。**
+**コマンドを推測して実行してはならない。必ずプロジェクト設定を確認してから実行すること。**
 
 ## 実行手順
 
@@ -56,9 +57,17 @@ Read: CLAUDE.md（プロジェクトルート）
 
 | プロジェクト | コマンド |
 |-------------|---------|
-| Node.js (package.json) | `{pm} audit`（ロックファイルでパッケージマネージャーを検出: pnpm-lock.yaml→pnpm, yarn.lock→yarn, package-lock.json→npm） |
 | Rust (Cargo.toml) | `cargo audit` |
 | Python (pyproject.toml) | `pip-audit` |
+
+Node.js プロジェクトの場合、ロックファイルでパッケージマネージャーを検出する:
+
+| ロックファイル | PM | 監査コマンド |
+|--------------|-----|------------|
+| `pnpm-lock.yaml` | pnpm | `pnpm audit` |
+| `yarn.lock` | yarn | `yarn npm audit` |
+| `package-lock.json` | npm | `npm audit` |
+| `bun.lockb` | bun | `bunx npm-audit`（bun に audit がない場合） |
 
 ### 4. 結果出力
 

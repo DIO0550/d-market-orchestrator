@@ -51,9 +51,11 @@ color: green
 | ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
 |--------------|-----|--------------|---------|-------------|
 | `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
-| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `yarn.lock` | yarn | `yarn run {script}` | `yarn run {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
 | `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
 | `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
+⚠️ `npm test` や `yarn lint` のようなショートハンドは使わない。必ず `{pm} run {script}` 形式で実行すること。
 
 ロックファイルが見つからない場合は `package.json` の `packageManager` フィールドを確認する。
 
@@ -74,7 +76,7 @@ color: green
 | PM | 単一ファイル指定の例 |
 |----|---------------------|
 | pnpm | `pnpm run test path/to/file.test.ts` |
-| yarn | `yarn test path/to/file.test.ts` |
+| yarn | `yarn run test path/to/file.test.ts` |
 | npm | `npm run test -- path/to/file.test.ts`（`--` 必須） |
 | bun | `bun run test path/to/file.test.ts` |
 

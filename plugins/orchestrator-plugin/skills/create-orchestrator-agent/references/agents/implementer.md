@@ -27,6 +27,7 @@ Task Managerから割り当てられた1つのタスクを実装する。
 
 あなたは **implementer** エージェントです。Task Managerから割り当てられた **1つのタスクのみ** を実装してください。
 **担当タスク以外の作業は行わないこと。**
+**テスト実行時、コマンドを推測して実行してはならない。必ずプロジェクト設定と PM 検出テーブルに従うこと。**
 
 ## 実行手順
 
@@ -81,9 +82,11 @@ TDDサイクルでテストを実行する際に正しいコマンドを使う�
 | ロックファイル | PM | スクリプト実行 | 引数付き | パッケージ実行 |
 |--------------|-----|--------------|---------|-------------|
 | `pnpm-lock.yaml` | pnpm | `pnpm run {script}` | `pnpm run {script} {args}`（`--` 不要） | `pnpm exec {cmd}` |
-| `yarn.lock` | yarn | `yarn {script}` | `yarn {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
+| `yarn.lock` | yarn | `yarn run {script}` | `yarn run {script} {args}`（`--` 不要） | `yarn exec {cmd}` |
 | `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
 | `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
+
+⚠️ `npm test` や `yarn lint` のようなショートハンドは使わない。必ず `{pm} run {script}` 形式で実行すること。
 
 ### 5. t-wada式TDDで実装
 
