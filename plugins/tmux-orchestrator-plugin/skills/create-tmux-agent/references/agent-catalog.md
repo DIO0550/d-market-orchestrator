@@ -8,49 +8,49 @@ tmux-orchestrator で使用可能な18種類のエージェント一覧。
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Orchestrator](agents/orchestrator.md) | 必須 | 🧠 opus | 全体フロー制御。tmuxセッションの管理、エージェント起動・監視 |
+| [Orchestrator](instructions/orchestrator.md) | 必須 | 🧠 opus | 全体フロー制御。tmuxセッションの管理、エージェント起動・監視 |
 
 ### 計画フェーズ（Phase 1）
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Explorer](agents/explorer.md) | 推奨 | ⚡ sonnet | コードベースの探索・関連ファイルの特定 |
-| [Planner](agents/planner.md) | 必須 | 🧠 opus | 実装計画の策定・タスク分割・依存関係設計 |
-| [Plan Reviewer](agents/plan-reviewer.md) | 推奨 | 🧠 opus | 計画の妥当性検証・仕様書との整合性チェック |
+| [Explorer](instructions/planning/explorer.md) | 推奨 | ⚡ sonnet | コードベースの探索・関連ファイルの特定 |
+| [Planner](instructions/planning/planner.md) | 必須 | 🧠 opus | 実装計画の策定・タスク分割・依存関係設計 |
+| [Plan Reviewer](instructions/planning/plan-reviewer.md) | 推奨 | 🧠 opus | 計画の妥当性検証・仕様書との整合性チェック |
 
 ### 実装フェーズ（Phase 2）
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Task Manager](agents/task-manager.md) | 推奨 | ⚡ sonnet | タスクライフサイクル管理（実装→レビュー→判定） |
-| [Implementer](agents/implementer.md) | 必須 | ⚡ sonnet | コードの実装・変更の適用 |
-| [Code Reviewer](agents/code-reviewer.md) | 推奨 | 🧠 opus | リードレビュー・スペシャリスト統合・最終判定 |
-| [Quality Reviewer](agents/quality-reviewer.md) | 任意 | ⚡ sonnet | コード品質レビュー（可読性・保守性・DRY・一貫性） |
-| [Bug Reviewer](agents/bug-reviewer.md) | 任意 | ⚡ sonnet | バグリスク検出（エッジケース・null/undefined・エラーハンドリング） |
-| [Performance Reviewer](agents/performance-reviewer.md) | 任意 | ⚡ sonnet | パフォーマンスレビュー（アルゴリズム効率・N+1クエリ・メモリリーク） |
-| [Security Reviewer](agents/security-reviewer.md) | 任意 | ⚡ sonnet | セキュリティレビュー（入力検証・機密情報・インジェクション脆弱性） |
+| [Task Manager](instructions/implementation/task-manager.md) | 推奨 | ⚡ sonnet | タスクライフサイクル管理（実装→レビュー→判定） |
+| [Implementer](instructions/implementation/implementer.md) | 必須 | ⚡ sonnet | コードの実装・変更の適用 |
+| [Code Reviewer](instructions/review/code-reviewer.md) | 推奨 | 🧠 opus | リードレビュー・スペシャリスト統合・最終判定 |
+| [Quality Reviewer](instructions/review/quality-reviewer.md) | 任意 | ⚡ sonnet | コード品質レビュー（可読性・保守性・DRY・一貫性） |
+| [Bug Reviewer](instructions/review/bug-reviewer.md) | 任意 | ⚡ sonnet | バグリスク検出（エッジケース・null/undefined・エラーハンドリング） |
+| [Performance Reviewer](instructions/review/performance-reviewer.md) | 任意 | ⚡ sonnet | パフォーマンスレビュー（アルゴリズム効率・N+1クエリ・メモリリーク） |
+| [Security Reviewer](instructions/review/security-reviewer.md) | 任意 | ⚡ sonnet | セキュリティレビュー（入力検証・機密情報・インジェクション脆弱性） |
 
 ### 検証フェーズ（Phase 2/3）
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Test Runner](agents/test-runner.md) | 推奨 | 💨 haiku | テストの実行・結果報告 |
-| [Linter](agents/linter.md) | 推奨 | 💨 haiku | コードスタイル・品質チェック |
-| [Security Scanner](agents/security-scanner.md) | 任意 | ⚡ sonnet | セキュリティ脆弱性スキャン |
+| [Test Runner](instructions/review/test-runner.md) | 推奨 | 💨 haiku | テストの実行・結果報告 |
+| [Linter](instructions/review/linter.md) | 推奨 | 💨 haiku | コードスタイル・品質チェック |
+| [Security Scanner](instructions/review/security-scanner.md) | 任意 | ⚡ sonnet | セキュリティ脆弱性スキャン |
 
 ### 修正フェーズ
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Debugger](agents/debugger.md) | 任意 | 🧠 opus | テスト失敗の原因分析・修正 |
-| [Refactorer](agents/refactorer.md) | 任意 | ⚡ sonnet | レビュー指摘に基づくコード改善 |
+| [Debugger](instructions/implementation/debugger.md) | 任意 | 🧠 opus | テスト失敗の原因分析・修正 |
+| [Refactorer](instructions/implementation/refactorer.md) | 任意 | ⚡ sonnet | レビュー指摘に基づくコード改善 |
 
 ### Gitフェーズ（Phase 4）
 
 | エージェント | 必須 | モデル | 説明 |
 |-------------|------|--------|------|
-| [Committer](agents/committer.md) | 任意 | 💨 haiku | Gitコミットの作成 |
-| [PR Creator](agents/pr-creator.md) | 任意 | 💨 haiku | Pull Requestの作成 |
+| [Committer](instructions/git/committer.md) | 任意 | 💨 haiku | Gitコミットの作成 |
+| [PR Creator](instructions/git/pr-creator.md) | 任意 | 💨 haiku | Pull Requestの作成 |
 
 ## モデル選択ガイド
 

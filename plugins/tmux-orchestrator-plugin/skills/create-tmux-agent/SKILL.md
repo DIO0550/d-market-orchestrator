@@ -53,15 +53,15 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 **制御**: [Orchestrator](references/instructions/orchestrator.md)
 
-**計画**: [Explorer](references/instructions/explorer.md), [Planner](references/instructions/planner.md), [Plan Reviewer](references/instructions/plan-reviewer.md)
+**計画**: [Explorer](references/instructions/planning/explorer.md), [Planner](references/instructions/planning/planner.md), [Plan Reviewer](references/instructions/planning/plan-reviewer.md)
 
-**実装**: [Implementer](references/instructions/implementer.md), [Task Manager](references/instructions/task-manager.md)
+**実装**: [Implementer](references/instructions/implementation/implementer.md), [Task Manager](references/instructions/implementation/task-manager.md)
 
-**検証**: [Code Reviewer](references/instructions/code-reviewer.md), [Quality Reviewer](references/instructions/quality-reviewer.md), [Bug Reviewer](references/instructions/bug-reviewer.md), [Performance Reviewer](references/instructions/performance-reviewer.md), [Security Reviewer](references/instructions/security-reviewer.md), [Test Runner](references/instructions/test-runner.md), [Linter](references/instructions/linter.md), [Security Scanner](references/instructions/security-scanner.md)
+**レビュー**: [Code Reviewer](references/instructions/review/code-reviewer.md), [Quality Reviewer](references/instructions/review/quality-reviewer.md), [Bug Reviewer](references/instructions/review/bug-reviewer.md), [Performance Reviewer](references/instructions/review/performance-reviewer.md), [Security Reviewer](references/instructions/review/security-reviewer.md), [Test Runner](references/instructions/review/test-runner.md), [Linter](references/instructions/review/linter.md), [Security Scanner](references/instructions/review/security-scanner.md)
 
-**修正**: [Debugger](references/instructions/debugger.md), [Refactorer](references/instructions/refactorer.md)
+**修正**: [Debugger](references/instructions/implementation/debugger.md), [Refactorer](references/instructions/implementation/refactorer.md)
 
-**Git**: [Committer](references/instructions/committer.md), [PR Creator](references/instructions/pr-creator.md)
+**Git**: [Committer](references/instructions/git/committer.md), [PR Creator](references/instructions/git/pr-creator.md)
 
 ### モデル選択
 
