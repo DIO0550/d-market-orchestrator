@@ -29,6 +29,14 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 │   ├── planner.exit
 │   ├── plan-reviewer.done       # 状態値: "Approved" / "Needs Revision" / "Rejected"
 │   ├── plan-reviewer.exit
+│   ├── plan-quality-reviewer.done  # 状態値: "done"（デフォルト）
+│   ├── plan-quality-reviewer.exit
+│   ├── plan-bug-reviewer.done
+│   ├── plan-bug-reviewer.exit
+│   ├── plan-performance-reviewer.done
+│   ├── plan-performance-reviewer.exit
+│   ├── plan-security-reviewer.done
+│   ├── plan-security-reviewer.exit
 │   ├── task-1-task-manager.done # 状態値: "completed" / "rejected"
 │   ├── task-1-task-manager.exit
 │   └── ...
@@ -133,7 +141,9 @@ Orchestrator:
 | Test Runner | `PASS` / `FAIL` |
 | Linter | `PASS` / `FAIL` |
 
-> **注意**: スペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は状態値を書き出さない（デフォルトの `done`）。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+> **注意**: コードスペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は状態値を書き出さない（デフォルトの `done`）。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+
+> **注意**: プランスペシャリストレビュアー（Plan Quality/Bug/Performance/Security Reviewer）も同様に状態値を書き出さない（デフォルトの `done`）。Lead Plan Reviewer が各スペシャリストの結果ファイルを直接読んで統合判定する。
 
 #### 書き出し例
 
@@ -186,6 +196,10 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
     "explorer": { "name": "Scout" },
     "planner": { "name": "Architect" },
     "plan-reviewer": { "name": "Critic" },
+    "plan-quality-reviewer": { "name": "Plan Stylist" },
+    "plan-bug-reviewer": { "name": "Plan Detective" },
+    "plan-performance-reviewer": { "name": "Plan Speedster" },
+    "plan-security-reviewer": { "name": "Plan Sentinel" },
     "implementer": { "name": "Builder" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
@@ -255,11 +269,14 @@ get_member_name() {
 ## データフロー図
 
 ```
-Explorer                    Planner                 Plan Reviewer
+Explorer                    Planner                 Plan Reviewer (Lead)
   │                           │                         │
   └── explorer/result.md ──→  │                         │
                               ├── planner/plan.md ───→  │
-                              └── planner/tasks.md      │
+                              └── planner/tasks.md      ├── plan-quality-reviewer
+                                    │                   ├── plan-bug-reviewer
+                                    │                   ├── plan-performance-reviewer
+                                    │                   ├── plan-security-reviewer
                                     │                   └── plan-reviewer/review-{round}.md
                                     │
                                     ▼

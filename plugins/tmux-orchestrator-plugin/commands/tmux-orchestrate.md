@@ -30,8 +30,8 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
    - `wait-for-completion.sh` で完了を待機
    - Planner のプロンプトファイルを生成（Explorer結果パスを含む）
    - `tmux-agent-launch.sh` で Planner を起動、完了を待機
-   - Plan Reviewer のプロンプトファイルを生成
-   - `tmux-agent-launch.sh` で Plan Reviewer を起動、完了を待機
+   - Plan Reviewer（Lead）のプロンプトファイルを生成
+   - `tmux-agent-launch.sh` で Plan Reviewer を起動（内部で4スペシャリストを並列起動）、完了を待機
    - `.status/plan-reviewer.done` の状態値を確認し分岐:
      - `Approved` → Phase 2 に進む
      - `Needs Revision` → Planner を再起動（最大2回）

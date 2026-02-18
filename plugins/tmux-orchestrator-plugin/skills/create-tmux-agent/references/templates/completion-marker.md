@@ -34,7 +34,9 @@ tmux-orchestrator のエージェント間同期メカニズム。
 | Test Runner | `task-{id}-test-runner.done` | `PASS` / `FAIL` |
 | Linter | `task-{id}-linter.done` | `PASS` / `FAIL` |
 
-> **注意**: スペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は状態値を書き出さない（デフォルトの `done`）。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+> **注意**: コードスペシャリストレビュアー（Quality/Bug/Performance/Security Reviewer）は状態値を書き出さない（デフォルトの `done`）。Lead Reviewer（Code Reviewer）が各スペシャリストの結果ファイルを直接読んで統合判定する。
+
+> **注意**: プランスペシャリストレビュアー（Plan Quality/Bug/Performance/Security Reviewer）も同様に状態値を書き出さない（デフォルトの `done`）。Lead Plan Reviewer が各スペシャリストの結果ファイルを直接読んで統合判定する。
 
 ### 書き出しタイミング
 
@@ -79,6 +81,10 @@ Orchestrator はこの状態値のみで分岐判断を行い、結果ファイ�
 | Explorer | `explorer.done`（done） | `explorer.exit` |
 | Planner | `planner.done`（done） | `planner.exit` |
 | Plan Reviewer | `plan-reviewer.done`（Approved等） | `plan-reviewer.exit` |
+| Plan Quality Reviewer | `plan-quality-reviewer.done`（done） | `plan-quality-reviewer.exit` |
+| Plan Bug Reviewer | `plan-bug-reviewer.done`（done） | `plan-bug-reviewer.exit` |
+| Plan Performance Reviewer | `plan-performance-reviewer.done`（done） | `plan-performance-reviewer.exit` |
+| Plan Security Reviewer | `plan-security-reviewer.done`（done） | `plan-security-reviewer.exit` |
 | Task Manager | `task-{id}-task-manager.done`（completed等） | `task-{id}-task-manager.exit` |
 | Implementer | `task-{id}-implementer.done`（done） | `task-{id}-implementer.exit` |
 | Code Reviewer | `task-{id}-code-reviewer.done`（Approved等） | `task-{id}-code-reviewer.exit` |
@@ -98,8 +104,9 @@ Orchestrator はこの状態値のみで分岐判断を行い、結果ファイ�
 
 ### 直列実行（.done の状態値で分岐）
 ```
-explorer.done → planner 起動 → planner.done → plan-reviewer 起動
-→ plan-reviewer.done の状態値を確認
+explorer.done → planner 起動 → planner.done → plan-reviewer (Lead) 起動
+→ plan-reviewer が 4 スペシャリストを並列起動
+→ 全スペシャリスト完了 → 統合 → plan-reviewer.done の状態値を確認
   → "Approved" → Phase 2 へ
   → "Needs Revision" → planner 再起動
   → "Rejected" → ユーザーに報告
@@ -127,6 +134,18 @@ implementer.done → test-runner.done + linter.done の状態値を確認
 → code-reviewer.done の状態値を確認
   → "Approved" → 完了判定
   → "Request Changes" → implementer 再起動
+```
+
+### Plan Reviewer (Lead) 内部フロー
+```
+plan-reviewer が起動される
+→ 前回のスペシャリストマーカーを削除
+→ 4つのスペシャリストを並列起動:
+  plan-quality-reviewer + plan-bug-reviewer + plan-performance-reviewer + plan-security-reviewer
+→ 全4つの .done を待機
+→ 各スペシャリストの結果ファイルを Read（.done の状態値は使用しない）
+→ 統合レビュー結果 + タスク依存関係チェック → review-{round}.md に書き出し
+→ plan-reviewer.done に状態値を書き出し（例: "Approved"）
 ```
 
 ### Code Reviewer (Lead) 内部フロー

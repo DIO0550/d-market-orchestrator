@@ -1,6 +1,6 @@
 # エージェントカタログ
 
-tmux-orchestrator で使用可能な18種類のエージェント一覧。
+tmux-orchestrator で使用可能な22種類のエージェント一覧。
 
 ## エージェント一覧
 
@@ -16,7 +16,11 @@ tmux-orchestrator で使用可能な18種類のエージェント一覧。
 |-------------|------|--------|------|
 | [Explorer](instructions/planning/explorer.md) | 推奨 | ⚡ sonnet | コードベースの探索・関連ファイルの特定 |
 | [Planner](instructions/planning/planner.md) | 必須 | 🧠 opus | 実装計画の策定・タスク分割・依存関係設計 |
-| [Plan Reviewer](instructions/planning/plan-reviewer.md) | 推奨 | 🧠 opus | 計画の妥当性検証・仕様書との整合性チェック |
+| [Plan Reviewer](instructions/planning/plan-reviewer.md) | 推奨 | 🧠 opus | リードプランレビュー・スペシャリスト統合・最終判定 |
+| [Plan Quality Reviewer](instructions/review/plan-quality-reviewer.md) | 任意 | ⚡ sonnet | 計画品質レビュー（構造・明確さ・タスク粒度・一貫性） |
+| [Plan Bug Reviewer](instructions/review/plan-bug-reviewer.md) | 任意 | ⚡ sonnet | 実装リスク検出（エッジケース・エラーシナリオ・前提条件） |
+| [Plan Performance Reviewer](instructions/review/plan-performance-reviewer.md) | 任意 | ⚡ sonnet | パフォーマンス影響レビュー（スケーラビリティ・効率性） |
+| [Plan Security Reviewer](instructions/review/plan-security-reviewer.md) | 任意 | ⚡ sonnet | セキュリティ影響レビュー（認証・データ処理・脆弱性） |
 
 ### 実装フェーズ（Phase 2）
 
@@ -57,7 +61,7 @@ tmux-orchestrator で使用可能な18種類のエージェント一覧。
 | クラス | 記号 | 用途 | コスト | エージェント |
 |--------|-----|------|--------|-------------|
 | 🧠 高性能 | opus | 複雑な判断・設計・レビュー | 高 | Orchestrator, Planner, Plan Reviewer, Code Reviewer, Debugger |
-| ⚡ 中程度 | sonnet | 分析・コード生成・探索 | 中 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer |
+| ⚡ 中程度 | sonnet | 分析・コード生成・探索 | 中 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer, Plan Quality Reviewer, Plan Bug Reviewer, Plan Performance Reviewer, Plan Security Reviewer |
 | 💨 軽量 | haiku | 定型作業・コマンド実行 | 低 | Test Runner, Linter, Committer, PR Creator |
 
 ## プリセット構成
@@ -92,7 +96,7 @@ tmux-orchestrator で使用可能な18種類のエージェント一覧。
 
 | エージェント | モデル |
 |-------------|--------|
-| 全18エージェント | 各推奨モデル |
+| 全22エージェント | 各推奨モデル |
 
 ### Review-Heavy（レビュー重視）
 
@@ -127,8 +131,13 @@ tmux-orchestrator で使用可能な18種類のエージェント一覧。
 ## 依存関係グラフ
 
 ```
-Explorer ──→ Planner ──→ Plan Reviewer
-                │
+Explorer ──→ Planner ──→ Plan Reviewer (Lead)
+                │              │
+                │              ├── Plan Quality Reviewer
+                │              ├── Plan Bug Reviewer
+                │              ├── Plan Performance Reviewer
+                │              ├── Plan Security Reviewer
+                │              ▼
                 ▼
           Task Manager ──→ Implementer ──→ Code Reviewer (Lead)
                 │              │                │
@@ -155,7 +164,11 @@ Explorer ──→ Planner ──→ Plan Reviewer
 ├── explorer/result.md                          ← Explorer
 ├── planner/plan.md                             ← Planner
 ├── planner/tasks.md                            ← Planner
-├── plan-reviewer/review-{round}.md             ← Plan Reviewer
+├── plan-reviewer/review-{round}.md             ← Plan Reviewer (Lead)
+├── plan-reviewer/quality-review-{round}.md     ← Plan Quality Reviewer
+├── plan-reviewer/bug-review-{round}.md         ← Plan Bug Reviewer
+├── plan-reviewer/performance-review-{round}.md ← Plan Performance Reviewer
+├── plan-reviewer/security-review-{round}.md    ← Plan Security Reviewer
 ├── task-{id}/implementer/result-{round}.md     ← Implementer
 ├── task-{id}/code-reviewer/review-{round}.md              ← Code Reviewer (Lead)
 ├── task-{id}/code-reviewer/quality-review-{round}.md      ← Quality Reviewer
@@ -184,7 +197,11 @@ Explorer ──→ Planner ──→ Plan Reviewer
 | Orchestrator | ✅ | ⚠️ | ❌ | tmux管理にBashツールが必要 |
 | Explorer | ✅ | ✅ | ⚠️ | ファイル検索能力が必要 |
 | Planner | ✅ | ✅ | ⚠️ | 複雑な分析能力が必要 |
-| Plan Reviewer | ✅ | ✅ | ⚠️ | 判断能力が必要 |
+| Plan Reviewer | ✅ | ⚠️ | ❌ | tmux管理にBashツールが必要 |
+| Plan Quality Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Plan Bug Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Plan Performance Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
+| Plan Security Reviewer | ✅ | ✅ | ⚠️ | コード分析能力が必要 |
 | Task Manager | ✅ | ⚠️ | ❌ | ペインでのエージェント管理が必要 |
 | Implementer | ✅ | ✅ | ⚠️ | ファイル編集能力が必要 |
 | Code Reviewer | ✅ | ⚠️ | ❌ | tmux管理にBashツールが必要 |

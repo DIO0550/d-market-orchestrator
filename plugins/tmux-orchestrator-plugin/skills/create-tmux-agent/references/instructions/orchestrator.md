@@ -93,7 +93,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
      ".orchestrator/{SESSION_ID}" "explorer" 300
    ```
 4. **Planner** のプロンプトファイルを生成し、起動・完了待機
-5. **Plan Reviewer** のプロンプトファイルを生成し、起動・完了待機
+5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動・完了待機（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
 6. `.status/plan-reviewer.done` の状態値を読んで分岐:
    ```bash
    STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.done" 2>/dev/null)
@@ -225,7 +225,11 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 | {SESSION_DIR}/task-{id}/task-manager/lifecycle.md | Task Manager | Committer, PR Creator |
 | {SESSION_DIR}/task-{id}/implementer/result-{round}.md | Implementer | Code Reviewer |
 | {SESSION_DIR}/task-{id}/code-reviewer/review-{round}.md | Code Reviewer | Refactorer |
-| {SESSION_DIR}/plan-reviewer/review-{round}.md | Plan Reviewer | Planner（修正時） |
+| {SESSION_DIR}/plan-reviewer/review-{round}.md | Plan Reviewer (Lead) | Planner（修正時） |
+| {SESSION_DIR}/plan-reviewer/quality-review-{round}.md | Plan Quality Reviewer | Plan Reviewer (Lead) |
+| {SESSION_DIR}/plan-reviewer/bug-review-{round}.md | Plan Bug Reviewer | Plan Reviewer (Lead) |
+| {SESSION_DIR}/plan-reviewer/performance-review-{round}.md | Plan Performance Reviewer | Plan Reviewer (Lead) |
+| {SESSION_DIR}/plan-reviewer/security-review-{round}.md | Plan Security Reviewer | Plan Reviewer (Lead) |
 
 ## 必要な操作
 

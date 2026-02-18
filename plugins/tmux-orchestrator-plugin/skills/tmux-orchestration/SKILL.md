@@ -35,8 +35,9 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │
     ▼ (wait-for-completion.sh で完了待ち)
     │
-    ├── plan-reviewer プロンプト生成 → tmux-agent-launch.sh で起動
-    │   └── 計画の妥当性を検証 → .done に状態値を書き出し
+    ├── plan-reviewer (Lead) プロンプト生成 → tmux-agent-launch.sh で起動
+    │   └── 4つのスペシャリスト（quality/bug/performance/security）を並列起動
+    │       → 統合レビュー + タスク依存関係チェック → .done に状態値を書き出し
     │
     ▼ (完了待ち → .done の状態値で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
     │

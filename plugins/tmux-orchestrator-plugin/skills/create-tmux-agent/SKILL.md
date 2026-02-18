@@ -1,6 +1,6 @@
 ---
 name: create-tmux-agent
-description: "tmuxベースのオーケストレーターフロー用指示ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。14種類の指示テンプレートから必要なものを選択し、tmux実行コンテキスト付きで生成可能。「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
+description: "tmuxベースのオーケストレーターフロー用指示ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。22種類の指示テンプレートから必要なものを選択し、tmux実行コンテキスト付きで生成可能。「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
 ---
 
 # Create tmux Orchestrator Agent
@@ -47,7 +47,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 |-----------|-------------|------|
 | **Minimal** | Orchestrator, Planner, Implementer | 最小限 |
 | **Standard** | + Explorer, Test Runner, Linter, Committer | 一般的 |
-| **Full** | 全14種類 | フル機能 |
+| **Full** | 全22種類 | フル機能 |
 
 ### 個別選択
 
@@ -57,7 +57,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 **実装**: [Implementer](references/instructions/implementation/implementer.md), [Task Manager](references/instructions/implementation/task-manager.md)
 
-**レビュー**: [Code Reviewer](references/instructions/review/code-reviewer.md), [Quality Reviewer](references/instructions/review/quality-reviewer.md), [Bug Reviewer](references/instructions/review/bug-reviewer.md), [Performance Reviewer](references/instructions/review/performance-reviewer.md), [Security Reviewer](references/instructions/review/security-reviewer.md), [Test Runner](references/instructions/review/test-runner.md), [Linter](references/instructions/review/linter.md), [Security Scanner](references/instructions/review/security-scanner.md)
+**レビュー**: [Code Reviewer](references/instructions/review/code-reviewer.md), [Quality Reviewer](references/instructions/review/quality-reviewer.md), [Bug Reviewer](references/instructions/review/bug-reviewer.md), [Performance Reviewer](references/instructions/review/performance-reviewer.md), [Security Reviewer](references/instructions/review/security-reviewer.md), [Plan Quality Reviewer](references/instructions/review/plan-quality-reviewer.md), [Plan Bug Reviewer](references/instructions/review/plan-bug-reviewer.md), [Plan Performance Reviewer](references/instructions/review/plan-performance-reviewer.md), [Plan Security Reviewer](references/instructions/review/plan-security-reviewer.md), [Test Runner](references/instructions/review/test-runner.md), [Linter](references/instructions/review/linter.md), [Security Scanner](references/instructions/review/security-scanner.md)
 
 **修正**: [Debugger](references/instructions/implementation/debugger.md), [Refactorer](references/instructions/implementation/refactorer.md)
 
@@ -68,7 +68,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 | クラス | 記号 | エージェント | 用途 |
 |--------|-----|-------------|------|
 | 🧠 高性能 | opus相当 | Orchestrator, Planner, Plan Reviewer, Code Reviewer, Debugger | 判断・設計・レビュー |
-| ⚡ 中程度 | sonnet相当 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer | 分析・コード生成 |
+| ⚡ 中程度 | sonnet相当 | Explorer, Implementer, Task Manager, Refactorer, Security Scanner, Quality Reviewer, Bug Reviewer, Performance Reviewer, Security Reviewer, Plan Quality Reviewer, Plan Bug Reviewer, Plan Performance Reviewer, Plan Security Reviewer | 分析・コード生成 |
 | 💨 軽量 | haiku相当 | Test Runner, Linter, Committer, PR Creator | 定型作業・コマンド実行 |
 
 ## Step 3: テンプレート参照
@@ -124,7 +124,11 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 │   │   ├── plan.md
 │   │   └── tasks.md
 │   ├── plan-reviewer/
-│   │   └── review-{round}.md
+│   │   ├── review-{round}.md
+│   │   ├── quality-review-{round}.md
+│   │   ├── bug-review-{round}.md
+│   │   ├── performance-review-{round}.md
+│   │   └── security-review-{round}.md
 │   ├── task-{id}/
 │   │   ├── implementer/
 │   │   │   └── result-{round}.md
@@ -168,20 +172,21 @@ mkdir -p .orchestrator/scripts
 
 ### テンプレートの配置
 
-以下の9ファイルを **1つずつ Read → Write** でコピーする:
+以下の11ファイルを **1つずつ Read → Write** でコピーする:
 
 | # | Read 対象（このスキルの参照ファイル） | Write 先 |
 |---|--------------------------------------|----------|
 | 1 | [exploration-result.md](references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
 | 2 | [implementation-plan.md](references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
 | 3 | [code-review-result.md](references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
-| 3.5 | [specialist-review-result.md](references/templates/specialist-review-result.md) | `.orchestrator/templates/specialist-review-result.md` |
-| 4 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
-| 5 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
-| 6 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
-| 7 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
-| 8 | [agent-prompt.md](references/templates/agent-prompt.md) | `.orchestrator/templates/agent-prompt.md` |
-| 9 | [completion-marker.md](references/templates/completion-marker.md) | `.orchestrator/templates/completion-marker.md` |
+| 4 | [specialist-review-result.md](references/templates/specialist-review-result.md) | `.orchestrator/templates/specialist-review-result.md` |
+| 5 | [plan-specialist-review-result.md](references/templates/plan-specialist-review-result.md) | `.orchestrator/templates/plan-specialist-review-result.md` |
+| 6 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
+| 7 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
+| 8 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
+| 9 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
+| 10 | [agent-prompt.md](references/templates/agent-prompt.md) | `.orchestrator/templates/agent-prompt.md` |
+| 11 | [completion-marker.md](references/templates/completion-marker.md) | `.orchestrator/templates/completion-marker.md` |
 
 ### スクリプトの配置
 
@@ -218,6 +223,10 @@ chmod +x .orchestrator/scripts/*.sh
     "explorer": { "name": "Scout" },
     "planner": { "name": "Architect" },
     "plan-reviewer": { "name": "Critic" },
+    "plan-quality-reviewer": { "name": "Plan Stylist" },
+    "plan-bug-reviewer": { "name": "Plan Detective" },
+    "plan-performance-reviewer": { "name": "Plan Speedster" },
+    "plan-security-reviewer": { "name": "Plan Sentinel" },
     "implementer": { "name": "Builder" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
@@ -254,7 +263,7 @@ chmod +x .orchestrator/scripts/*.sh
 
 ## 生成後チェックリスト
 
-- [ ] `.orchestrator/templates/` に9ファイルが配置されている
+- [ ] `.orchestrator/templates/` に11ファイルが配置されている
 - [ ] `.orchestrator/scripts/` に9スクリプトが配置されている
 - [ ] 全スクリプトに実行権限が付与されている
 - [ ] ターゲットCLIの形式に従っている
