@@ -55,7 +55,10 @@ color: green
 | `package-lock.json` | npm | `npm run {script}` | `npm run {script} -- {args}`（`--` 必須） | `npx {cmd}` |
 | `bun.lockb` | bun | `bun run {script}` | `bun run {script} {args}`（`--` 不要） | `bunx {cmd}` |
 
-⚠️ `npm test` や `yarn lint` のようなショートハンドは使わない。必ず `{pm} run {script}` 形式で実行すること。
+⚠️ **ショートハンド禁止**: `npm test` や `yarn lint` は使わない。必ず `{pm} run {script}` 形式で実行すること。
+⚠️ **`--` の使い分け**: **npm だけ** `--` が必要。pnpm / yarn / bun では `--` を**付けてはならない**。
+- ✅ `pnpm run test -t "foo"` / ❌ `pnpm run test -- -t "foo"`
+- ✅ `npm run test -- -t "foo"` / ❌ `npm run test -t "foo"`
 
 ロックファイルが見つからない場合は `package.json` の `packageManager` フィールドを確認する。
 
