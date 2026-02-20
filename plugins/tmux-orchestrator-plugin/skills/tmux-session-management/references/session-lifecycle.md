@@ -53,14 +53,14 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ### 4. 監視（Monitoring）
 
-完了マーカーを監視し、進捗を追跡する。
+エージェントからのロック付き通知をイベント駆動で待機する。
 
 ```bash
-# 個別エージェントの完了待ち
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/0001-user-auth" "explorer" 600
+# エージェント完了通知の待機（イベント駆動、ポーリングなし）
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/0001-user-auth" "orch-0001-user-auth" 600
 
-# リアルタイムモニター
+# リアルタイムモニター（control ウィンドウ表示用）
 bash .orchestrator/scripts/tmux-status-monitor.sh \
   ".orchestrator/0001-user-auth"
 ```

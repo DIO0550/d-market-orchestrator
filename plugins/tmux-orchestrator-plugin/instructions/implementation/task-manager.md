@@ -43,9 +43,9 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
-# 完了待機
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" 600
+# 完了通知を待機
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "orch-{SESSION_ID}" 600
 ```
 
 ### 完了監視
@@ -97,8 +97,8 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 ### 4. Implementer の完了待ち
 
 ```bash
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" 600
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "orch-{SESSION_ID}" 600
 ```
 
 ### 5. Test Runner + Linter の並列起動
@@ -118,11 +118,11 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
-# 両方の完了を待機
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-test-runner" 300
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" 300
+# 両方の完了通知を待機
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-test-runner" "orch-{SESSION_ID}" 300
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" "orch-{SESSION_ID}" 300
 ```
 
 ### 6. 検証結果の確認
@@ -149,8 +149,8 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 ### 8. Code Reviewer の完了待ち
 
 ```bash
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" 300
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" "orch-{SESSION_ID}" 300
 ```
 
 ### 9. レビュー結果に基づく分岐

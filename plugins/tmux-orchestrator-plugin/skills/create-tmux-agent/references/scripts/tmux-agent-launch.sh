@@ -6,7 +6,7 @@
 #   tmux-agent-launch.sh <session> <window> <agent-name> <cli-tool> <prompt-file> <session-dir> [working-dir]
 #
 # 引数:
-#   session     - tmuxセッション名
+#   session     - tmuxセッション名（通知チャネル名にも使用）
 #   window      - tmuxウィンドウ名（phase1, phase2, etc.）
 #   agent-name  - エージェント名（explorer, planner, etc.）
 #   cli-tool    - CLIツール名（claude, codex, copilot, またはカスタムコマンド）
@@ -14,9 +14,10 @@
 #   session-dir - セッションディレクトリ（.orchestrator/{SESSION_ID}）
 #   working-dir - 作業ディレクトリ（省略時はカレントディレクトリ）
 #
-# 完了時に以下のファイルが自動作成される:
-#   {session-dir}/.status/{agent-name}.done - 完了マーカー
-#   {session-dir}/.status/{agent-name}.exit - 終了コード
+# 完了時の動作:
+#   1. {session-dir}/.status/{agent-name}.done - 完了マーカー作成
+#   2. {session-dir}/.status/{agent-name}.exit - 終了コード記録
+#   3. notify-parent.sh でオーケストレーターに完了を通知（ロック付き）
 
 set -euo pipefail
 
@@ -75,23 +76,28 @@ tmux select-pane -t "$TARGET_PANE" -T "$DISPLAY_NAME"
 
 # CLIツールに応じたコマンドを構築
 PROMPT_FILE_ABS=$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FILE")
-STATUS_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DIR")/.status
+SESSION_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DIR")
+STATUS_DIR_ABS="${SESSION_DIR_ABS}/.status"
+SCRIPTS_DIR_ABS=$(cd "$(dirname "$0")" && pwd)
+
+# 完了後の共通処理: .exit/.done 作成 → notify-parent.sh で親に通知
+COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'; bash '${SCRIPTS_DIR_ABS}/notify-parent.sh' '${SESSION_DIR_ABS}' '${AGENT_NAME}' '${SESSION}'"
 
 case "$CLI_TOOL" in
   claude)
-    CMD="cd '${WORKING_DIR}' && claude --print --prompt-file '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && claude --print --prompt-file '${PROMPT_FILE_ABS}' 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
     # Codex はプロンプトを引数として受け取る
-    CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   copilot)
     # GitHub Copilot CLI
-    CMD="cd '${WORKING_DIR}' && cat '${PROMPT_FILE_ABS}' | gh copilot suggest -t shell 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && cat '${PROMPT_FILE_ABS}' | gh copilot suggest -t shell 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   *)
     # 汎用CLI: コマンドをそのまま使用
-    CMD="cd '${WORKING_DIR}' && ${CLI_TOOL} '${PROMPT_FILE_ABS}' 2>&1; EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; echo '[${AGENT_NAME}] Completed (exit: '\${EXIT_CODE}')'"
+    CMD="cd '${WORKING_DIR}' && ${CLI_TOOL} '${PROMPT_FILE_ABS}' 2>&1; ${COMPLETION_SUFFIX}"
     ;;
 esac
 

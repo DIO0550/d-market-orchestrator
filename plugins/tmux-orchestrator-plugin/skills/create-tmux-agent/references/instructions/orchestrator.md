@@ -1,7 +1,7 @@
 # Orchestrator（オーケストレーター）指示テンプレート
 
 tmux を使って全体フローを制御し、他のエージェントを起動・管理する司令塔。
-Task ツールではなく Bash ツールで tmux コマンド（tmux-session-create.sh, tmux-agent-launch.sh, wait-for-completion.sh）を実行してエージェントを制御する。
+Task ツールではなく Bash ツールで tmux コマンド（tmux-session-create.sh, tmux-agent-launch.sh, wait-for-notification.sh）を実行してエージェントを制御する。
 
 **推奨モデル**: 🧠 高性能（opus相当）
 - 全体の判断、エージェント選択、エラー時の対応判断が必要
@@ -46,7 +46,8 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 |-----------|------|
 | `tmux-session-create.sh` | tmux セッションの作成 |
 | `tmux-agent-launch.sh` | エージェントを tmux ペインで起動 |
-| `wait-for-completion.sh` | `.status/` の .done ファイルをポーリングして完了を待機 |
+| `wait-for-notification.sh` | エージェント完了通知を `tmux wait-for` で待機（イベント駆動） |
+| `notify-parent.sh` | エージェント完了時にオーケストレーターへ通知を送信（`tmux-agent-launch.sh` が自動呼び出し） |
 | `check-dependencies.sh` | tasks.json と .done ファイルを照合し実行可能タスクを出力 |
 | `init-session.sh` | セッションフォルダの初期化 |
 | `init-task.sh` | タスクディレクトリの初期化 |
@@ -89,8 +90,8 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```
 3. 完了を待機:
    ```bash
-   bash .orchestrator/scripts/wait-for-completion.sh \
-     ".orchestrator/{SESSION_ID}" "explorer" 300
+   bash .orchestrator/scripts/wait-for-notification.sh \
+     ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 300
    ```
 4. **Planner** のプロンプトファイルを生成し、起動・完了待機
 5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動・完了待機（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
@@ -124,8 +125,8 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```
 4. 完了を待機:
    ```bash
-   bash .orchestrator/scripts/wait-for-completion.sh \
-     ".orchestrator/{SESSION_ID}" "task-{taskId}-task-manager" 600
+   bash .orchestrator/scripts/wait-for-notification.sh \
+     ".orchestrator/{SESSION_ID}" "task-{taskId}-task-manager" "orch-{SESSION_ID}" 600
    ```
 5. 全タスク完了まで繰り返し（新たにブロック解除されたタスクがあれば 1 に戻る）
 
@@ -209,7 +210,7 @@ Orchestrator はコンテキストウィンドウの肥大化を防ぐため、*
 
 | ファイル | 用途 | 確認方法 |
 |---------|------|---------|
-| `.status/{agent}.done` | 完了検知 + 分岐判断 | `wait-for-completion.sh` で待機 → `cat` で状態値読み取り |
+| `.status/{agent}.done` | 完了検知 + 分岐判断 | `wait-for-notification.sh` で通知待機 → `cat` で状態値読み取り |
 | `.status/{agent}.exit` | エラー検知 | `AGENT_EXIT_CODE` の値を確認 |
 
 ## エージェント間のパス渡し

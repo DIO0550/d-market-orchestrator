@@ -27,7 +27,7 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
 1. **Phase 1: 探索・計画・レビュー**
    - Explorer のプロンプトファイルを `.prompts/explorer-prompt.md` に生成
    - `tmux-agent-launch.sh` で Explorer を phase1 ウィンドウに起動
-   - `wait-for-completion.sh` で完了を待機
+   - `wait-for-notification.sh` で完了を待機
    - Planner のプロンプトファイルを生成（Explorer結果パスを含む）
    - `tmux-agent-launch.sh` で Planner を起動、完了を待機
    - Plan Reviewer（Lead）のプロンプトファイルを生成
@@ -44,7 +44,7 @@ tmuxセッションを使って複数のAI CLIエージェントを並列起動�
      - Task Manager のプロンプトファイルを生成
      - `tmux-agent-launch.sh` で phase2 ウィンドウに起動（独立タスクは並列）
    - Task Manager が内部で implementer → test-runner + linter → code-reviewer → refactorer → 完了判定を管理
-   - `wait-for-completion.sh` で全 Task Manager の完了を待機
+   - `wait-for-notification.sh` で全 Task Manager の完了を待機
    - 各 Task Manager の `.status/task-{id}-task-manager.done` の状態値を確認
    - 新たにブロック解除されたタスクがあれば繰り返し
    - 全タスク完了後、`tmux-result-collector.sh` で結果を集約
@@ -98,9 +98,9 @@ bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}"
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}"
 
-3. 完了を待機:
-   bash .orchestrator/scripts/wait-for-completion.sh \
-     ".orchestrator/{SESSION_ID}" "explorer" 600
+3. 完了通知を待機:
+   bash .orchestrator/scripts/wait-for-notification.sh \
+     ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 600
 ```
 
 ### Step 3: Phase 1 - 計画（Planner）
@@ -137,7 +137,7 @@ while (pendingタスクが残っている):
      a. init-task.sh でディレクトリ作成
      b. Task Manager のプロンプト生成
      c. tmux-agent-launch.sh で起動
-  3. wait-for-completion.sh で全 Task Manager の完了を待機
+  3. wait-for-notification.sh で全 Task Manager の完了を待機
   4. 各 .status/task-{id}-task-manager.done の状態値を確認（completed / rejected）
   5. tasks.json のステータスを更新
   6. 新たに実行可能なタスクがあれば 1 に戻る

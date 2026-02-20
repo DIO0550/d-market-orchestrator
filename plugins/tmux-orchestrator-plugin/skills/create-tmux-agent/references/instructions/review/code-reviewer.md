@@ -76,7 +76,7 @@ color: yellow
 tmux-agent-launch.sh で全4スペシャリストを並列起動する。
 
 ### 5. スペシャリスト全員の完了待ち
-wait-for-completion.sh で全4つの .done を待機する。
+wait-for-notification.sh で全4つの .done を待機する。
 失敗時はそのスペシャリストなしで続行する。
 
 ### 6. スペシャリスト結果の読み込み

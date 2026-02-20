@@ -8,9 +8,10 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 各エージェントは独立したCLIプロセスとして動作し、以下の仕組みで情報を共有する:
 
 1. **結果ファイル**: エージェントが処理結果を所定パスに書き出す
-2. **完了マーカー**: エージェントの完了を `.done` ファイルで通知（状態値を含む）
-3. **プロンプトファイル**: 次のエージェントへの入力をプロンプトファイルに記載
-4. **依存グラフ**: タスクの実行順序を `tasks.json` で管理
+2. **完了マーカー**: エージェントの完了を `.done` ファイルで記録（状態値を含む）
+3. **完了通知**: `notify-parent.sh` がロック付きで `tmux wait-for` シグナルを送信し、オーケストレーターにイベント駆動で通知
+4. **プロンプトファイル**: 次のエージェントへの入力をプロンプトファイルに記載
+5. **依存グラフ**: タスクの実行順序を `tasks.json` で管理
 
 ## ディレクトリ構成
 
@@ -22,7 +23,7 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 ├── .config/                     # ランタイム設定
 │   └── cli-assignments.json     # エージェント→CLI割り当て
 │
-├── .status/                     # マーカーファイル（同期メカニズム）
+├── .status/                     # マーカーファイル + 通知メカニズム
 │   ├── explorer.done            # 完了マーカー（状態値: "done"）
 │   ├── explorer.exit            # 終了コード: AGENT_EXIT_CODE={code}
 │   ├── planner.done
@@ -56,16 +57,32 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 
 ## 通信パターン
 
+### 通知メカニズム（ポーリング廃止・イベント駆動）
+
+エージェント完了の検知にはポーリングではなく、`tmux wait-for` によるイベント駆動方式を使用する:
+
+```
+Agent完了 → .done/.exit 作成 → notify-parent.sh
+         → tmux wait-for -S "orch-done-{tmux-session}-{agent-name}"
+
+待機側 → wait-for-notification.sh
+       → tmux wait-for "orch-done-{tmux-session}-{agent-name}" でブロック
+       → シグナル受信 → .done/.exit を読み取り → 次のアクション判断
+```
+
+**チャネル分離**: 各エージェントに固有のチャネル名が割り当てられるため、複数エージェントが同時に完了しても他のチャネルに干渉しない。
+**シグナルバッファ**: `tmux wait-for -S` は待機側がまだ listen していなくてもシグナルをバッファするため、完了順序に依存しない。
+
 ### パターン 1: 直列パイプライン
 
 ```
 Orchestrator:
   1. explorer-prompt.md を生成
   2. tmux-agent-launch.sh で explorer 起動
-  3. wait-for-completion.sh で explorer.done を待機
+  3. wait-for-notification.sh SESSION_DIR "explorer" TMUX_SESSION で完了通知を待機
   4. explorer/result.md のパスを planner-prompt.md に含める
   5. tmux-agent-launch.sh で planner 起動
-  6. wait-for-completion.sh で planner.done を待機
+  6. wait-for-notification.sh SESSION_DIR "planner" TMUX_SESSION で完了通知を待機
 ```
 
 ### パターン 2: 並列実行 + バリア
@@ -74,9 +91,10 @@ Orchestrator:
 Orchestrator:
   1. test-runner-prompt.md と linter-prompt.md を生成
   2. tmux-agent-launch.sh で両方を起動
-  3. wait-for-completion.sh で test-runner.done を待機
-  4. wait-for-completion.sh で linter.done を待機
-  5. 両方完了後に次のフェーズへ
+  3. wait-for-notification.sh SESSION_DIR "test-runner" TMUX_SESSION で待機
+  4. wait-for-notification.sh SESSION_DIR "linter" TMUX_SESSION で待機
+  5. 各 .done の状態値を確認、両方完了後に次のフェーズへ
+     （順序不問: 先に完了したエージェントのシグナルはバッファされる）
 ```
 
 ### パターン 3: 依存関係駆動
@@ -85,9 +103,12 @@ Orchestrator:
 Orchestrator:
   1. check-dependencies.sh で実行可能タスクを取得
   2. 各タスクの task-manager を起動
-  3. wait-for-completion.sh で完了を待機
-  4. check-dependencies.sh で新たに実行可能になったタスクを取得
-  5. 繰り返し
+  3. 各 task-manager の完了を待機:
+     for each task_id:
+       wait-for-notification.sh SESSION_DIR "task-{id}-task-manager" TMUX_SESSION
+  4. tasks.json を更新
+  5. check-dependencies.sh で新たに実行可能になったタスクを取得
+  6. 繰り返し
 ```
 
 ## プロンプトファイル仕様

@@ -28,12 +28,12 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     ├── explorer プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 関連ファイルを探索
     │
-    ▼ (wait-for-completion.sh で完了待ち)
+    ▼ (wait-for-notification.sh で完了待ち)
     │
     ├── planner プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 探索結果を基に実装計画を作成
     │
-    ▼ (wait-for-completion.sh で完了待ち)
+    ▼ (wait-for-notification.sh で完了待ち)
     │
     ├── plan-reviewer (Lead) プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 4つのスペシャリスト（quality/bug/performance/security）を並列起動
@@ -57,7 +57,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │     5. completed/rejected 判定 → .done に状態値を書き出し
     │     6. rejected → implementer 再起動（最大2回）
     │
-    ├── wait-for-completion.sh で全 task-manager の完了待ち
+    ├── wait-for-notification.sh で全 task-manager の完了待ち
     ├── 各 task-manager の .done の状態値を確認（completed / rejected）
     ├── 新たにブロック解除されたタスクがあれば繰り返し
     │
@@ -104,9 +104,9 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
-# 3. 完了を待機
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" 600
+# 3. 完了通知を待機
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 600
 ```
 
 ### 並列起動（依存関係なし）
@@ -123,11 +123,11 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
-# 両方の完了を待機
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "test-runner" 300
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "linter" 300
+# 両方の完了通知を待機
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "test-runner" "orch-{SESSION_ID}" 300
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "linter" "orch-{SESSION_ID}" 300
 ```
 
 ### 依存関係のあるタスク起動
@@ -173,7 +173,7 @@ done
 
 ### エージェントがタイムアウトした場合
 
-1. `wait-for-completion.sh` が終了コード 1 を返す
+1. `wait-for-notification.sh` が終了コード 1 を返す
 2. ユーザーに状況を報告
 3. 「継続して待つ」「中断する」の選択肢を提示
 

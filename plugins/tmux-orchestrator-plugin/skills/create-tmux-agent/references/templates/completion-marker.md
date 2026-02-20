@@ -5,7 +5,7 @@ tmux-orchestrator のエージェント間同期メカニズム。
 ## 概要
 
 各エージェントの完了は `.status/` ディレクトリ内のマーカーファイルで管理される。
-`tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成する。
+`tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成した後、`notify-parent.sh` でオーケストレーターにロック付き通知を送信する。
 
 ## ファイル構成
 
@@ -21,7 +21,7 @@ tmux-orchestrator のエージェント間同期メカニズム。
 - **ファイルの中身** = 状態値（1行のみ）
 - 判定を出すエージェントは、プロセス終了前に自分で `.done` ファイルに状態値を書き出す
 - 判定を出さないエージェントの場合、`tmux-agent-launch.sh` がCLIプロセス終了後に `done` をデフォルト書き込みする
-- `wait-for-completion.sh` がこのファイルの存在をポーリングする
+- `notify-parent.sh` がこのファイルの内容を読み取り、オーケストレーターに通知する
 
 ### 状態値の一覧
 
@@ -102,9 +102,22 @@ Orchestrator はこの状態値のみで分岐判断を行い、結果ファイ�
 
 ## 同期パターン
 
+### 通知フロー（イベント駆動）
+
+```
+Agent完了 → .done/.exit 作成 → notify-parent.sh
+         → tmux wait-for -S "orch-done-{tmux-session}-{agent-name}"
+
+待機側 → wait-for-notification.sh SESSION_DIR AGENT_NAME TMUX_SESSION
+       → tmux wait-for "orch-done-{tmux-session}-{agent-name}" でブロック
+       → シグナル受信 → .done/.exit 読み取り → 次のアクション判断
+```
+
+チャネルはエージェント単位で分離されるため、複数エージェントが同時に完了しても干渉しない。
+
 ### 直列実行（.done の状態値で分岐）
 ```
-explorer.done → planner 起動 → planner.done → plan-reviewer (Lead) 起動
+explorer 完了 → 通知 → planner 起動 → planner 完了 → 通知 → plan-reviewer (Lead) 起動
 → plan-reviewer が 4 スペシャリストを並列起動
 → 全スペシャリスト完了 → 統合 → plan-reviewer.done の状態値を確認
   → "Approved" → Phase 2 へ
@@ -115,8 +128,8 @@ explorer.done → planner 起動 → planner.done → plan-reviewer (Lead) 起�
 ### 並列実行 + バリア
 ```
 test-runner 起動 ─┐
-                  ├── 両方の .done を待機
-linter 起動 ──────┘
+                  ├── wait-for-notification.sh を各エージェントに対して呼び出し
+linter 起動 ──────┘   （チャネルが分離されているため順序不問）
                   ↓
           各 .done の状態値を確認 → 両方 PASS → 次のフェーズ
 ```

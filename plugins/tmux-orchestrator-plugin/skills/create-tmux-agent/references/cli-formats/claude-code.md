@@ -77,6 +77,6 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
   ".orchestrator/{SESSION_ID}"
 
 # 完了待ち
-bash .orchestrator/scripts/wait-for-completion.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" 300
+bash .orchestrator/scripts/wait-for-notification.sh \
+  ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 300
 ```
