@@ -13,9 +13,9 @@ description: "オーケストレーターフロー用のエージェント定義
 1. ターゲットツール確認 → Claude Code / Copilot / Codex
 1.5. 並列レーン数確認 → Copilot のみ、1〜4レーン（デフォルト: 1）
 2. エージェント選択 → カタログから必要なものを選ぶ
-3. テンプレート参照 → 個別ファイルから詳細を確認
-4. ツール別の調整 → 操作名をツール固有の形式に変換
-5. エージェント定義の生成 → 適切なディレクトリに配置
+2.5 & 5. 分析 → 生成（種別ごとの analyzer/generator ペアを並列起動）
+  Phase A: {種別}-analyzer × N を並列起動 → 各プロファイル取得
+  Phase B: {種別}-generator × N を並列起動 → プロジェクト固有エージェント生成
 6. テンプレートの配置 → .orchestrator/templates/ にコピー
 ```
 
@@ -112,25 +112,91 @@ Copilot では同名のサブエージェントを同時に複数起動できな
 
 詳細は [agent-catalog.md](references/agent-catalog.md) の「モデル選択ガイド」を参照。
 
-## Step 3: テンプレート参照
+## Step 2.5 & Step 5: プロジェクト分析 → エージェント定義の生成（analyzer/generator ペア並列起動）
 
-各テンプレートには以下が含まれる:
-- エージェント定義（フロントマター + 本文）
-- 実行手順
-- **必要な操作**（汎用的な表現）
-- 入出力形式
-- 完了条件
+Step 2 で選択した各エージェント種別に対し、**専用の analyzer → generator ペア**をバックグラウンドで並列起動する。
 
-## Step 4: ツール別の調整
+### アーキテクチャ
 
-テンプレートの「必要な操作」をターゲットツールの形式に変換する。
+```
+選択した各エージェント種別に対して並列実行:
 
-詳細は [tool-mapping.md](references/tool-mapping.md) を参照:
-- 汎用操作名 → ツール固有名の対応表
-- サブエージェント呼び出しの変換方法
-- エージェント別の使用操作一覧
+  {種別}-analyzer → プロファイル出力
+       ↓
+  {種別}-generator → プロジェクト固有のエージェント定義を生成
+```
 
-## Step 5: エージェント定義の生成
+各 analyzer/generator は `agents/analyzers/` および `agents/generators/` に配置されている。
+
+### エージェント一覧
+
+| 種別 | Analyzer | Generator |
+|------|----------|-----------|
+| Orchestrator | `analyzers/orchestrator-analyzer.md` | `generators/orchestrator-generator.md` |
+| Explorer | `analyzers/explorer-analyzer.md` | `generators/explorer-generator.md` |
+| Planner | `analyzers/planner-analyzer.md` | `generators/planner-generator.md` |
+| Plan Reviewer | `analyzers/plan-reviewer-analyzer.md` | `generators/plan-reviewer-generator.md` |
+| Task Manager | `analyzers/task-manager-analyzer.md` | `generators/task-manager-generator.md` |
+| Implementer | `analyzers/implementer-analyzer.md` | `generators/implementer-generator.md` |
+| Code Reviewer | `analyzers/code-reviewer-analyzer.md` | `generators/code-reviewer-generator.md` |
+| Test Runner | `analyzers/test-runner-analyzer.md` | `generators/test-runner-generator.md` |
+| Linter | `analyzers/linter-analyzer.md` | `generators/linter-generator.md` |
+| Security Scanner | `analyzers/security-scanner-analyzer.md` | `generators/security-scanner-generator.md` |
+| Debugger | `analyzers/debugger-analyzer.md` | `generators/debugger-generator.md` |
+| Refactorer | `analyzers/refactorer-analyzer.md` | `generators/refactorer-generator.md` |
+| Committer | `analyzers/committer-analyzer.md` | `generators/committer-generator.md` |
+| PR Creator | `analyzers/pr-creator-analyzer.md` | `generators/pr-creator-generator.md` |
+
+### 起動手順
+
+Step 2 で選択した各エージェント種別に対し、以下を並列実行する:
+
+#### Phase A: Analyzer 並列起動
+
+選択した全種別の analyzer をバックグラウンドで同時起動する。
+
+```yaml
+# 各種別に対して並列起動
+サブエージェント起動:
+  エージェント: {種別}-analyzer  # 例: test-runner-analyzer
+  バックグラウンド: true
+  プロンプト: |
+    対象プロジェクトを分析し、{種別} エージェント生成に必要なプロファイルを出力してください。
+```
+
+全 analyzer の完了を待ち、各プロファイルを取得する。
+
+#### Phase B: Generator 並列起動
+
+全 analyzer の完了後、各種別の generator をバックグラウンドで同時起動する。
+
+```yaml
+# 各種別に対して並列起動
+サブエージェント起動:
+  エージェント: {種別}-generator  # 例: test-runner-generator
+  バックグラウンド: true
+  プロンプト: |
+    ## Analyzer プロファイル
+    {Phase A で取得した該当種別のプロファイル全文}
+
+    ## テンプレートパス
+    references/agents/{種別}.md
+
+    ## ターゲットツール
+    {Claude Code / GitHub Copilot / OpenAI Codex}
+
+    ## 出力先
+    {配置先ディレクトリ}/{種別}.md
+
+    ## ツール変換ルール
+    tool-mapping.md のパス: references/tool-mapping.md
+
+    ## 並列レーン情報（Copilot の場合）
+    レーン数: {1〜4}
+    サフィックス: {a, b, c, d}（レーン数 > 1 の場合）
+```
+
+全 generator の完了を待つ。
 
 ### 配置先
 
@@ -140,19 +206,52 @@ Copilot では同名のサブエージェントを同時に複数起動できな
 | Copilot | `.github/agents/{name}.agent.md` |
 | Codex | `{name}/AGENTS.md` または ルート追記 |
 
+### 並列起動の例
+
+Step 2 で Standard プリセット（7エージェント）を選択した場合:
+
+```
+Phase A: analyzer × 7 を同時にバックグラウンド起動
+  - orchestrator-analyzer
+  - explorer-analyzer
+  - planner-analyzer
+  - implementer-analyzer
+  - test-runner-analyzer
+  - linter-analyzer
+  - committer-analyzer
+→ 全 analyzer の完了を待つ
+
+Phase B: generator × 7 を同時にバックグラウンド起動
+  - orchestrator-generator（orchestrator-analyzer のプロファイル + テンプレート）
+  - explorer-generator（explorer-analyzer のプロファイル + テンプレート）
+  - planner-generator（planner-analyzer のプロファイル + テンプレート）
+  - implementer-generator（implementer-analyzer のプロファイル + テンプレート）
+  - test-runner-generator（test-runner-analyzer のプロファイル + テンプレート）
+  - linter-generator（linter-analyzer のプロファイル + テンプレート）
+  - committer-generator（committer-analyzer のプロファイル + テンプレート）
+→ 全 generator の完了を待つ
+```
+
 ### 並列レーン対応（Copilot、レーン数 > 1 の場合）
 
-Step 1.5 で指定されたレーン数に応じて、複製対象の各エージェントを N 個生成する。
+generator に並列レーン情報を渡す。generator がレーン数分のファイルを生成する。
 
-例: レーン数 = 2 の場合
-- `implementer-a.agent.md`, `implementer-b.agent.md`
-- `test-runner-a.agent.md`, `test-runner-b.agent.md`
-- `linter-a.agent.md`, `linter-b.agent.md`
-- `code-reviewer-a.agent.md`, `code-reviewer-b.agent.md`
-- `debugger-a.agent.md`, `debugger-b.agent.md`
-- `refactorer-a.agent.md`, `refactorer-b.agent.md`
+例: レーン数 = 2 の場合、implementer-generator が以下を生成:
+- `implementer-a.agent.md`
+- `implementer-b.agent.md`
 
-各ファイルの内容は、`name:` フィールドと自己参照名のみ異なり、残りは元テンプレートと同一。
+### テンプレートの位置づけ
+
+**テンプレート（`references/agents/*.md`）は出力そのものではなく、構造のリファレンスである。**
+
+各 generator はテンプレートを Read して構造・必須セクションを把握した上で、analyzer のプロファイルに基づいてプロジェクト固有のエージェント定義を生成する。テンプレートをそのままコピーしてはならない。
+
+### ツール別の調整
+
+[tool-mapping.md](references/tool-mapping.md) の変換ルールは各 generator が自分で参照する:
+- 汎用操作名 → ツール固有名の対応表
+- サブエージェント呼び出しの変換方法
+- エージェント別の使用操作一覧
 
 ## Step 6: テンプレートの配置（必須）
 
@@ -247,3 +346,7 @@ chmod +x .orchestrator/scripts/init-session.sh
 - [ ] 入出力パスが一貫している
 - [ ] Copilot + 並列レーン時: 複製エージェントファイルが正しい数だけ生成されている
 - [ ] 複製エージェントの `name:` フィールドにサフィックスが付与されている
+- [ ] **エージェント定義がプロジェクト固有化されている**（テンプレートそのままではない）
+- [ ] **不要な言語セクションが除去されている**
+- [ ] **PM コマンドが具体値で記載されている**（検出テーブルではない）
+- [ ] **テスト・Lint コマンドが具体値で記載されている**
