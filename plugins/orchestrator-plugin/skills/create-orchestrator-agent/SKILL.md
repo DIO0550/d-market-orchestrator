@@ -11,7 +11,6 @@ description: "オーケストレーターフロー用のエージェント定義
 
 ```
 1. ターゲットツール確認 → Claude Code / Copilot / Codex
-1.5. 並列レーン数確認 → Copilot のみ、1〜4レーン（デフォルト: 1）
 2. エージェント選択 → カタログから必要なものを選ぶ
 2.5 & 5. 分析 → 生成（種別ごとの analyzer/generator ペアを並列起動）
   Phase A: {種別}-analyzer × N を並列起動 → 各プロファイル取得
@@ -33,46 +32,6 @@ description: "オーケストレーターフロー用のエージェント定義
 - [claude-code-format.md](references/claude-code-format.md)
 - [copilot-format.md](references/copilot-format.md)
 - [codex-format.md](references/codex-format.md)
-
-## Step 1.5: 並列レーン数確認（Copilot のみ）
-
-ターゲットが GitHub Copilot の場合、並列レーン数を確認する。Claude Code / Codex の場合はこのステップをスキップ。
-
-### 背景
-
-Copilot では同名のサブエージェントを同時に複数起動できない。Phase 2 で独立したタスクを並列実行するには、実行系エージェントの複製が必要。
-
-### 確認事項
-
-ユーザーに並列レーン数（1〜4）を確認:
-
-| レーン数 | 説明 | 生成されるエージェント |
-|---------|------|---------------------|
-| 1（デフォルト） | 逐次実行、複製なし | 通常の1セットのみ |
-| 2 | 2タスク並列 | 各実行エージェントに -a, -b サフィックス |
-| 3 | 3タスク並列 | 各実行エージェントに -a, -b, -c サフィックス |
-| 4 | 4タスク並列 | 各実行エージェントに -a, -b, -c, -d サフィックス |
-
-### 複製対象エージェント
-
-以下の6種類のみ複製する（制御系・計画系・Git系は複製しない）:
-
-| エージェント | 理由 |
-|-------------|------|
-| Implementer | タスクごとに独立した実装 |
-| Test Runner | タスク単位のテスト実行 |
-| Linter | タスク単位のLint実行 |
-| Code Reviewer | タスク単位のレビュー |
-| Debugger | タスク単位のデバッグ |
-| Refactorer | タスク単位のリファクタリング |
-
-### 複製ルール
-
-- ファイル名: `{agent-name}-{suffix}.agent.md`（例: `implementer-a.agent.md`）
-- フロントマターの `name:` を `{agent-name}-{suffix}` に変更（例: `name: implementer-a`）
-- 本文中の自己参照名を更新（例: 「あなたは **implementer-a** エージェントです」）
-- それ以外の内容（指示、tools、description 等）は元のエージェントと同一
-- レーン数が1の場合はサフィックスなしの通常エージェントのみ生成（現行動作）
 
 ## Step 2: エージェント選択
 
@@ -190,10 +149,6 @@ Step 2 で選択した各エージェント種別に対し、以下を並列実�
 
     ## ツール変換ルール
     tool-mapping.md のパス: references/tool-mapping.md
-
-    ## 並列レーン情報（Copilot の場合）
-    レーン数: {1〜4}
-    サフィックス: {a, b, c, d}（レーン数 > 1 の場合）
 ```
 
 全 generator の完了を待つ。
@@ -231,14 +186,6 @@ Phase B: generator × 7 を同時にバックグラウンド起動
   - committer-generator（committer-analyzer のプロファイル + テンプレート）
 → 全 generator の完了を待つ
 ```
-
-### 並列レーン対応（Copilot、レーン数 > 1 の場合）
-
-generator に並列レーン情報を渡す。generator がレーン数分のファイルを生成する。
-
-例: レーン数 = 2 の場合、implementer-generator が以下を生成:
-- `implementer-a.agent.md`
-- `implementer-b.agent.md`
 
 ### テンプレートの位置づけ
 
@@ -349,8 +296,6 @@ chmod +x .orchestrator/scripts/init-session.sh .orchestrator/scripts/init-task.s
 - [ ] 操作がツール固有の形式に変換されている
 - [ ] サブエージェント呼び出しが正しい形式
 - [ ] 入出力フォーマットが一貫している
-- [ ] Copilot + 並列レーン時: 複製エージェントファイルが正しい数だけ生成されている
-- [ ] 複製エージェントの `name:` フィールドにサフィックスが付与されている
 - [ ] **エージェント定義がプロジェクト固有化されている**（テンプレートそのままではない）
 - [ ] **不要な言語セクションが除去されている**
 - [ ] **PM コマンドが具体値で記載されている**（検出テーブルではない）

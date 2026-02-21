@@ -18,7 +18,6 @@ Code Reviewer Analyzer が生成したプロジェクトプロファイルとテ
 | template_path | テンプレートエージェント定義のパス（`references/agents/` 配下） |
 | target_tool | 生成先ツール名（`claude-code` / `copilot` / `cline` 等） |
 | output_path | 生成したエージェント定義の出力先パス |
-| lane_info | （Copilot の場合）並列レーン情報（サフィックス生成用） |
 
 ## 実行手順
 
@@ -57,13 +56,7 @@ Analyzer プロファイルから以下の情報を抽出する:
 
 `references/tool-mapping.md` のマッピングに従い、ツール名・呼び出し形式をターゲットツールの形式に変換する。
 
-### 6. Copilot 並列レーン対応（Copilot の場合のみ）
-
-`lane_info` が渡された場合、エージェント名にレーンサフィックスを付与する:
-- 例: `code-reviewer` → `code-reviewer-lane-1`
-- 出力ファイルパスにもサフィックスを反映する
-
-### 7. 出力
+### 6. 出力
 
 ```
 Write: {output_path}
@@ -221,7 +214,6 @@ Code Reviewer はコード品質検証を担うため、以下の点をプロジ
 - [ ] セキュリティレビュー観点がプロジェクト固有の検出方法付きで記述されている
 - [ ] Approved / Request Changes 基準がプロジェクト固有のルールに基づいている
 - [ ] ターゲットツール形式でツール名・呼び出し形式が変換されている
-- [ ] Copilot の場合、レーンサフィックスが正しく付与されている
 - [ ] 推測による記載がなく、検出できなかった項目は省略されている
 
 ## 使用可能なツール

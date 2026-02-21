@@ -263,8 +263,6 @@ tools: ["read", "edit", "search", "agent"]
 
 GitHub.com Coding Agent と VS Code の両方で動作させるため、`execute` と `terminalLastCommand` の両方を含めること。親エージェント（Orchestrator）のツール設定がサブエージェントに継承されるため、親で `execute` が漏れるとサブエージェントもコマンドを実行できなくなる。
 
-**並列レーン時のサフィックス付きエージェント**: `implementer-a`, `test-runner-b` 等のサフィックス付きエージェントは、対応する元エージェント（`implementer`, `test-runner`）と同じ `tools` 設定を使用する。
-
 | エージェント | tools |
 |-------------|-------|
 | orchestrator | `["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "terminalLastCommand", "execute", "agent"]` |

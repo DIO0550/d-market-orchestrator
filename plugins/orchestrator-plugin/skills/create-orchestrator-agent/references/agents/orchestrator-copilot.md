@@ -76,80 +76,40 @@ Copilot ではサブエージェントからサブエージェントを呼び出
    b. **rejected** → Implementer を再起動し Step 3 に戻る（最大2回リトライ）
 10. 全タスク完了まで繰り返し
 
-#### 並列レーンモード（レーン数 > 1 の場合）
+#### 並列実行モード
 
-並列レーンが設定されている場合、独立したタスク（blockedBy が空の pending タスク）を最大 N 個同時に処理する。各レーンには専用のサフィックス付きエージェントセット（-a, -b, -c, -d）を使用する。
-
-**Copilot の制約**: 同名のサブエージェントは同時に1つしか起動できない。そのため、並列実行にはサフィックス付きの別名エージェントが必要。
+独立したタスク（blockedBy が空の pending タスク）が複数ある場合、同名の **Implementer** を同時に複数起動して並列処理する。
 
 ##### 並列実行フロー
 
-**重要**: 各レーンは独立したパイプラインとして動作する。他のレーンの完了を待たずに、自レーンの次のステップに即座に進むこと。
+1. タスク一覧から依存関係のない pending タスクを複数取得
+2. 各タスクに対して **Implementer** をバックグラウンドで同時起動（同じ `agentName: implementer` を使用）
+3. 各 Implementer が完了次第、他の Implementer の完了を待たずに即座にそのタスクの次のステップ（Test Runner + Linter）を開始
+4. 全タスクのライフサイクルが完了するまで繰り返し
 
-###### 初期化
-
-1. タスク一覧から依存関係のない pending タスクを最大 N 個取得（N = レーン数）
-2. 各タスクにレーン（a, b, c, d）を割り当て、タスクディレクトリを初期化
-3. 全レーンの **Implementer-{suffix}** をバックグラウンド起動
-
-###### 各レーンのライフサイクル（レーンごとに独立実行）
-
-各レーンの Implementer が完了次第、**他のレーンの完了を待たずに**即座にそのレーンの次のステップを開始する:
+##### 並列起動の例（2タスク同時処理）
 
 ```
-Implementer-{suffix} 完了
-  ↓ 即座に
-Test Runner-{suffix} + Linter-{suffix} 並列起動
-  ↓ 両方完了
-  ├─ 失敗 → Implementer-{suffix} を再起動（リトライ）
-  └─ 成功 ↓
-Refactorer-{suffix} 起動
-  ↓ 完了
-Code Reviewer-{suffix} 起動
-  ↓ 完了
-Task Manager 起動（判定）
-  ├─ completed → タスク完了、レーンを解放
-  └─ rejected → Implementer-{suffix} を再起動
-```
-
-###### レーン解放後
-
-空いたレーンに次の pending タスクを割り当て、そのレーンのライフサイクルを再開する。全タスク完了まで繰り返し。
-
-##### 並列起動の例（2レーン: Implementer の同時起動）
-
-```
-# レーン A: タスク1を処理
+# タスク1を処理
 #tool:agent/runSubagent を使って実装処理をサブエージェントで実行してください。
 - prompt: |
     セッションパス: .orchestrator/{SESSION_ID}
     以下の1つのタスクのみを実装してください。
     - タスクID: 1
     - 件名: ...
-- description: "Implementer-A起動"
-- agentName: implementer-a
+- description: "Implementer起動(タスク1)"
+- agentName: implementer
 
-# レーン B: タスク2を同時に処理
+# タスク2を同時に処理
 #tool:agent/runSubagent を使って実装処理をサブエージェントで実行してください。
 - prompt: |
     セッションパス: .orchestrator/{SESSION_ID}
     以下の1つのタスクのみを実装してください。
     - タスクID: 2
     - 件名: ...
-- description: "Implementer-B起動"
-- agentName: implementer-b
+- description: "Implementer起動(タスク2)"
+- agentName: implementer
 ```
-
-→ Implementer-A が先に完了した場合、**Implementer-B の完了を待たずに** Test Runner-A + Linter-A を即座に起動する。
-
-##### レーン管理ルール
-
-- **各レーンは独立パイプライン** — 他のレーンの完了を絶対に待たない
-- レーンが完了したら、次の未着手タスクがあれば即座に再利用
-- あるレーンでリトライが発生しても、他のレーンには影響しない
-- Task Manager は1つのみ（判定は直列で実行、レーンごとに別インスタンスは不要）
-- 全レーンが完了（pending タスクなし）で Phase 2 終了
-- Phase 3 以降のテスト/Lint は通常のエージェント（サフィックスなし）を使用
 
 ### Phase 3: 検証
 
@@ -230,8 +190,6 @@ Task Manager 起動（判定）
 ## サブエージェント結果の活用（パス渡し方式）
 
 各サブエージェントはセッションフォルダ内の所定パスに結果を書き出す。Orchestrator はファイル内容をプロンプトに含めず、パスだけを渡す。各エージェントが自分で Read する。
-
-**並列レーン時の注意**: 結果のパスはタスクID（`task-{id}`）で区別されるため、レーンのサフィックスによるパスの変更は不要。implementer-a も implementer-b も同じ `{SESSION_DIR}/task-{taskId}/implementer/result-{round}.md` に書き出す。
 
 | パス | ソース | 渡し先 |
 |------|--------|--------|
