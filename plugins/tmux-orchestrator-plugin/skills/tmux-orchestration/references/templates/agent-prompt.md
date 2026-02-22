@@ -43,7 +43,25 @@
 - {出力先パス} に結果が書き出されていること
 - {その他の完了条件}
 
+## 完了手順（必須）
+
+すべての作業が完了したら、以下を **必ず** 実行してください:
+
+1. 状態値を `.done` ファイルに書き出す:
+   ```bash
+   echo "{状態値}" > {SESSION_DIR}/.status/{agent-name}.done
+   ```
+   - 判定を出すエージェント: 判定結果（例: `Approved`, `PASS`, `FAIL`）
+   - 判定を出さないエージェント: `done`
+
+2. 親に完了を通知する:
+   ```bash
+   bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {TMUX_SESSION}
+   ```
+
+> **注意**: この2つのコマンドを実行しないとオーケストレーターが完了を検知できません。
+
 ---
 
-> このファイルは tmux-agent-launch.sh によってCLIプロセスに渡されるプロンプトファイルのテンプレートです。
+> このファイルは tmux ペイン内で対話的に起動された Claude Code に初期プロンプトとして渡されるテンプレートです。
 > Orchestrator が各エージェント起動時にこのテンプレートを元にプロンプトファイルを生成します。

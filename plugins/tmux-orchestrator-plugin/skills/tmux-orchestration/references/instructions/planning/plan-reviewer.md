@@ -225,11 +225,13 @@ echo "Rejected" > {SESSION_DIR}/.status/plan-reviewer.done
 ### Claude Code の場合
 
 ```bash
-claude --print --prompt-file "{PROMPT_FILE}" --output-format text
+claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 ```
 
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - Bash ツールで tmux スクリプトを実行してスペシャリストをペインで起動
 - Read ツールでスペシャリストの結果ファイルを読み取り
+- 完了後は `.done` マーカーに状態値を書き出し `notify-parent.sh` で通知する
 
 ### OpenAI Codex の場合
 

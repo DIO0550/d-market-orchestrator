@@ -7,12 +7,12 @@ tmux-orchestrator が対応する AI CLI ツールのプロファイル一覧。
 | 項目 | Claude Code | OpenAI Codex | GitHub Copilot | 汎用 CLI |
 |------|-------------|--------------|----------------|---------|
 | コマンド | `claude` | `codex` | `gh copilot` | 任意 |
-| プロンプト方式 | `--prompt-file` / `-p` | 位置引数 / `--prompt` | `--prompt` / stdin | 設定による |
+| プロンプト方式 | 位置引数（初期プロンプト） | 位置引数 / `--prompt` | `--prompt` / stdin | 設定による |
 | 自律実行モード | `--dangerously-skip-permissions` | `--approval-mode full-auto` | N/A | 設定による |
 | ファイル編集 | 可能（Write/Edit ツール） | 可能（内蔵） | エディタ連携 | 設定による |
 | コマンド実行 | 可能（Bash ツール） | 可能（内蔵） | `execute` | 設定による |
 | エージェント管理 | 可能（Task ツール） | 不可 | 不可 | 不可 |
-| 出力モード | `--print`（標準出力） | `--quiet` | 対話的 | 設定による |
+| 実行モード | 対話的（tmuxペイン内） | `--quiet` | 対話的 | 設定による |
 
 ## Claude Code CLI
 
@@ -27,14 +27,14 @@ tmux-orchestrator が対応する AI CLI ツールのプロファイル一覧。
 ### 起動テンプレート
 
 ```bash
-# プロンプトファイルから実行（推奨）
-claude --print --prompt-file "{PROMPT_FILE}" --output-format text
+# プロンプトファイルから対話モードで実行（推奨）
+claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 
-# 直接プロンプト
-claude --print -p "{PROMPT}"
+# 直接プロンプト（対話モード）
+claude --dangerously-skip-permissions "{PROMPT}"
 
-# 許可設定付き（自律実行）
-claude --print --prompt-file "{PROMPT_FILE}" --dangerously-skip-permissions
+# 非対話モード（単発出力のみ、ファイル編集不可）
+claude -p "{PROMPT}"
 ```
 
 ### 能力
@@ -47,9 +47,11 @@ claude --print --prompt-file "{PROMPT_FILE}" --dangerously-skip-permissions
 
 ### tmux での使用上の注意
 
-- `--print` フラグで非対話モードにすること
+- `--dangerously-skip-permissions` で自律実行モードにすること
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - プロンプトファイルにセッションパスと出力先を明記すること
 - CLAUDE.md が作業ディレクトリに存在すればプロジェクトルールが自動適用される
+- エージェントは作業完了後、`.done` マーカーを書き出し `notify-parent.sh` で完了通知する
 
 ---
 

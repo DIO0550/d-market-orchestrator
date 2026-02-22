@@ -144,8 +144,9 @@ Co-Authored-By: {AI名} <noreply@example.com>"
 ## CLI別の注意事項
 
 ### Claude Code
-- `--print` モードで実行されるため、対話的な入力は不可
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - `Bash` ツールで git コマンドを実行する
+- 完了後は `.done` マーカーを書き出し `notify-parent.sh` で通知する
 
 ### OpenAI Codex
 - `--approval-mode full-auto` で自律実行される

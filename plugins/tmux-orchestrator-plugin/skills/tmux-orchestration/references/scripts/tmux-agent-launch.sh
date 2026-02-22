@@ -85,7 +85,7 @@ COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${ST
 
 case "$CLI_TOOL" in
   claude)
-    CMD="cd '${WORKING_DIR}' && claude --print --prompt-file '${PROMPT_FILE_ABS}' 2>&1; ${COMPLETION_SUFFIX}"
+    CMD="cd '${WORKING_DIR}' && claude --dangerously-skip-permissions \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
     # Codex はプロンプトを引数として受け取る

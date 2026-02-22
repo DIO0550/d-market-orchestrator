@@ -5,7 +5,10 @@ tmux-orchestrator のエージェント間同期メカニズム。
 ## 概要
 
 各エージェントの完了は `.status/` ディレクトリ内のマーカーファイルで管理される。
-`tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成した後、`notify-parent.sh` でオーケストレーターにロック付き通知を送信する。
+
+**対話モード（Claude Code）**: エージェント自身が作業完了時に `.done` ファイルに状態値を書き出し、`notify-parent.sh` を Bash ツールで実行してオーケストレーターに通知する。`tmux-agent-launch.sh` の COMPLETION_SUFFIX はフォールバック（プロセス終了時にまだ `.done` がなければデフォルト値を書き出す）として機能する。
+
+**非対話モード（Codex 等）**: `tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成した後、`notify-parent.sh` でオーケストレーターにロック付き通知を送信する。
 
 ## ファイル構成
 
@@ -40,11 +43,19 @@ tmux-orchestrator のエージェント間同期メカニズム。
 
 ### 書き出しタイミング
 
-エージェントは結果ファイルを出力した後、CLIプロセス終了直前に `.done` ファイルに状態値を書き出す:
+エージェントは結果ファイルを出力した後、`.done` ファイルに状態値を書き出し、親に完了を通知する:
 
 ```bash
-# エージェント内での書き出し例
+# エージェント内での書き出し例（対話モード: エージェント自身が実行）
 echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
+bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} plan-reviewer {TMUX_SESSION}
+```
+
+判定を出さないエージェント（デフォルト状態値 `done`）の場合:
+
+```bash
+echo "done" > {SESSION_DIR}/.status/{agent-name}.done
+bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {TMUX_SESSION}
 ```
 
 ### Orchestrator での読み取り

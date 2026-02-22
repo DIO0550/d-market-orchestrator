@@ -145,12 +145,13 @@ Task Manager から割り当てられた1つのタスクを実装する。
 ### Claude Code の場合
 
 ```bash
-claude --print --prompt-file "{PROMPT_FILE}" --output-format text
+claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 ```
 
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - Read, Edit, Write ツールで実装を実施
 - Bash ツールでテスト実行（TDDサイクル）
-- `--dangerously-skip-permissions` で自律実行を許可する場合あり
+- 完了後は `.done` マーカーを書き出し `notify-parent.sh` で通知する
 
 ### OpenAI Codex の場合
 

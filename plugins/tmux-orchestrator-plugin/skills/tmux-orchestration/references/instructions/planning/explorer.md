@@ -108,11 +108,12 @@ color: cyan
 ### Claude Code の場合
 
 ```bash
-claude --print --prompt-file "{PROMPT_FILE}" --output-format text
+claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 ```
 
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - Read, Glob, Grep ツールで探索を実施
-- `--print` で非対話モード
+- 完了後は `.done` マーカーを書き出し `notify-parent.sh` で通知する
 
 ### OpenAI Codex の場合
 

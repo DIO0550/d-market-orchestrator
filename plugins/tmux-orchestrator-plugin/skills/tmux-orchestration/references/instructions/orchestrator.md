@@ -181,12 +181,14 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 ### Claude Code の場合
 
 ```bash
-# --print で非対話モード、--prompt-file でプロンプトファイルを渡す
-claude --print --prompt-file "{PROMPT_FILE}" --output-format text
+# 対話モードで起動、プロンプトファイルの内容を初期プロンプトとして渡す
+claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 ```
 
-- `--print` フラグで非対話モードにすること
+- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
+- `--dangerously-skip-permissions` で権限確認なしの自律実行モードにすること
 - CLAUDE.md がプロジェクトルートにあれば自動適用される
+- エージェントは作業完了後、`.done` マーカーを書き出し `notify-parent.sh` で完了通知する
 
 ### OpenAI Codex の場合
 
