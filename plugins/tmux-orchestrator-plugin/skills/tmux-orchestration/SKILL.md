@@ -392,58 +392,21 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 │       └── result.md
 ```
 
-## Step 6: テンプレート・スクリプトの配置（必須）
+## Step 6: テンプレート・スクリプト・設定の配置（必須）
 
 エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して出力フォーマットを決定する。
-**このステップを省略するとエージェントが正しく動作しない。必ず全ファイルをコピーすること。**
+**このステップを省略するとエージェントが正しく動作しない。**
 
-まず出力先ディレクトリを作成:
+`/tmux-setup` コマンドを実行すると、以下が自動で配置される:
 
-```bash
-mkdir -p .orchestrator/templates
-mkdir -p .orchestrator/scripts
-```
+- `.orchestrator/templates/` — 11 テンプレートファイル
+- `.orchestrator/scripts/` — 10 スクリプトファイル（実行権限付き）
+- `.orchestrator/default-cli-assignments.json` — デフォルト CLI 割り当て設定
 
-### テンプレートの配置
+詳細: [tmux-orchestrator-setup スキル](../tmux-orchestrator-setup/SKILL.md)
 
-以下の11ファイルを **1つずつ Read → Write** でコピーする:
-
-| # | Read 対象（このスキルの参照ファイル） | Write 先 |
-|---|--------------------------------------|----------|
-| 1 | [exploration-result.md](references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
-| 2 | [implementation-plan.md](references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
-| 3 | [code-review-result.md](references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
-| 4 | [specialist-review-result.md](references/templates/specialist-review-result.md) | `.orchestrator/templates/specialist-review-result.md` |
-| 5 | [plan-specialist-review-result.md](references/templates/plan-specialist-review-result.md) | `.orchestrator/templates/plan-specialist-review-result.md` |
-| 6 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
-| 7 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
-| 8 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
-| 9 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
-| 10 | [agent-prompt.md](references/templates/agent-prompt.md) | `.orchestrator/templates/agent-prompt.md` |
-| 11 | [completion-marker.md](references/templates/completion-marker.md) | `.orchestrator/templates/completion-marker.md` |
-
-### スクリプトの配置
-
-以下の10ファイルを **Read → Write** でコピーする:
-
-| # | Read 対象（このスキルの参照ファイル） | Write 先 |
-|---|--------------------------------------|----------|
-| 1 | [tmux-session-create.sh](references/scripts/tmux-session-create.sh) | `.orchestrator/scripts/tmux-session-create.sh` |
-| 2 | [tmux-session-destroy.sh](references/scripts/tmux-session-destroy.sh) | `.orchestrator/scripts/tmux-session-destroy.sh` |
-| 3 | [tmux-agent-launch.sh](references/scripts/tmux-agent-launch.sh) | `.orchestrator/scripts/tmux-agent-launch.sh` |
-| 4 | [tmux-status-monitor.sh](references/scripts/tmux-status-monitor.sh) | `.orchestrator/scripts/tmux-status-monitor.sh` |
-| 5 | [tmux-result-collector.sh](references/scripts/tmux-result-collector.sh) | `.orchestrator/scripts/tmux-result-collector.sh` |
-| 6 | [wait-for-notification.sh](references/scripts/wait-for-notification.sh) | `.orchestrator/scripts/wait-for-notification.sh` |
-| 7 | [notify-parent.sh](references/scripts/notify-parent.sh) | `.orchestrator/scripts/notify-parent.sh` |
-| 8 | [check-dependencies.sh](references/scripts/check-dependencies.sh) | `.orchestrator/scripts/check-dependencies.sh` |
-| 9 | [init-session.sh](references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
-| 10 | [init-task.sh](references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
-
-コピー後、実行権限を付与:
-
-```bash
-chmod +x .orchestrator/scripts/*.sh
-```
+CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行う。
+詳細: [tmux-orchestrator-config スキル](../tmux-orchestrator-config/SKILL.md)
 
 ## チーム設定のカスタマイズ（任意）
 
