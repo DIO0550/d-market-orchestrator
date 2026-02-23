@@ -44,8 +44,8 @@ fi
 mkdir -p "${SESSION_DIR}/.status"
 
 # 常に新しいペインを作成し、tiled レイアウトで均等配置
-tmux split-window -t "${SESSION}:${WINDOW}" -v
-TARGET_PANE=$(tmux list-panes -t "${SESSION}:${WINDOW}" -F '#{pane_id}' | tail -1)
+# -d: フォーカスを移動しない  -P -F: 新ペインIDを直接取得
+TARGET_PANE=$(tmux split-window -t "${SESSION}:${WINDOW}" -v -d -P -F '#{pane_id}')
 tmux select-layout -t "${SESSION}:${WINDOW}" tiled
 
 # チーム設定からメンバー表示名を取得

@@ -53,13 +53,13 @@ Task Manager は Bash ツールで tmux スクリプトを実行してエージ�
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-implementer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 完了通知を待機
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "orch-{SESSION_ID}" 600
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "{TMUX_SESSION}" 600
 ```
 
 ### 完了監視
@@ -101,7 +101,7 @@ Implementer のプロンプトファイルを `.prompts/task-{taskId}-implemente
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-implementer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```
@@ -110,7 +110,7 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ```bash
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "orch-{SESSION_ID}" 600
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "{TMUX_SESSION}" 600
 ```
 
 ### 5. Test Runner + Linter の並列起動
@@ -120,21 +120,21 @@ Implementer の実装完了後、検証としてプロンプトを生成し並�
 ```bash
 # Test Runner 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-test-runner" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # Linter 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-linter" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 両方の完了通知を待機
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-test-runner" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-test-runner" "{TMUX_SESSION}" 300
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" "{TMUX_SESSION}" 300
 ```
 
 ### 6. 検証結果の確認（.done ファイルの状態値で判定）
@@ -161,7 +161,7 @@ Code Reviewer のプロンプトファイルを生成し起動:
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-code-reviewer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-code-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-code-reviewer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```
@@ -170,7 +170,7 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ```bash
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" "{TMUX_SESSION}" 300
 ```
 
 ### 9. レビュー結果に基づく分岐（.done ファイルの状態値で判定）
@@ -199,7 +199,7 @@ Refactorer のプロンプトを生成し起動:
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-refactorer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}" "task-{taskId}-refactorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-refactorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```

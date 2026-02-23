@@ -76,6 +76,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```bash
    bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}"
    ```
+   > `tmux-session-create.sh` は team-config.json の `team_name` に基づきセッション名を変換する（`orch-` → `{team_name}-`）。以降、作成された**実際のセッション名**を `{TMUX_SESSION}` として使用する。
 6. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
 ### Phase 1: 探索・計画・レビュー
@@ -84,14 +85,14 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 2. tmux でエージェントを起動:
    ```bash
    bash .orchestrator/scripts/tmux-agent-launch.sh \
-     "orch-{SESSION_ID}" "phase1" "explorer" "claude" \
+     "{TMUX_SESSION}" "phase1" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}"
    ```
 3. 完了を待機:
    ```bash
    bash .orchestrator/scripts/wait-for-notification.sh \
-     ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 300
+     ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 300
    ```
 4. **Planner** のプロンプトファイルを生成し、起動・完了待機
 5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動・完了待機（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
@@ -119,14 +120,14 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 3. 各タスクの **Task Manager** プロンプトを生成し、tmux ペインで起動（独立タスクは並列）:
    ```bash
    bash .orchestrator/scripts/tmux-agent-launch.sh \
-     "orch-{SESSION_ID}" "task-{taskId}" "task-{taskId}-task-manager" "claude" \
+     "{TMUX_SESSION}" "phase2" "task-{taskId}-task-manager" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
      ".orchestrator/{SESSION_ID}"
    ```
 4. 完了を待機:
    ```bash
    bash .orchestrator/scripts/wait-for-notification.sh \
-     ".orchestrator/{SESSION_ID}" "task-{taskId}-task-manager" "orch-{SESSION_ID}" 600
+     ".orchestrator/{SESSION_ID}" "task-{taskId}-task-manager" "{TMUX_SESSION}" 600
    ```
 5. 全タスク完了まで繰り返し（新たにブロック解除されたタスクがあれば 1 に戻る）
 

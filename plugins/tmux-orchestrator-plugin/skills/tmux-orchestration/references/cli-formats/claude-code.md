@@ -72,11 +72,11 @@ tmux版では Orchestrator が `Bash` ツールを使って tmux コマンドを
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 完了待ち
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 300
 ```

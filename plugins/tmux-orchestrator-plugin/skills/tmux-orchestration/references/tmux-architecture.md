@@ -5,7 +5,7 @@ tmux-orchestrator のセッション・ウィンドウ・ペイン構成の詳�
 ## セッション構成
 
 ```
-tmux session: "orch-{SESSION_ID}"
+tmux session: "{TMUX_SESSION}"  (デフォルト: "orch-{SESSION_ID}", team_name設定時: "{team_name}-{SESSION_ID}")
 │
 ├── window "control"       ← ステータスモニター表示
 │   └── pane 0: tmux-status-monitor.sh
@@ -71,7 +71,7 @@ tmux select-pane -t "$PANE_ID" -T "explorer"
 
 ```bash
 # セッション内の全ペインを表示
-tmux list-panes -t "orch-{SESSION_ID}" -a -F \
+tmux list-panes -t "{TMUX_SESSION}" -a -F \
   '#{window_name}:#{pane_index} #{pane_title} #{pane_current_command}'
 ```
 
@@ -191,7 +191,7 @@ tmux select-layout -t "orch-{SESSION_ID}:phase2" tiled
 
 ```bash
 # 全ペインの一覧
-tmux list-panes -t "orch-{SESSION_ID}" -a -F \
+tmux list-panes -t "{TMUX_SESSION}" -a -F \
   '#{window_name}:#{pane_index} [#{pane_title}] #{pane_current_command} #{pane_width}x#{pane_height}'
 
 # 特定ペインの出力をキャプチャ

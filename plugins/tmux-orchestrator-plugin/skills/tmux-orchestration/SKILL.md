@@ -107,34 +107,36 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 
 # 2. tmux ペインでエージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 3. 完了通知を待機
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 600
+  ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 600
 ```
+
+> `{TMUX_SESSION}` = `tmux-session-create.sh` が作成した実際のセッション名（例: `Alpha-0003-xxx`）
 
 ### 並列起動（依存関係なし）
 
 ```bash
 # test-runner と linter を同時起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "phase3" "test-runner" "claude" \
+  "{TMUX_SESSION}" "phase3" "test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "phase3" "linter" "claude" \
+  "{TMUX_SESSION}" "phase3" "linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 両方の完了通知を待機
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "test-runner" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "test-runner" "{TMUX_SESSION}" 300
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "linter" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "linter" "{TMUX_SESSION}" 300
 ```
 
 ### 依存関係のあるタスク起動
@@ -151,7 +153,7 @@ for TASK_ID in $READY_TASKS; do
 
   # プロンプト生成してtmux起動
   bash .orchestrator/scripts/tmux-agent-launch.sh \
-    "orch-{SESSION_ID}" "phase2" "task-${TASK_ID}-task-manager" "claude" \
+    "{TMUX_SESSION}" "phase2" "task-${TASK_ID}-task-manager" "claude" \
     ".orchestrator/{SESSION_ID}/.prompts/task-${TASK_ID}-task-manager-prompt.md" \
     ".orchestrator/{SESSION_ID}"
 done
@@ -162,8 +164,10 @@ done
 ### セッション作成
 
 ```bash
-# 1. tmuxセッションを作成
+# 1. tmuxセッションを作成（team-config.json があればプレフィックスが変わる）
 bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}"
+# → 出力例: tmux session 'Alpha-0003-xxx' created.
+# → 以降、この実際のセッション名を {TMUX_SESSION} として使用する
 
 # 2. セッションディレクトリを初期化
 bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
@@ -171,6 +175,8 @@ bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
 # 3. CLI割り当て設定を作成
 # .orchestrator/{SESSION_ID}/.config/cli-assignments.json に書き出す
 ```
+
+**重要**: `tmux-session-create.sh` は team-config.json の `team_name` に基づきセッション名を変換する（`orch-` → `{team_name}-`）。以降の全 tmux コマンドでは、作成された**実際のセッション名**を使用すること。
 
 ### セッション監視
 
@@ -183,7 +189,7 @@ bash .orchestrator/scripts/tmux-status-monitor.sh ".orchestrator/{SESSION_ID}"
 
 ```bash
 # tmuxセッションを破棄
-bash .orchestrator/scripts/tmux-session-destroy.sh "orch-{SESSION_ID}"
+bash .orchestrator/scripts/tmux-session-destroy.sh "{TMUX_SESSION}"
 ```
 
 ### 結果収集
@@ -417,15 +423,15 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 {
   "team_name": "Alpha",
   "members": {
-    "orchestrator": { "name": "Commander" },
-    "explorer": { "name": "Scout" },
-    "planner": { "name": "Architect" },
+    "orchestrator": { "name": "Commander", "personality": "冷静沈着なリーダー" },
+    "explorer": { "name": "Scout", "personality": "好奇心旺盛で何でも調べたがる" },
+    "planner": { "name": "Architect", "personality": "慎重で論理的" },
     "plan-reviewer": { "name": "Critic" },
     "plan-quality-reviewer": { "name": "Plan Stylist" },
     "plan-bug-reviewer": { "name": "Plan Detective" },
     "plan-performance-reviewer": { "name": "Plan Speedster" },
     "plan-security-reviewer": { "name": "Plan Sentinel" },
-    "implementer": { "name": "Builder" },
+    "implementer": { "name": "Builder", "personality": "職人気質で実直" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
     "quality-reviewer": { "name": "Stylist" },
@@ -435,13 +441,15 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
     "test-runner": { "name": "Tester" },
     "linter": { "name": "Checker" },
     "security-scanner": { "name": "Guardian" },
-    "debugger": { "name": "Medic" },
+    "debugger": { "name": "Medic", "personality": "冷静な分析家" },
     "refactorer": { "name": "Polisher" },
     "committer": { "name": "Recorder" },
     "pr-creator": { "name": "Messenger" }
   }
 }
 ```
+
+各メンバーのフィールドはすべて任意。`name` のみでも、`personality` 付きでも動作する。
 
 ### 反映される箇所
 
@@ -450,6 +458,7 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 | tmux セッション名 | `orch-{SESSION_ID}` | `{team_name}-{SESSION_ID}` |
 | tmux ペインタイトル | `explorer` | `Scout (explorer)` |
 | プロンプト冒頭 | `あなたは explorer エージェントです` | `あなたは **Alpha** の **Scout**（explorer）エージェントです` |
+| 性格・話し方 | なし | `あなたの性格・話し方: 好奇心旺盛で何でも調べたがる` |
 | ステータスモニター | `[RUNNING] explorer` | `[RUNNING] Scout (explorer)` |
 
 ### 影響しない箇所

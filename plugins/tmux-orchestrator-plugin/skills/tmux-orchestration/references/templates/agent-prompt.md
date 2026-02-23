@@ -8,11 +8,17 @@
 > あなたは **{team_name}** の **{member_name}**（{エージェント内部識別子}）エージェントです。
 > ```
 >
+> `personality` が設定されている場合、冒頭に続けて:
+> ```
+> あなたの性格・話し方: {personality}
+> ```
+>
 > team-config.json がない場合は従来通り `あなたは {エージェント名} エージェントです。` を使用。
 
 ## セッション情報
 
 - セッションパス: {SESSION_DIR}
+- tmux セッション名: {TMUX_SESSION}
 - 出力先: {SESSION_DIR}/{出力パス}
 
 ## タスク

@@ -213,15 +213,15 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
 {
   "team_name": "Alpha",
   "members": {
-    "orchestrator": { "name": "Commander" },
-    "explorer": { "name": "Scout" },
-    "planner": { "name": "Architect" },
+    "orchestrator": { "name": "Commander", "personality": "冷静沈着なリーダー" },
+    "explorer": { "name": "Scout", "personality": "好奇心旺盛で何でも調べたがる" },
+    "planner": { "name": "Architect", "personality": "慎重で論理的" },
     "plan-reviewer": { "name": "Critic" },
     "plan-quality-reviewer": { "name": "Plan Stylist" },
     "plan-bug-reviewer": { "name": "Plan Detective" },
     "plan-performance-reviewer": { "name": "Plan Speedster" },
     "plan-security-reviewer": { "name": "Plan Sentinel" },
-    "implementer": { "name": "Builder" },
+    "implementer": { "name": "Builder", "personality": "職人気質で実直" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
     "quality-reviewer": { "name": "Stylist" },
@@ -231,7 +231,7 @@ Orchestrator のコンテキストウィンドウ肥大化を防ぐため、以�
     "test-runner": { "name": "Tester" },
     "linter": { "name": "Checker" },
     "security-scanner": { "name": "Guardian" },
-    "debugger": { "name": "Medic" },
+    "debugger": { "name": "Medic", "personality": "冷静な分析家" },
     "refactorer": { "name": "Polisher" },
     "committer": { "name": "Recorder" },
     "pr-creator": { "name": "Messenger" }

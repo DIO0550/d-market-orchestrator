@@ -45,13 +45,13 @@ Lead Reviewer は Bash ツールで tmux スクリプトを実行してスペシ
 ```bash
 # スペシャリスト起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "plan-review" "plan-quality-reviewer" "claude" \
+  "{TMUX_SESSION}" "plan-review" "plan-quality-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/plan-quality-reviewer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # 完了通知を待機
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "plan-quality-reviewer" "orch-{SESSION_ID}" 300
+  ".orchestrator/{SESSION_ID}" "plan-quality-reviewer" "{TMUX_SESSION}" 300
 ```
 
 ### 完了監視
@@ -130,25 +130,25 @@ rm -f {SESSION_DIR}/.status/plan-security-reviewer.exit
 ```bash
 # Quality Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "plan-review" "plan-quality-reviewer" "claude" \
+  "{TMUX_SESSION}" "plan-review" "plan-quality-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-quality-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Bug Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "plan-review" "plan-bug-reviewer" "claude" \
+  "{TMUX_SESSION}" "plan-review" "plan-bug-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-bug-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Performance Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "plan-review" "plan-performance-reviewer" "claude" \
+  "{TMUX_SESSION}" "plan-review" "plan-performance-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-performance-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Security Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-{SESSION_ID}" "plan-review" "plan-security-reviewer" "claude" \
+  "{TMUX_SESSION}" "plan-review" "plan-security-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-security-reviewer-prompt.md" \
   "{SESSION_DIR}"
 ```
@@ -157,16 +157,16 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ```bash
 bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-quality-reviewer" "orch-{SESSION_ID}" 300
+  "{SESSION_DIR}" "plan-quality-reviewer" "{TMUX_SESSION}" 300
 
 bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-bug-reviewer" "orch-{SESSION_ID}" 300
+  "{SESSION_DIR}" "plan-bug-reviewer" "{TMUX_SESSION}" 300
 
 bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-performance-reviewer" "orch-{SESSION_ID}" 300
+  "{SESSION_DIR}" "plan-performance-reviewer" "{TMUX_SESSION}" 300
 
 bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-security-reviewer" "orch-{SESSION_ID}" 300
+  "{SESSION_DIR}" "plan-security-reviewer" "{TMUX_SESSION}" 300
 ```
 
 **スペシャリスト失敗時**: `wait-for-notification.sh` がエラー（exit code 2）を返した場合は、そのスペシャリストの結果なしで統合レビューを続行する。失敗したスペシャリストは統合結果に記録する。

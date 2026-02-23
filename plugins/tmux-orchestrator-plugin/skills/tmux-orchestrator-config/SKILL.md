@@ -101,7 +101,10 @@ tmux オーケストレーターの CLI 割り当てやチーム設定を対話�
 2. メンバー表示名をカスタマイズするか確認
    - **する場合**: 各エージェントの表示名を対話的に設定
    - **しない場合**: チーム名のみ設定
-3. 設定ファイルを書き出す
+3. 性格を設定するか確認（任意）
+   - **する場合**: 主要エージェントの `personality` を対話的に設定
+   - **しない場合**: スキップ（デフォルト動作に影響なし）
+4. 設定ファイルを書き出す
 
 #### 設定例
 
@@ -109,22 +112,31 @@ tmux オーケストレーターの CLI 割り当てやチーム設定を対話�
 {
   "team_name": "Alpha",
   "members": {
-    "orchestrator": { "name": "Commander" },
-    "explorer": { "name": "Scout" },
-    "planner": { "name": "Architect" },
+    "orchestrator": { "name": "Commander", "personality": "冷静沈着なリーダー" },
+    "explorer": { "name": "Scout", "personality": "好奇心旺盛で何でも調べたがる" },
+    "planner": { "name": "Architect", "personality": "慎重で論理的" },
     "plan-reviewer": { "name": "Critic" },
-    "implementer": { "name": "Builder" },
+    "implementer": { "name": "Builder", "personality": "職人気質で実直" },
     "task-manager": { "name": "Captain" },
     "code-reviewer": { "name": "Inspector" },
     "test-runner": { "name": "Tester" },
     "linter": { "name": "Checker" },
-    "debugger": { "name": "Medic" },
+    "debugger": { "name": "Medic", "personality": "冷静な分析家" },
     "refactorer": { "name": "Polisher" },
     "committer": { "name": "Recorder" },
     "pr-creator": { "name": "Messenger" }
   }
 }
 ```
+
+各メンバーのフィールドはすべて任意。`name` のみでも、`personality` 付きでも動作する。
+
+#### フィールド
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `name` | string | No | エージェントの表示名 |
+| `personality` | string | No | 性格・話し方の説明。プロンプト冒頭に注入される |
 
 #### 反映される箇所
 
@@ -133,6 +145,7 @@ tmux オーケストレーターの CLI 割り当てやチーム設定を対話�
 | tmux セッション名 | `orch-{SESSION_ID}` | `{team_name}-{SESSION_ID}` |
 | tmux ペインタイトル | `explorer` | `Scout (explorer)` |
 | プロンプト冒頭 | `あなたは explorer エージェントです` | `あなたは **Alpha** の **Scout**（explorer）エージェントです` |
+| 性格・話し方 | なし | `あなたの性格・話し方: 好奇心旺盛で何でも調べたがる` |
 | ステータスモニター | `[RUNNING] explorer` | `[RUNNING] Scout (explorer)` |
 
 #### 影響しない箇所

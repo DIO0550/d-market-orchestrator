@@ -16,6 +16,8 @@ tmux セッションとウィンドウを作成する。
 
 ```bash
 bash .orchestrator/scripts/tmux-session-create.sh "orch-0001-user-auth"
+# → team-config.json があれば "Alpha-0001-user-auth" のように変換される
+# → 以降、実際のセッション名を {TMUX_SESSION} として使用
 ```
 
 **前提条件**:
@@ -23,7 +25,7 @@ bash .orchestrator/scripts/tmux-session-create.sh "orch-0001-user-auth"
 - 同名のセッションが存在しないこと（存在する場合は自動で破棄・再作成）
 
 **結果**:
-- tmux セッション `orch-0001-user-auth` が作成
+- tmux セッションが作成（team_name があればプレフィックスが変換される）
 - ウィンドウ: control, phase1, phase2, phase3, phase4
 
 ### 2. 初期化（Initialization）
@@ -46,7 +48,7 @@ Orchestrator がエージェントを tmux ペインに順次起動する。
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "orch-0001-user-auth" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
   ".orchestrator/0001-user-auth/.prompts/explorer-prompt.md" \
   ".orchestrator/0001-user-auth"
 ```
@@ -58,7 +60,7 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 ```bash
 # エージェント完了通知の待機（イベント駆動、ポーリングなし）
 bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/0001-user-auth" "orch-0001-user-auth" 600
+  ".orchestrator/0001-user-auth" "{TMUX_SESSION}" 600
 
 # リアルタイムモニター（control ウィンドウ表示用）
 bash .orchestrator/scripts/tmux-status-monitor.sh \
@@ -82,7 +84,7 @@ bash .orchestrator/scripts/tmux-result-collector.sh \
 tmux セッションを破棄する。セッションディレクトリは保持される（履歴として）。
 
 ```bash
-bash .orchestrator/scripts/tmux-session-destroy.sh "orch-0001-user-auth"
+bash .orchestrator/scripts/tmux-session-destroy.sh "{TMUX_SESSION}"
 ```
 
 ## セッション ID の採番
