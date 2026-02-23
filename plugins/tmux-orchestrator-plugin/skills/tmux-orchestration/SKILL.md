@@ -416,7 +416,7 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 `/tmux-setup` コマンドを実行すると、以下が自動で配置される:
 
 - `.orchestrator/templates/` — 11 テンプレートファイル
-- `.orchestrator/scripts/` — 10 スクリプトファイル（実行権限付き）
+- `.orchestrator/scripts/` — 9 スクリプトファイル（実行権限付き）
 - `.orchestrator/default-cli-assignments.json` — デフォルト CLI 割り当て設定
 
 詳細: [tmux-orchestrator-setup スキル](../tmux-orchestrator-setup/SKILL.md)
@@ -481,7 +481,7 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 ## 生成後チェックリスト
 
 - [ ] `.orchestrator/templates/` に11ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に10スクリプトが配置されている
+- [ ] `.orchestrator/scripts/` に9スクリプトが配置されている
 - [ ] 全スクリプトに実行権限が付与されている
 - [ ] ターゲットCLIの形式に従っている
 - [ ] description にトリガー条件が含まれている

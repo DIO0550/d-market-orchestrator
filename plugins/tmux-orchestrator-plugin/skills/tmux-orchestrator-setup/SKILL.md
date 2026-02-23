@@ -51,7 +51,7 @@ mkdir -p .orchestrator/scripts
 
 ### Step 4: スクリプトの配置
 
-以下の 10 ファイルを **Read → Write** でコピーする:
+以下の 9 ファイルを **Read → Write** でコピーする:
 
 | # | Read 対象（このスキルの参照ファイル） | Write 先 |
 |---|--------------------------------------|----------|
@@ -60,11 +60,10 @@ mkdir -p .orchestrator/scripts
 | 3 | [tmux-agent-launch.sh](../tmux-orchestration/references/scripts/tmux-agent-launch.sh) | `.orchestrator/scripts/tmux-agent-launch.sh` |
 | 4 | [tmux-status-monitor.sh](../tmux-orchestration/references/scripts/tmux-status-monitor.sh) | `.orchestrator/scripts/tmux-status-monitor.sh` |
 | 5 | [tmux-result-collector.sh](../tmux-orchestration/references/scripts/tmux-result-collector.sh) | `.orchestrator/scripts/tmux-result-collector.sh` |
-| 6 | [wait-for-notification.sh](../tmux-orchestration/references/scripts/wait-for-notification.sh) | `.orchestrator/scripts/wait-for-notification.sh` |
-| 7 | [notify-parent.sh](../tmux-orchestration/references/scripts/notify-parent.sh) | `.orchestrator/scripts/notify-parent.sh` |
-| 8 | [check-dependencies.sh](../tmux-orchestration/references/scripts/check-dependencies.sh) | `.orchestrator/scripts/check-dependencies.sh` |
-| 9 | [init-session.sh](../tmux-orchestration/references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
-| 10 | [init-task.sh](../tmux-orchestration/references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
+| 6 | [notify-parent.sh](../tmux-orchestration/references/scripts/notify-parent.sh) | `.orchestrator/scripts/notify-parent.sh` |
+| 7 | [check-dependencies.sh](../tmux-orchestration/references/scripts/check-dependencies.sh) | `.orchestrator/scripts/check-dependencies.sh` |
+| 8 | [init-session.sh](../tmux-orchestration/references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
+| 9 | [init-task.sh](../tmux-orchestration/references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
 
 コピー後、実行権限を付与:
 
@@ -77,7 +76,7 @@ chmod +x .orchestrator/scripts/*.sh
 以下のチェックリストを確認して結果を報告:
 
 - [ ] `.orchestrator/templates/` に 11 ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に 10 スクリプトが配置されている
+- [ ] `.orchestrator/scripts/` に 9 スクリプトが配置されている
 - [ ] 全スクリプトに実行権限が付与されている
 
 完了後、以下を案内:
