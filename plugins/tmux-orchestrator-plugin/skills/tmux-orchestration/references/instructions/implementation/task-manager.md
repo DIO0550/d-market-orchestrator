@@ -53,7 +53,7 @@ Task Manager は Bash ツールで tmux スクリプトを実行してエージ�
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-implementer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -101,7 +101,7 @@ Implementer のプロンプトファイルを `.prompts/task-{taskId}-implemente
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-implementer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```
@@ -120,13 +120,13 @@ Implementer の実装完了後、検証としてプロンプトを生成し並�
 ```bash
 # Test Runner 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-test-runner" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 # Linter 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-linter" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -161,7 +161,7 @@ Code Reviewer のプロンプトファイルを生成し起動:
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-code-reviewer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-code-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-code-reviewer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```
@@ -199,7 +199,7 @@ Refactorer のプロンプトを生成し起動:
 
 ```bash
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "task-{taskId}-refactorer" "claude" \
+  "{TMUX_SESSION}" "task-{taskId}-refactorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-refactorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 ```

@@ -1,15 +1,13 @@
 #!/bin/bash
 # tmux-session-create.sh
-# オーケストレーション用のウィンドウを作成する
+# オーケストレーション用の tmux セッション名を返す
 #
 # 使用方法:
 #   tmux-session-create.sh <session-name> [team-config-path]
 #
 # 動作:
-#   tmux 内で実行 → 現在のセッションに "agents" ウィンドウを1つ追加
-#   tmux 外で実行 → 新しいセッションを作成し "agents" ウィンドウを追加
-#
-# エージェントは全て "agents" ウィンドウにペイン分割（tiled レイアウト）で起動される
+#   tmux 内で実行 → 現在のセッション名を返す（ウィンドウ作成不要）
+#   tmux 外で実行 → 新しいセッションを作成しセッション名を返す
 
 set -euo pipefail
 
@@ -37,21 +35,12 @@ if ! command -v tmux &>/dev/null; then
   exit 1
 fi
 
-AGENTS_WINDOW="agents"
-
 if [ -n "${TMUX:-}" ]; then
-  # ===== tmux 内: 現在のセッションに agents ウィンドウを追加 =====
+  # ===== tmux 内: 現在のセッション名を返す =====
   CURRENT_SESSION=$(tmux display-message -p '#{session_name}')
 
-  if ! tmux list-windows -t "$CURRENT_SESSION" -F '#{window_name}' | grep -qx "$AGENTS_WINDOW"; then
-    tmux new-window -t "$CURRENT_SESSION" -n "$AGENTS_WINDOW"
-  fi
-
-  # 元のウィンドウに戻る（オーケストレーターが動作中のウィンドウ）
-  tmux last-window -t "$CURRENT_SESSION"
-
   echo "TMUX_SESSION=${CURRENT_SESSION}"
-  echo "Window '${AGENTS_WINDOW}' added to session '${CURRENT_SESSION}'."
+  echo "Using current session '${CURRENT_SESSION}'."
 
 else
   # ===== tmux 外: 新しいセッションを作成 =====
@@ -60,10 +49,10 @@ else
     tmux kill-session -t "$SESSION_NAME"
   fi
 
-  # セッション作成（最初のウィンドウを agents にする）
-  tmux new-session -d -s "$SESSION_NAME" -n "$AGENTS_WINDOW"
+  # セッション作成（デフォルトウィンドウ）
+  tmux new-session -d -s "$SESSION_NAME"
 
   echo "TMUX_SESSION=${SESSION_NAME}"
-  echo "tmux session '$SESSION_NAME' created with window '${AGENTS_WINDOW}'."
+  echo "tmux session '$SESSION_NAME' created."
   echo "Attach with: tmux attach -t $SESSION_NAME"
 fi

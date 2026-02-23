@@ -9,10 +9,9 @@ tmux session: "{TMUX_SESSION}"
   tmux 内で実行: 現在のセッションをそのまま使用（新セッション不要）
   tmux 外で実行: "orch-{SESSION_ID}" (team_name設定時: "{team_name}-{SESSION_ID}")
 │
-├── window (orchestrator)  ← オーケストレーターが動作中のウィンドウ（tmux内実行時）
-│   └── pane 0: orchestrator (Claude Code)
+├── pane 0: orchestrator (Claude Code)  ← オーケストレーターが動作中のペイン
 │
-└── window "agents"        ← 全エージェント（tiled レイアウト）
+└── 各エージェントペイン（tiled レイアウト）
     ├── pane: explorer
     ├── pane: planner
     ├── pane: plan-reviewer
@@ -31,9 +30,9 @@ tmux session: "{TMUX_SESSION}"
 Orchestrator がステータスモニターを表示するための専用ウィンドウ。
 `tmux-status-monitor.sh` を実行して全エージェントの進捗をリアルタイム表示する。
 
-### agents ウィンドウ
+### エージェントペイン
 
-全エージェントの実行ウィンドウ。`tmux-agent-launch.sh` がペインを自動作成してエージェントを起動する。
+`tmux-agent-launch.sh` がペインを自動作成してエージェントを起動する。
 
 - 最初のエージェントは既存の空ペインを再利用
 - 2つ目以降は `split-window` で新しいペインを追加
@@ -43,8 +42,8 @@ Orchestrator がステータスモニターを表示するための専用ウィ�
 ### サブエージェントパターン
 
 Task Manager や Code Reviewer (Lead) は自身もエージェントを tmux ペインで起動するミニオーケストレーターとして動作する。
-Code Reviewer (Lead) は agents ウィンドウ内で4つのスペシャリストレビュアー（quality/bug/performance/security）を並列起動する。
-スペシャリストは既にプロセスが完了した他のペイン（implementer, test-runner 等）と同じウィンドウに追加される。
+Code Reviewer (Lead) は同セッション内で4つのスペシャリストレビュアー（quality/bug/performance/security）を並列起動する。
+スペシャリストは既にプロセスが完了した他のペイン（implementer, test-runner 等）と同じセッションに追加される。
 
 ## ペイン管理
 
@@ -52,7 +51,7 @@ Code Reviewer (Lead) は agents ウィンドウ内で4つのスペシャリス�
 
 ```bash
 # 新しいペインを作成してエージェントを起動
-tmux split-window -t "orch-{SESSION_ID}:agents" -v
+tmux split-window -t "{TMUX_SESSION}" -v
 ```
 
 ### ペインの識別
@@ -109,7 +108,7 @@ tmux のペインは画面サイズに制限されるため、同時起動する
 
 ステータスモニターが全エージェントの進捗を3秒間隔で更新表示。
 
-### agents ウィンドウ（全エージェント）
+### エージェントペインレイアウト（全エージェント）
 
 ```
 ┌──────────────────┬──────────────────┐
@@ -137,10 +136,10 @@ tmux のペインは画面サイズに制限されるため、同時起動する
 
 ```bash
 # 均等分割（縦）
-tmux select-layout -t "orch-{SESSION_ID}:agents" even-vertical
+tmux select-layout -t "{TMUX_SESSION}" even-vertical
 
 # タイル状（2x2グリッド）
-tmux select-layout -t "orch-{SESSION_ID}:agents" tiled
+tmux select-layout -t "{TMUX_SESSION}" tiled
 ```
 
 ### ペインサイズの制限
@@ -157,8 +156,8 @@ tmux list-panes -t "{TMUX_SESSION}" -a -F \
   '#{window_name}:#{pane_index} [#{pane_title}] #{pane_current_command} #{pane_width}x#{pane_height}'
 
 # 特定ペインの出力をキャプチャ
-tmux capture-pane -t "orch-{SESSION_ID}:agents.0" -p
+tmux capture-pane -t "{TMUX_SESSION}.0" -p
 
 # ペインを全画面表示
-tmux resize-pane -t "orch-{SESSION_ID}:agents.0" -Z
+tmux resize-pane -t "{TMUX_SESSION}.0" -Z
 ```

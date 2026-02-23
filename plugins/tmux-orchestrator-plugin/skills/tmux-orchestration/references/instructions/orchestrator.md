@@ -72,12 +72,12 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    ```bash
    bash .orchestrator/scripts/init-session.sh .orchestrator/{SESSION_ID}
    ```
-5. ウィンドウを作成し、セッション名を取得:
+5. セッション名を取得:
    ```bash
    OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
    TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
    ```
-   > tmux 内で実行した場合は現在のセッションにウィンドウを追加し、そのセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
+   > tmux 内で実行した場合は現在のセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
 6. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
 ### Phase 1: 探索・計画・レビュー
@@ -86,7 +86,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 2. tmux でエージェントを起動:
    ```bash
    bash .orchestrator/scripts/tmux-agent-launch.sh \
-     "{TMUX_SESSION}" "agents" "explorer" "claude" \
+     "{TMUX_SESSION}" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}"
    ```
@@ -121,7 +121,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 3. 各タスクの **Task Manager** プロンプトを生成し、tmux ペインで起動（独立タスクは並列）:
    ```bash
    bash .orchestrator/scripts/tmux-agent-launch.sh \
-     "{TMUX_SESSION}" "agents" "task-{taskId}-task-manager" "claude" \
+     "{TMUX_SESSION}" "task-{taskId}-task-manager" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
      ".orchestrator/{SESSION_ID}"
    ```

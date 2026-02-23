@@ -3,16 +3,18 @@
 # 指定されたCLIツールでエージェントをtmuxペインに起動する
 #
 # 使用方法:
-#   tmux-agent-launch.sh <session> <window> <agent-name> <cli-tool> <prompt-file> <session-dir> [working-dir]
+#   tmux-agent-launch.sh <session> <agent-name> <cli-tool> <prompt-file> <session-dir> [working-dir]
 #
 # 引数:
 #   session     - tmuxセッション名（通知チャネル名にも使用）
-#   window      - tmuxウィンドウ名（通常 "agents"）
 #   agent-name  - エージェント名（explorer, planner, etc.）
 #   cli-tool    - CLIツール名（claude, codex, copilot, またはカスタムコマンド）
 #   prompt-file - プロンプトファイルのパス
 #   session-dir - セッションディレクトリ（.orchestrator/{SESSION_ID}）
 #   working-dir - 作業ディレクトリ（省略時はカレントディレクトリ）
+#
+# 動作:
+#   セッションの現在アクティブなウィンドウでペインを分割し、エージェントを起動する
 #
 # 完了時の動作:
 #   1. {session-dir}/.status/{agent-name}.done - 完了マーカー作成
@@ -22,15 +24,14 @@
 set -euo pipefail
 
 SESSION="${1:-}"
-WINDOW="${2:-}"
-AGENT_NAME="${3:-}"
-CLI_TOOL="${4:-}"
-PROMPT_FILE="${5:-}"
-SESSION_DIR="${6:-}"
-WORKING_DIR="${7:-$(pwd)}"
+AGENT_NAME="${2:-}"
+CLI_TOOL="${3:-}"
+PROMPT_FILE="${4:-}"
+SESSION_DIR="${5:-}"
+WORKING_DIR="${6:-$(pwd)}"
 
-if [ -z "$SESSION" ] || [ -z "$WINDOW" ] || [ -z "$AGENT_NAME" ] || [ -z "$CLI_TOOL" ] || [ -z "$PROMPT_FILE" ] || [ -z "$SESSION_DIR" ]; then
-  echo "Usage: tmux-agent-launch.sh <session> <window> <agent-name> <cli-tool> <prompt-file> <session-dir> [working-dir]"
+if [ -z "$SESSION" ] || [ -z "$AGENT_NAME" ] || [ -z "$CLI_TOOL" ] || [ -z "$PROMPT_FILE" ] || [ -z "$SESSION_DIR" ]; then
+  echo "Usage: tmux-agent-launch.sh <session> <agent-name> <cli-tool> <prompt-file> <session-dir> [working-dir]"
   exit 1
 fi
 
@@ -43,10 +44,10 @@ fi
 # ステータスディレクトリの確認
 mkdir -p "${SESSION_DIR}/.status"
 
-# 常に新しいペインを作成し、tiled レイアウトで均等配置
+# 現在のウィンドウでペインを分割し、tiled レイアウトで均等配置
 # -d: フォーカスを移動しない  -P -F: 新ペインIDを直接取得
-TARGET_PANE=$(tmux split-window -t "${SESSION}:${WINDOW}" -v -d -P -F '#{pane_id}')
-tmux select-layout -t "${SESSION}:${WINDOW}" tiled
+TARGET_PANE=$(tmux split-window -t "${SESSION}" -v -d -P -F '#{pane_id}')
+tmux select-layout -t "${SESSION}" tiled
 
 # チーム設定からメンバー表示名を取得
 DISPLAY_NAME="$AGENT_NAME"
@@ -75,15 +76,12 @@ case "$CLI_TOOL" in
     CMD="cd '${WORKING_DIR}' && claude --dangerously-skip-permissions \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
-    # Codex はプロンプトを引数として受け取る
     CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   copilot)
-    # GitHub Copilot CLI
     CMD="cd '${WORKING_DIR}' && cat '${PROMPT_FILE_ABS}' | gh copilot suggest -t shell 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   *)
-    # 汎用CLI: コマンドをそのまま使用
     CMD="cd '${WORKING_DIR}' && ${CLI_TOOL} '${PROMPT_FILE_ABS}' 2>&1; ${COMPLETION_SUFFIX}"
     ;;
 esac
@@ -91,6 +89,6 @@ esac
 # ペインにコマンドを送信
 tmux send-keys -t "$TARGET_PANE" "$CMD" C-m
 
-echo "Agent '${AGENT_NAME}' launched in ${SESSION}:${WINDOW} using ${CLI_TOOL}"
+echo "Agent '${AGENT_NAME}' launched in ${SESSION} using ${CLI_TOOL}"
 echo "Prompt: ${PROMPT_FILE}"
 echo "Completion marker: ${SESSION_DIR}/.status/${AGENT_NAME}.done"

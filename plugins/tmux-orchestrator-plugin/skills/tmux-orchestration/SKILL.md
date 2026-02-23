@@ -107,7 +107,7 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 
 # 2. tmux ペインでエージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "explorer" "claude" \
+  "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -123,12 +123,12 @@ bash .orchestrator/scripts/wait-for-notification.sh \
 ```bash
 # test-runner と linter を同時起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "test-runner" "claude" \
+  "{TMUX_SESSION}" "test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "agents" "linter" "claude" \
+  "{TMUX_SESSION}" "linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -153,7 +153,7 @@ for TASK_ID in $READY_TASKS; do
 
   # プロンプト生成してtmux起動
   bash .orchestrator/scripts/tmux-agent-launch.sh \
-    "{TMUX_SESSION}" "agents" "task-${TASK_ID}-task-manager" "claude" \
+    "{TMUX_SESSION}" "task-${TASK_ID}-task-manager" "claude" \
     ".orchestrator/{SESSION_ID}/.prompts/task-${TASK_ID}-task-manager-prompt.md" \
     ".orchestrator/{SESSION_ID}"
 done
@@ -167,8 +167,8 @@ done
 # 1. セッションディレクトリを初期化
 bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
 
-# 2. ウィンドウを作成し、実際のセッション名を取得
-#    tmux 内: 現在のセッションにウィンドウを追加（新セッション不要）
+# 2. セッション名を取得
+#    tmux 内: 現在のセッション名を返す（新セッション不要）
 #    tmux 外: 新しいセッションを作成
 OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
 TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
@@ -177,7 +177,7 @@ TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 # .orchestrator/{SESSION_ID}/.config/cli-assignments.json に書き出す
 ```
 
-**重要**: `tmux-session-create.sh` の出力から `TMUX_SESSION=` の値を取得し、以降の全 tmux コマンドでこの値を使用すること。tmux 内で実行した場合は現在のセッション名、tmux 外では新規作成されたセッション名が返される。
+**重要**: `tmux-session-create.sh` の出力から `TMUX_SESSION=` の値を取得し、以降の全 tmux コマンドでこの値を使用すること。tmux 内では現在のセッション名、tmux 外では新規作成されたセッション名が返される。
 
 ### セッション監視
 
