@@ -45,7 +45,7 @@ Lead Reviewer は Bash ツールで tmux スクリプトを実行してスペシ
 ```bash
 # スペシャリスト起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "plan-review" "plan-quality-reviewer" "claude" \
+  "{TMUX_SESSION}" "agents" "plan-quality-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/plan-quality-reviewer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -130,25 +130,25 @@ rm -f {SESSION_DIR}/.status/plan-security-reviewer.exit
 ```bash
 # Quality Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "plan-review" "plan-quality-reviewer" "claude" \
+  "{TMUX_SESSION}" "agents" "plan-quality-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-quality-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Bug Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "plan-review" "plan-bug-reviewer" "claude" \
+  "{TMUX_SESSION}" "agents" "plan-bug-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-bug-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Performance Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "plan-review" "plan-performance-reviewer" "claude" \
+  "{TMUX_SESSION}" "agents" "plan-performance-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-performance-reviewer-prompt.md" \
   "{SESSION_DIR}"
 
 # Security Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "plan-review" "plan-security-reviewer" "claude" \
+  "{TMUX_SESSION}" "agents" "plan-security-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-security-reviewer-prompt.md" \
   "{SESSION_DIR}"
 ```

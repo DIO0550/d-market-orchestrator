@@ -7,7 +7,7 @@
 #
 # 引数:
 #   session     - tmuxセッション名（通知チャネル名にも使用）
-#   window      - tmuxウィンドウ名（phase1, phase2, etc.）
+#   window      - tmuxウィンドウ名（通常 "agents"）
 #   agent-name  - エージェント名（explorer, planner, etc.）
 #   cli-tool    - CLIツール名（claude, codex, copilot, またはカスタムコマンド）
 #   prompt-file - プロンプトファイルのパス

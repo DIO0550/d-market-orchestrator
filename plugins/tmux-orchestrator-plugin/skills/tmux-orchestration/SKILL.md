@@ -107,7 +107,7 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 
 # 2. tmux ペインでエージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "agents" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -123,12 +123,12 @@ bash .orchestrator/scripts/wait-for-notification.sh \
 ```bash
 # test-runner と linter を同時起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "phase3" "test-runner" "claude" \
+  "{TMUX_SESSION}" "agents" "test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "phase3" "linter" "claude" \
+  "{TMUX_SESSION}" "agents" "linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 
@@ -153,7 +153,7 @@ for TASK_ID in $READY_TASKS; do
 
   # プロンプト生成してtmux起動
   bash .orchestrator/scripts/tmux-agent-launch.sh \
-    "{TMUX_SESSION}" "phase2" "task-${TASK_ID}-task-manager" "claude" \
+    "{TMUX_SESSION}" "agents" "task-${TASK_ID}-task-manager" "claude" \
     ".orchestrator/{SESSION_ID}/.prompts/task-${TASK_ID}-task-manager-prompt.md" \
     ".orchestrator/{SESSION_ID}"
 done
@@ -164,19 +164,20 @@ done
 ### セッション作成
 
 ```bash
-# 1. tmuxセッションを作成（team-config.json があればプレフィックスが変わる）
-bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}"
-# → 出力例: tmux session 'Alpha-0003-xxx' created.
-# → 以降、この実際のセッション名を {TMUX_SESSION} として使用する
-
-# 2. セッションディレクトリを初期化
+# 1. セッションディレクトリを初期化
 bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
+
+# 2. ウィンドウを作成し、実際のセッション名を取得
+#    tmux 内: 現在のセッションにウィンドウを追加（新セッション不要）
+#    tmux 外: 新しいセッションを作成
+OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
+TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 
 # 3. CLI割り当て設定を作成
 # .orchestrator/{SESSION_ID}/.config/cli-assignments.json に書き出す
 ```
 
-**重要**: `tmux-session-create.sh` は team-config.json の `team_name` に基づきセッション名を変換する（`orch-` → `{team_name}-`）。以降の全 tmux コマンドでは、作成された**実際のセッション名**を使用すること。
+**重要**: `tmux-session-create.sh` の出力から `TMUX_SESSION=` の値を取得し、以降の全 tmux コマンドでこの値を使用すること。tmux 内で実行した場合は現在のセッション名、tmux 外では新規作成されたセッション名が返される。
 
 ### セッション監視
 

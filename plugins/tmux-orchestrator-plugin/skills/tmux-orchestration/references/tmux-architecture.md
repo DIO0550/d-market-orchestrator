@@ -5,29 +5,23 @@ tmux-orchestrator のセッション・ウィンドウ・ペイン構成の詳�
 ## セッション構成
 
 ```
-tmux session: "{TMUX_SESSION}"  (デフォルト: "orch-{SESSION_ID}", team_name設定時: "{team_name}-{SESSION_ID}")
+tmux session: "{TMUX_SESSION}"
+  tmux 内で実行: 現在のセッションをそのまま使用（新セッション不要）
+  tmux 外で実行: "orch-{SESSION_ID}" (team_name設定時: "{team_name}-{SESSION_ID}")
 │
-├── window "control"       ← ステータスモニター表示
-│   └── pane 0: tmux-status-monitor.sh
+├── window (orchestrator)  ← オーケストレーターが動作中のウィンドウ（tmux内実行時）
+│   └── pane 0: orchestrator (Claude Code)
 │
-├── window "phase1"        ← 探索・計画・レビュー
-│   ├── pane 0: explorer (CLI プロセス)
-│   ├── pane 1: planner (CLI プロセス)
-│   └── pane 2: plan-reviewer (CLI プロセス)
-│
-├── window "phase2"        ← 実装（タスクごと）
-│   ├── pane 0: task-1-task-manager (CLI プロセス)
-│   ├── pane 1: task-2-task-manager (CLI プロセス)
-│   └── pane N: task-N-task-manager (CLI プロセス)
-│
-├── window "phase3"        ← 検証
-│   ├── pane 0: test-runner (CLI プロセス)
-│   ├── pane 1: linter (CLI プロセス)
-│   └── pane 2: security-scanner (CLI プロセス)
-│
-└── window "phase4"        ← Git操作
-    ├── pane 0: committer (CLI プロセス)
-    └── pane 1: pr-creator (CLI プロセス)
+└── window "agents"        ← 全エージェント（tiled レイアウト）
+    ├── pane: explorer
+    ├── pane: planner
+    ├── pane: plan-reviewer
+    ├── pane: task-N-task-manager
+    ├── pane: test-runner
+    ├── pane: linter
+    ├── pane: committer
+    └── pane: pr-creator
+    （起動順にペイン追加、tiled で均等配置）
 ```
 
 ## ウィンドウの使い方
@@ -37,18 +31,19 @@ tmux session: "{TMUX_SESSION}"  (デフォルト: "orch-{SESSION_ID}", team_name
 Orchestrator がステータスモニターを表示するための専用ウィンドウ。
 `tmux-status-monitor.sh` を実行して全エージェントの進捗をリアルタイム表示する。
 
-### phase ウィンドウ
+### agents ウィンドウ
 
-各フェーズの実行ウィンドウ。`tmux-agent-launch.sh` がペインを自動作成してエージェントを起動する。
+全エージェントの実行ウィンドウ。`tmux-agent-launch.sh` がペインを自動作成してエージェントを起動する。
 
 - 最初のエージェントは既存の空ペインを再利用
 - 2つ目以降は `split-window` で新しいペインを追加
 - 各ペインのタイトルにエージェント名を設定
+- tiled レイアウトで均等配置
 
-### サブエージェントパターン（Phase 2）
+### サブエージェントパターン
 
 Task Manager や Code Reviewer (Lead) は自身もエージェントを tmux ペインで起動するミニオーケストレーターとして動作する。
-Code Reviewer (Lead) は Phase 2 ウィンドウ内で4つのスペシャリストレビュアー（quality/bug/performance/security）を並列起動する。
+Code Reviewer (Lead) は agents ウィンドウ内で4つのスペシャリストレビュアー（quality/bug/performance/security）を並列起動する。
 スペシャリストは既にプロセスが完了した他のペイン（implementer, test-runner 等）と同じウィンドウに追加される。
 
 ## ペイン管理
@@ -57,7 +52,7 @@ Code Reviewer (Lead) は Phase 2 ウィンドウ内で4つのスペシャリス�
 
 ```bash
 # 新しいペインを作成してエージェントを起動
-tmux split-window -t "orch-{SESSION_ID}:phase1" -v
+tmux split-window -t "orch-{SESSION_ID}:agents" -v
 ```
 
 ### ペインの識別
@@ -114,58 +109,25 @@ tmux のペインは画面サイズに制限されるため、同時起動する
 
 ステータスモニターが全エージェントの進捗を3秒間隔で更新表示。
 
-### phase1 ウィンドウ（探索・計画）
-
-```
-┌─────────────────────────────────────┐
-│ explorer (claude)                   │
-├─────────────────────────────────────┤
-│ planner (claude)                    │
-├─────────────────────────────────────┤
-│ plan-reviewer (claude)              │
-└─────────────────────────────────────┘
-```
-
-エージェントは順次起動されるため、同時に3ペインすべてがアクティブになることは通常ない。
-
-### phase2 ウィンドウ（実装）
+### agents ウィンドウ（全エージェント）
 
 ```
 ┌──────────────────┬──────────────────┐
-│ task-1-manager   │ task-2-manager   │
-│ (claude)         │ (codex)          │
-├──────────────────┼──────────────────┤
-│ task-3-manager   │ task-4-manager   │
+│ explorer         │ planner          │
 │ (claude)         │ (claude)         │
+├──────────────────┼──────────────────┤
+│ plan-reviewer    │ task-1-manager   │
+│ (claude)         │ (claude)         │
+├──────────────────┼──────────────────┤
+│ task-2-manager   │ test-runner      │
+│ (codex)          │ (claude)         │
+├──────────────────┼──────────────────┤
+│ linter           │ committer        │
+│ (codex)          │ (claude)         │
 └──────────────────┴──────────────────┘
 ```
 
-タスク数に応じてペインが動的に追加される。並列上限（デフォルト4）を超える場合はキューイング。
-
-### phase3 ウィンドウ（検証）
-
-```
-┌──────────────────┬──────────────────┐
-│ test-runner      │ linter           │
-│ (claude)         │ (codex)          │
-├──────────────────┴──────────────────┤
-│ security-scanner (claude)           │
-└─────────────────────────────────────┘
-```
-
-test-runner と linter は並列実行。security-scanner はオプション。
-
-### phase4 ウィンドウ（Git）
-
-```
-┌─────────────────────────────────────┐
-│ committer (claude)                  │
-├─────────────────────────────────────┤
-│ pr-creator (claude)                 │
-└─────────────────────────────────────┘
-```
-
-committer → pr-creator の順で実行。
+起動順にペインが追加され、tiled レイアウトで均等配置される。
 
 ## レイアウト調整
 
@@ -175,10 +137,10 @@ committer → pr-creator の順で実行。
 
 ```bash
 # 均等分割（縦）
-tmux select-layout -t "orch-{SESSION_ID}:phase2" even-vertical
+tmux select-layout -t "orch-{SESSION_ID}:agents" even-vertical
 
 # タイル状（2x2グリッド）
-tmux select-layout -t "orch-{SESSION_ID}:phase2" tiled
+tmux select-layout -t "orch-{SESSION_ID}:agents" tiled
 ```
 
 ### ペインサイズの制限
@@ -195,8 +157,8 @@ tmux list-panes -t "{TMUX_SESSION}" -a -F \
   '#{window_name}:#{pane_index} [#{pane_title}] #{pane_current_command} #{pane_width}x#{pane_height}'
 
 # 特定ペインの出力をキャプチャ
-tmux capture-pane -t "orch-{SESSION_ID}:phase1.0" -p
+tmux capture-pane -t "orch-{SESSION_ID}:agents.0" -p
 
 # ペインを全画面表示
-tmux resize-pane -t "orch-{SESSION_ID}:phase1.0" -Z
+tmux resize-pane -t "orch-{SESSION_ID}:agents.0" -Z
 ```

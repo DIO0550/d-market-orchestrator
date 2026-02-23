@@ -72,7 +72,7 @@ tmux版では Orchestrator が `Bash` ツールを使って tmux コマンドを
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "agents" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}"
 

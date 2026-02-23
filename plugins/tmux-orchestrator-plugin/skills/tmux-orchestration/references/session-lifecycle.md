@@ -12,21 +12,20 @@ tmuxオーケストレーションセッションの作成から破棄までの�
 
 ### 1. 作成（Creation）
 
-tmux セッションとウィンドウを作成する。
+ウィンドウを作成する。tmux 内なら現在のセッションに追加、tmux 外なら新規セッションを作成。
 
 ```bash
-bash .orchestrator/scripts/tmux-session-create.sh "orch-0001-user-auth"
-# → team-config.json があれば "Alpha-0001-user-auth" のように変換される
-# → 以降、実際のセッション名を {TMUX_SESSION} として使用
+OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-0001-user-auth")
+TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 ```
 
 **前提条件**:
 - tmux がインストールされていること
-- 同名のセッションが存在しないこと（存在する場合は自動で破棄・再作成）
 
 **結果**:
-- tmux セッションが作成（team_name があればプレフィックスが変換される）
-- ウィンドウ: control, phase1, phase2, phase3, phase4
+- tmux 内: 現在のセッションに agents ウィンドウが追加される
+- tmux 外: 新しいセッションが作成される（control, agents）
+- `TMUX_SESSION` に実際のセッション名が返される
 
 ### 2. 初期化（Initialization）
 
@@ -48,7 +47,7 @@ Orchestrator がエージェントを tmux ペインに順次起動する。
 ```bash
 # エージェント起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
-  "{TMUX_SESSION}" "phase1" "explorer" "claude" \
+  "{TMUX_SESSION}" "agents" "explorer" "claude" \
   ".orchestrator/0001-user-auth/.prompts/explorer-prompt.md" \
   ".orchestrator/0001-user-auth"
 ```
