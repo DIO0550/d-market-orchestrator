@@ -73,10 +73,14 @@ color: yellow
 4つのスペシャリスト用プロンプトファイルを `.prompts/` に生成する。
 
 ### 4. スペシャリストの並列起動
-tmux-agent-launch.sh で全4スペシャリストを並列起動する。
+自身のペインIDを取得し、tmux-agent-launch.sh で全4スペシャリストを並列起動する（`$PARENT_PANE` を第6引数に渡す）。
+
+```bash
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+```
 
 ### 5. スペシャリスト全員の完了待ち
-wait-for-notification.sh で全4つの .done を待機する。
+各スペシャリスト完了時、入力に `[AGENT_COMPLETE]` メッセージが届く。全4つの完了を確認する。
 失敗時はそのスペシャリストなしで続行する。
 
 ### 6. スペシャリスト結果の読み込み

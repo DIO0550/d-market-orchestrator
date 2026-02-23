@@ -35,18 +35,18 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     ├── explorer プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 関連ファイルを探索
     │
-    ▼ (wait-for-notification.sh で完了待ち)
+    ▼ ([AGENT_COMPLETE] メッセージ受信で完了検知)
     │
     ├── planner プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 探索結果を基に実装計画を作成
     │
-    ▼ (wait-for-notification.sh で完了待ち)
+    ▼ ([AGENT_COMPLETE] メッセージ受信で完了検知)
     │
     ├── plan-reviewer (Lead) プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 4つのスペシャリスト（quality/bug/performance/security）を並列起動
     │       → 統合レビュー + タスク依存関係チェック → .done に状態値を書き出し
     │
-    ▼ (完了待ち → .done の状態値で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
+    ▼ ([AGENT_COMPLETE] 受信 → .done の状態値で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
     │
 [Phase 2: 実装（タスクごと）] ─────────────────
     │
@@ -64,7 +64,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │     5. completed/rejected 判定 → .done に状態値を書き出し
     │     6. rejected → implementer 再起動（最大2回）
     │
-    ├── wait-for-notification.sh で全 task-manager の完了待ち
+    ├── [AGENT_COMPLETE] メッセージ受信で各 task-manager の完了を検知
     ├── 各 task-manager の .done の状態値を確認（completed / rejected）
     ├── 新たにブロック解除されたタスクがあれば繰り返し
     │
@@ -109,14 +109,15 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 3. 完了通知を待機
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 600
+# 3. エージェント完了時、オーケストレーターの入力に以下のメッセージが届く:
+#    [AGENT_COMPLETE] explorer done
+# 4. .done ファイルの状態値を確認して次のアクションを判断
 ```
 
 > `{TMUX_SESSION}` = `tmux-session-create.sh` が作成した実際のセッション名（例: `Alpha-0003-xxx`）
+> `$PARENT_PANE` = オーケストレーター自身のペインID（セッション初期化時に取得）
 
 ### 並列起動（依存関係なし）
 
@@ -125,18 +126,17 @@ bash .orchestrator/scripts/wait-for-notification.sh \
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/test-runner-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 両方の完了通知を待機
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "test-runner" "{TMUX_SESSION}" 300
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "linter" "{TMUX_SESSION}" 300
+# 各エージェント完了時、オーケストレーターの入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] test-runner PASS
+#   [AGENT_COMPLETE] linter PASS
+# .done ファイルの状態値を確認して次のアクションを判断
 ```
 
 ### 依存関係のあるタスク起動
@@ -155,8 +155,12 @@ for TASK_ID in $READY_TASKS; do
   bash .orchestrator/scripts/tmux-agent-launch.sh \
     "{TMUX_SESSION}" "task-${TASK_ID}-task-manager" "claude" \
     ".orchestrator/{SESSION_ID}/.prompts/task-${TASK_ID}-task-manager-prompt.md" \
-    ".orchestrator/{SESSION_ID}"
+    ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 done
+
+# 各 task-manager 完了時、オーケストレーターの入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] task-1-task-manager completed
+#   [AGENT_COMPLETE] task-2-task-manager completed
 ```
 
 ## セッション管理
@@ -173,11 +177,16 @@ bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
 OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
 TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 
-# 3. CLI割り当て設定を作成
+# 3. 自身のペインIDを取得（エージェント完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
+# 4. CLI割り当て設定を作成
 # .orchestrator/{SESSION_ID}/.config/cli-assignments.json に書き出す
 ```
 
 **重要**: `tmux-session-create.sh` の出力から `TMUX_SESSION=` の値を取得し、以降の全 tmux コマンドでこの値を使用すること。tmux 内では現在のセッション名、tmux 外では新規作成されたセッション名が返される。
+
+**重要**: `PARENT_PANE` はエージェント完了時に `tmux send-keys` で `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
 
 ### セッション監視
 
@@ -233,7 +242,7 @@ ls -d .orchestrator/????-* 2>/dev/null
 
 ### エージェントがタイムアウトした場合
 
-1. `wait-for-notification.sh` が終了コード 1 を返す
+1. `[AGENT_COMPLETE]` メッセージが一定時間届かない
 2. ユーザーに状況を報告
 3. 「継続して待つ」「中断する」の選択肢を提示
 
@@ -251,7 +260,7 @@ ls -d .orchestrator/????-* 2>/dev/null
    rm -f .orchestrator/{SESSION_ID}/.status/{agent}.exit
    ```
 2. 新しいプロンプトファイルを生成（エラー情報を含める）
-3. `tmux-agent-launch.sh` で再起動
+3. `tmux-agent-launch.sh` で再起動（`$PARENT_PANE` を第6引数に含める）
 
 ---
 

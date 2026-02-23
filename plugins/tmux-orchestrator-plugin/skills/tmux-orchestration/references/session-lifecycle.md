@@ -45,21 +45,26 @@ bash .orchestrator/scripts/init-session.sh ".orchestrator/0001-user-auth"
 Orchestrator がエージェントを tmux ペインに順次起動する。
 
 ```bash
-# エージェント起動
+# 自身のペインIDを取得（エージェント完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
+# エージェント起動（第6引数に PARENT_PANE を渡す）
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/0001-user-auth/.prompts/explorer-prompt.md" \
-  ".orchestrator/0001-user-auth"
+  ".orchestrator/0001-user-auth" "$PARENT_PANE"
 ```
 
 ### 4. 監視（Monitoring）
 
-エージェントからのロック付き通知をイベント駆動で待機する。
+エージェント完了時、`notify-parent.sh` が `tmux send-keys` で親ペインに完了メッセージを送信する。
 
 ```bash
-# エージェント完了通知の待機（イベント駆動、ポーリングなし）
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/0001-user-auth" "{TMUX_SESSION}" 600
+# エージェント完了時、オーケストレーターの入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] explorer done
+#   [AGENT_COMPLETE] plan-reviewer Approved
+#   [AGENT_COMPLETE] test-runner PASS
+# オーケストレーターは .done ファイルの状態値を確認して次のアクションを判断
 
 # リアルタイムモニター（control ウィンドウ表示用）
 bash .orchestrator/scripts/tmux-status-monitor.sh \

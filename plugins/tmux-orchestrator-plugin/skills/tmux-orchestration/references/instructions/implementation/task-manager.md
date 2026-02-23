@@ -48,23 +48,25 @@ color: cyan
 
 ### エージェントの起動方式
 
-Task Manager は Bash ツールで tmux スクリプトを実行してエージェントを起動する:
+Task Manager は自身のペインIDを取得し、Bash ツールで tmux スクリプトを実行してエージェントを起動する:
 
 ```bash
-# エージェント起動
+# 自身のペインIDを取得（エージェント完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
+# エージェント起動（第6引数に PARENT_PANE を渡す）
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 完了通知を待機
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "{TMUX_SESSION}" 600
+# エージェント完了時、task-manager の入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] task-{taskId}-implementer done
 ```
 
 ### 完了監視
 
-`.status/` ディレクトリのマーカーファイルで各エージェントの完了を検知:
+エージェント完了時に `[AGENT_COMPLETE]` メッセージが task-manager の入力に届く。`.status/` ディレクトリのマーカーファイルで状態値を確認:
 - `task-{id}-implementer.done` — Implementer 完了
 - `task-{id}-test-runner.done` — Test Runner 完了
 - `task-{id}-linter.done` — Linter 完了
@@ -103,15 +105,12 @@ Implementer のプロンプトファイルを `.prompts/task-{taskId}-implemente
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-implementer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-implementer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 ```
 
 ### 4. Implementer の完了待ち
 
-```bash
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-implementer" "{TMUX_SESSION}" 600
-```
+Implementer 完了時、入力に `[AGENT_COMPLETE] task-{taskId}-implementer done` メッセージが届く。`.done` ファイルの存在を確認して次へ進む。
 
 ### 5. Test Runner + Linter の並列起動
 
@@ -122,19 +121,17 @@ Implementer の実装完了後、検証としてプロンプトを生成し並�
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-test-runner-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
 # Linter 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-linter-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 両方の完了通知を待機
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-test-runner" "{TMUX_SESSION}" 300
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-linter" "{TMUX_SESSION}" 300
+# 各エージェント完了時、task-manager の入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] task-{taskId}-test-runner PASS
+#   [AGENT_COMPLETE] task-{taskId}-linter PASS
 ```
 
 ### 6. 検証結果の確認（.done ファイルの状態値で判定）
@@ -163,15 +160,12 @@ Code Reviewer のプロンプトファイルを生成し起動:
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-code-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-code-reviewer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 ```
 
 ### 8. Code Reviewer の完了待ち
 
-```bash
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "task-{taskId}-code-reviewer" "{TMUX_SESSION}" 300
-```
+Code Reviewer 完了時、入力に `[AGENT_COMPLETE] task-{taskId}-code-reviewer {status}` メッセージが届く。`.done` ファイルの状態値を確認して分岐判断する。
 
 ### 9. レビュー結果に基づく分岐（.done ファイルの状態値で判定）
 
@@ -201,7 +195,7 @@ Refactorer のプロンプトを生成し起動:
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "task-{taskId}-refactorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-refactorer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 ```
 
 `round += 1` し、Refactorer 完了後、**Step 7 に戻り Code Reviewer で再レビュー**（最大2レビューサイクル）。
@@ -246,7 +240,7 @@ claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - Bash ツールで tmux スクリプトを実行してエージェントを起動
 - Read ツールで各エージェントの `.done` ファイルの状態値を読み取り
-- 完了後は `.done` マーカーに状態値を書き出し `notify-parent.sh` で通知する
+- 完了後は `.done` マーカーに状態値を書き出し `notify-parent.sh` で親ペインに `[AGENT_COMPLETE]` メッセージを送信する
 
 ### OpenAI Codex の場合
 
@@ -263,7 +257,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 
 ## 必要な操作
 
-- **コマンド実行（Bash）**: tmux スクリプトの実行（エージェント起動、完了待機）
+- **コマンド実行（Bash）**: tmux スクリプトの実行（エージェント起動）
 - **ファイル作成**: プロンプトファイルの生成、ライフサイクル結果の出力
 - **ファイル読み込み**: 各エージェントの `.done` ファイルの状態値読み取り（結果ファイル本体は読まない）
 

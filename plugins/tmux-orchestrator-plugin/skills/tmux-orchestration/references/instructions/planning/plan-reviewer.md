@@ -40,23 +40,25 @@ Planner が作成した計画をレビューするにあたり、**4つのスペ
 
 ### スペシャリストレビュアーの起動方式
 
-Lead Reviewer は Bash ツールで tmux スクリプトを実行してスペシャリストをペインで起動する:
+Lead Reviewer は自身のペインIDを取得し、Bash ツールで tmux スクリプトを実行してスペシャリストをペインで起動する:
 
 ```bash
-# スペシャリスト起動
+# 自身のペインIDを取得（スペシャリスト完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
+# スペシャリスト起動（第6引数に PARENT_PANE を渡す）
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "plan-quality-reviewer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/plan-quality-reviewer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 完了通知を待機
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "plan-quality-reviewer" "{TMUX_SESSION}" 300
+# スペシャリスト完了時、plan-reviewer の入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] plan-quality-reviewer done
 ```
 
 ### 完了監視
 
-`.status/` ディレクトリのマーカーファイルでスペシャリストの完了を検知:
+スペシャリスト完了時に `[AGENT_COMPLETE]` メッセージが plan-reviewer の入力に届く。`.status/` ディレクトリのマーカーファイルで状態値を確認:
 - `plan-quality-reviewer.done`
 - `plan-bug-reviewer.done`
 - `plan-performance-reviewer.done`
@@ -125,51 +127,51 @@ rm -f {SESSION_DIR}/.status/plan-security-reviewer.exit
 
 ### 4. スペシャリストの並列起動
 
-4つのスペシャリストを全て並列で起動する:
+自身のペインIDを取得し、4つのスペシャリストを全て並列で起動する:
 
 ```bash
+# 自身のペインIDを取得（スペシャリスト完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
 # Quality Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "plan-quality-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-quality-reviewer-prompt.md" \
-  "{SESSION_DIR}"
+  "{SESSION_DIR}" "$PARENT_PANE"
 
 # Bug Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "plan-bug-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-bug-reviewer-prompt.md" \
-  "{SESSION_DIR}"
+  "{SESSION_DIR}" "$PARENT_PANE"
 
 # Performance Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "plan-performance-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-performance-reviewer-prompt.md" \
-  "{SESSION_DIR}"
+  "{SESSION_DIR}" "$PARENT_PANE"
 
 # Security Reviewer 起動
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "plan-security-reviewer" "claude" \
   "{SESSION_DIR}/.prompts/plan-security-reviewer-prompt.md" \
-  "{SESSION_DIR}"
+  "{SESSION_DIR}" "$PARENT_PANE"
 ```
 
 ### 5. スペシャリスト全員の完了待ち
 
-```bash
-bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-quality-reviewer" "{TMUX_SESSION}" 300
+各スペシャリスト完了時、plan-reviewer の入力に以下の形式のメッセージが届く:
 
-bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-bug-reviewer" "{TMUX_SESSION}" 300
-
-bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-performance-reviewer" "{TMUX_SESSION}" 300
-
-bash .orchestrator/scripts/wait-for-notification.sh \
-  "{SESSION_DIR}" "plan-security-reviewer" "{TMUX_SESSION}" 300
+```
+[AGENT_COMPLETE] plan-quality-reviewer done
+[AGENT_COMPLETE] plan-bug-reviewer done
+[AGENT_COMPLETE] plan-performance-reviewer done
+[AGENT_COMPLETE] plan-security-reviewer done
 ```
 
-**スペシャリスト失敗時**: `wait-for-notification.sh` がエラー（exit code 2）を返した場合は、そのスペシャリストの結果なしで統合レビューを続行する。失敗したスペシャリストは統合結果に記録する。
+全4つの `[AGENT_COMPLETE]` メッセージを受信し、`.status/` のマーカーファイルで完了を確認する。
+
+**スペシャリスト失敗時**: `.exit` ファイルの終了コードがエラーの場合は、そのスペシャリストの結果なしで統合レビューを続行する。失敗したスペシャリストは統合結果に記録する。
 
 ### 6. スペシャリスト結果の読み込み
 
@@ -231,7 +233,7 @@ claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - Bash ツールで tmux スクリプトを実行してスペシャリストをペインで起動
 - Read ツールでスペシャリストの結果ファイルを読み取り
-- 完了後は `.done` マーカーに状態値を書き出し `notify-parent.sh` で通知する
+- 完了後は `.done` マーカーに状態値を書き出し `notify-parent.sh` で親ペインに `[AGENT_COMPLETE]` メッセージを送信する
 
 ### OpenAI Codex の場合
 
@@ -248,7 +250,7 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 
 ## 必要な操作
 
-- **コマンド実行（Bash）**: tmux スクリプトの実行（スペシャリスト起動、完了待機）
+- **コマンド実行（Bash）**: tmux スクリプトの実行（スペシャリスト起動）
 - **ファイル作成**: プロンプトファイルの生成、統合レビュー結果の出力
 - **ファイル読み込み**: 計画書・タスク一覧・スペシャリストレビュー結果読み込み
 - **コード内容検索**: タスク依存関係確認のためのパターン検索

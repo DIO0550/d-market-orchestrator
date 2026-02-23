@@ -6,9 +6,9 @@ tmux-orchestrator のエージェント間同期メカニズム。
 
 各エージェントの完了は `.status/` ディレクトリ内のマーカーファイルで管理される。
 
-**対話モード（Claude Code）**: エージェント自身が作業完了時に `.done` ファイルに状態値を書き出し、`notify-parent.sh` を Bash ツールで実行してオーケストレーターに通知する。`tmux-agent-launch.sh` の COMPLETION_SUFFIX はフォールバック（プロセス終了時にまだ `.done` がなければデフォルト値を書き出す）として機能する。
+**対話モード（Claude Code）**: エージェント自身が作業完了時に `.done` ファイルに状態値を書き出し、`notify-parent.sh` を Bash ツールで実行して親ペインに `[AGENT_COMPLETE]` メッセージを送信する。`tmux-agent-launch.sh` の COMPLETION_SUFFIX はフォールバック（プロセス終了時にまだ `.done` がなければデフォルト値を書き出す）として機能する。
 
-**非対話モード（Codex 等）**: `tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成した後、`notify-parent.sh` でオーケストレーターにロック付き通知を送信する。
+**非対話モード（Codex 等）**: `tmux-agent-launch.sh` がCLIプロセスの終了を検知し、自動的にマーカーファイルを作成した後、`notify-parent.sh` で親ペインに `[AGENT_COMPLETE]` メッセージを `tmux send-keys` で送信する。
 
 ## ファイル構成
 
@@ -24,7 +24,7 @@ tmux-orchestrator のエージェント間同期メカニズム。
 - **ファイルの中身** = 状態値（1行のみ）
 - 判定を出すエージェントは、プロセス終了前に自分で `.done` ファイルに状態値を書き出す
 - 判定を出さないエージェントの場合、`tmux-agent-launch.sh` がCLIプロセス終了後に `done` をデフォルト書き込みする
-- `notify-parent.sh` がこのファイルの内容を読み取り、オーケストレーターに通知する
+- `notify-parent.sh` がこのファイルの状態値を読み取り、`tmux send-keys` で親ペインに `[AGENT_COMPLETE] {agent-name} {status}` メッセージを送信する
 
 ### 状態値の一覧
 
@@ -48,15 +48,17 @@ tmux-orchestrator のエージェント間同期メカニズム。
 ```bash
 # エージェント内での書き出し例（対話モード: エージェント自身が実行）
 echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
-bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} plan-reviewer {TMUX_SESSION}
+bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE}
 ```
 
 判定を出さないエージェント（デフォルト状態値 `done`）の場合:
 
 ```bash
 echo "done" > {SESSION_DIR}/.status/{agent-name}.done
-bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {TMUX_SESSION}
+bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
 ```
+
+> `{PARENT_PANE}` はプロンプトのセッション情報から取得する（`tmux-agent-launch.sh` が第6引数として受け取り、エージェントのプロンプトに含める）。
 
 ### Orchestrator での読み取り
 
@@ -113,22 +115,22 @@ Orchestrator はこの状態値のみで分岐判断を行い、結果ファイ�
 
 ## 同期パターン
 
-### 通知フロー（イベント駆動）
+### 通知フロー（send-keys 方式）
 
 ```
-Agent完了 → .done/.exit 作成 → notify-parent.sh
-         → tmux wait-for -S "orch-done-{tmux-session}-{agent-name}"
+Agent完了 → .done/.exit 作成 → notify-parent.sh SESSION_DIR AGENT_NAME PARENT_PANE
+         → tmux send-keys -t {parent-pane} "[AGENT_COMPLETE] {agent-name} {status}" Enter
 
-待機側 → wait-for-notification.sh SESSION_DIR AGENT_NAME TMUX_SESSION
-       → tmux wait-for "orch-done-{tmux-session}-{agent-name}" でブロック
-       → シグナル受信 → .done/.exit 読み取り → 次のアクション判断
+親ペイン → 入力に [AGENT_COMPLETE] メッセージを受信
+         → .done ファイルの状態値を確認 → 次のアクション判断
 ```
 
-チャネルはエージェント単位で分離されるため、複数エージェントが同時に完了しても干渉しない。
+メッセージにはエージェント名と状態値が含まれるため、複数エージェントが同時に完了しても区別可能。
 
 ### 直列実行（.done の状態値で分岐）
 ```
-explorer 完了 → 通知 → planner 起動 → planner 完了 → 通知 → plan-reviewer (Lead) 起動
+explorer 完了 → [AGENT_COMPLETE] explorer done → planner 起動
+→ planner 完了 → [AGENT_COMPLETE] planner done → plan-reviewer (Lead) 起動
 → plan-reviewer が 4 スペシャリストを並列起動
 → 全スペシャリスト完了 → 統合 → plan-reviewer.done の状態値を確認
   → "Approved" → Phase 2 へ
@@ -139,8 +141,8 @@ explorer 完了 → 通知 → planner 起動 → planner 完了 → 通知 → 
 ### 並列実行 + バリア
 ```
 test-runner 起動 ─┐
-                  ├── wait-for-notification.sh を各エージェントに対して呼び出し
-linter 起動 ──────┘   （チャネルが分離されているため順序不問）
+                  ├── [AGENT_COMPLETE] メッセージを各エージェントから受信
+linter 起動 ──────┘   （順序不問: メッセージは到着順に処理）
                   ↓
           各 .done の状態値を確認 → 両方 PASS → 次のフェーズ
 ```
@@ -163,25 +165,29 @@ implementer.done → test-runner.done + linter.done の状態値を確認
 ### Plan Reviewer (Lead) 内部フロー
 ```
 plan-reviewer が起動される
+→ PARENT_PANE=$(tmux display-message -p '#{pane_id}') で自身のペインIDを取得
 → 前回のスペシャリストマーカーを削除
-→ 4つのスペシャリストを並列起動:
+→ 4つのスペシャリストを並列起動（PARENT_PANE を第6引数に渡す）:
   plan-quality-reviewer + plan-bug-reviewer + plan-performance-reviewer + plan-security-reviewer
-→ 全4つの .done を待機
+→ 全4つの [AGENT_COMPLETE] メッセージを受信
 → 各スペシャリストの結果ファイルを Read（.done の状態値は使用しない）
 → 統合レビュー結果 + タスク依存関係チェック → review-{round}.md に書き出し
 → plan-reviewer.done に状態値を書き出し（例: "Approved"）
+→ notify-parent.sh で親ペインに [AGENT_COMPLETE] plan-reviewer Approved を送信
 ```
 
 ### Code Reviewer (Lead) 内部フロー
 ```
 code-reviewer が起動される
+→ PARENT_PANE=$(tmux display-message -p '#{pane_id}') で自身のペインIDを取得
 → 前回のスペシャリストマーカーを削除
-→ 4つのスペシャリストを並列起動:
+→ 4つのスペシャリストを並列起動（PARENT_PANE を第6引数に渡す）:
   quality-reviewer + bug-reviewer + performance-reviewer + security-reviewer
-→ 全4つの .done を待機
+→ 全4つの [AGENT_COMPLETE] メッセージを受信
 → 各スペシャリストの結果ファイルを Read（.done の状態値は使用しない）
 → 統合レビュー結果を review-{round}.md に書き出し
 → code-reviewer.done に状態値を書き出し（例: "Approved"）
+→ notify-parent.sh で親ペインに [AGENT_COMPLETE] code-reviewer Approved を送信
 ```
 
 ## リトライ時の扱い

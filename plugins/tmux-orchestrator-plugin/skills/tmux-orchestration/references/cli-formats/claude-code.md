@@ -70,13 +70,15 @@ tmux版では Orchestrator が `Bash` ツールを使って tmux コマンドを
 代わりに以下のパターンを使用:
 
 ```bash
-# エージェント起動
+# 自身のペインIDを取得（エージェント完了通知の受信先）
+PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+
+# エージェント起動（第6引数に PARENT_PANE を渡す）
 bash .orchestrator/scripts/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
-  ".orchestrator/{SESSION_ID}"
+  ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-# 完了待ち
-bash .orchestrator/scripts/wait-for-notification.sh \
-  ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 300
+# エージェント完了時、親ペインの入力に以下のメッセージが届く:
+#   [AGENT_COMPLETE] explorer done
 ```

@@ -1,7 +1,7 @@
 # Orchestrator（オーケストレーター）指示テンプレート
 
 tmux を使って全体フローを制御し、他のエージェントを起動・管理する司令塔。
-Task ツールではなく Bash ツールで tmux コマンド（tmux-session-create.sh, tmux-agent-launch.sh, wait-for-notification.sh）を実行してエージェントを制御する。
+Task ツールではなく Bash ツールで tmux コマンド（tmux-session-create.sh, tmux-agent-launch.sh）を実行してエージェントを制御する。
 
 **推奨モデル**: 🧠 高性能（opus相当）
 - 全体の判断、エージェント選択、エラー時の対応判断が必要
@@ -45,12 +45,28 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 | スクリプト | 用途 |
 |-----------|------|
 | `tmux-session-create.sh` | tmux セッションの作成 |
-| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動 |
-| `wait-for-notification.sh` | エージェント完了通知を `tmux wait-for` で待機（イベント駆動） |
-| `notify-parent.sh` | エージェント完了時にオーケストレーターへ通知を送信（`tmux-agent-launch.sh` が自動呼び出し） |
+| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動（第6引数: parent-pane） |
+| `notify-parent.sh` | エージェント完了時に `tmux send-keys` で親ペインに `[AGENT_COMPLETE]` メッセージを送信（`tmux-agent-launch.sh` が自動呼び出し） |
 | `check-dependencies.sh` | tasks.json と .done ファイルを照合し実行可能タスクを出力 |
 | `init-session.sh` | セッションフォルダの初期化 |
 | `init-task.sh` | タスクディレクトリの初期化 |
+
+### 完了通知の仕組み
+
+エージェントが完了すると、`notify-parent.sh` が `tmux send-keys` でオーケストレーターのペインに以下の形式のメッセージを送信する:
+
+```
+[AGENT_COMPLETE] {agent-name} {status}
+```
+
+例:
+```
+[AGENT_COMPLETE] explorer done
+[AGENT_COMPLETE] plan-reviewer Approved
+[AGENT_COMPLETE] task-1-task-manager completed
+```
+
+オーケストレーターはこのメッセージを入力として受け取り、`.done` ファイルの状態値を確認して次のアクションを判断する。
 
 ## 制約（厳守）
 
@@ -78,7 +94,12 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
    ```
    > tmux 内で実行した場合は現在のセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
-6. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
+6. 自身のペインIDを取得（エージェント完了通知の受信先）:
+   ```bash
+   PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+   ```
+   > `$PARENT_PANE` はエージェント完了時に `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
+7. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
 ### Phase 1: 探索・計画・レビュー
 
@@ -88,15 +109,11 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    bash .orchestrator/scripts/tmux-agent-launch.sh \
      "{TMUX_SESSION}" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
-     ".orchestrator/{SESSION_ID}"
+     ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
-3. 完了を待機:
-   ```bash
-   bash .orchestrator/scripts/wait-for-notification.sh \
-     ".orchestrator/{SESSION_ID}" "explorer" "{TMUX_SESSION}" 300
-   ```
-4. **Planner** のプロンプトファイルを生成し、起動・完了待機
-5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動・完了待機（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
+3. エージェント完了時、入力に `[AGENT_COMPLETE] explorer done` メッセージが届く。`.done` ファイルの状態値を確認して次へ進む。
+4. **Planner** のプロンプトファイルを生成し、起動。`[AGENT_COMPLETE]` メッセージ受信で完了を検知。
+5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動。`[AGENT_COMPLETE]` メッセージ受信で完了を検知。（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
 6. `.status/plan-reviewer.done` の状態値を読んで分岐:
    ```bash
    STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.done" 2>/dev/null)
@@ -123,19 +140,15 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    bash .orchestrator/scripts/tmux-agent-launch.sh \
      "{TMUX_SESSION}" "task-{taskId}-task-manager" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
-     ".orchestrator/{SESSION_ID}"
+     ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
-4. 完了を待機:
-   ```bash
-   bash .orchestrator/scripts/wait-for-notification.sh \
-     ".orchestrator/{SESSION_ID}" "task-{taskId}-task-manager" "{TMUX_SESSION}" 600
-   ```
+4. 各 task-manager 完了時、入力に `[AGENT_COMPLETE] task-{taskId}-task-manager {status}` メッセージが届く。`.done` ファイルの状態値を確認。
 5. 全タスク完了まで繰り返し（新たにブロック解除されたタスクがあれば 1 に戻る）
 
 ### Phase 3: 検証
 
-1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動
-2. 両方の `.done` を待機
+1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動（`$PARENT_PANE` を第6引数に含める）
+2. 両方の `[AGENT_COMPLETE]` メッセージを受信
 3. `.done` ファイルの状態値を確認:
    ```bash
    TR_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.done" 2>/dev/null)
@@ -214,7 +227,7 @@ Orchestrator はコンテキストウィンドウの肥大化を防ぐため、*
 
 | ファイル | 用途 | 確認方法 |
 |---------|------|---------|
-| `.status/{agent}.done` | 完了検知 + 分岐判断 | `wait-for-notification.sh` で通知待機 → `cat` で状態値読み取り |
+| `.status/{agent}.done` | 完了検知 + 分岐判断 | `[AGENT_COMPLETE]` メッセージ受信で完了検知 → `cat` で状態値読み取り |
 | `.status/{agent}.exit` | エラー検知 | `AGENT_EXIT_CODE` の値を確認 |
 
 ## エージェント間のパス渡し
@@ -238,7 +251,7 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 
 ## 必要な操作
 
-- **コマンド実行（Bash）**: tmux スクリプトの実行（セッション作成、エージェント起動、完了待機、依存関係チェック）
+- **コマンド実行（Bash）**: tmux スクリプトの実行（セッション作成、エージェント起動、依存関係チェック）
 - **ファイル作成**: プロンプトファイルの生成（`.prompts/` ディレクトリ）
 - **ファイル読み込み**: `.status/` のマーカーファイル（`.done`、`.exit`）のみ
 - **ファイルパターン検索**: セッション連番の取得

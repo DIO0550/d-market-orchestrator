@@ -1,37 +1,33 @@
 #!/bin/bash
 # notify-parent.sh
-# エージェント完了時に待機側へシグナルを送信する
+# エージェント完了時に親ペインへ send-keys で通知する
 #
 # 使用方法:
-#   notify-parent.sh <session-dir> <agent-name> <tmux-session>
+#   notify-parent.sh <session-dir> <agent-name> <parent-pane>
 #
 # 引数:
 #   session-dir   - セッションディレクトリ（.orchestrator/{SESSION_ID}）
 #   agent-name    - エージェント名（explorer, planner, etc.）
-#   tmux-session  - tmux セッション名（orch-{SESSION_ID}）
+#   parent-pane   - 通知先の親ペインID
 #
 # 動作:
-#   エージェント固有の tmux wait-for チャネルにシグナルを送信する。
-#   待機側（wait-for-notification.sh）が同じチャネルでブロックしており、
-#   シグナル受信後に .done/.exit を読み取って処理する。
-#
-#   チャネルはエージェント単位で分離されるため、
-#   複数エージェントが同時に完了しても他のチャネルに干渉しない。
+#   .done ファイルの状態値を読み取り、親ペインに [AGENT_COMPLETE] メッセージを送信する。
+#   オーケストレーター（Claude Code）はこのメッセージを入力として受け取り、次のアクションに進む。
 
 set -euo pipefail
 
 SESSION_DIR="${1:-}"
 AGENT_NAME="${2:-}"
-TMUX_SESSION="${3:-}"
+PARENT_PANE="${3:-}"
 
-if [ -z "$SESSION_DIR" ] || [ -z "$AGENT_NAME" ] || [ -z "$TMUX_SESSION" ]; then
-  echo "Usage: notify-parent.sh <session-dir> <agent-name> <tmux-session>"
+if [ -z "$SESSION_DIR" ] || [ -z "$AGENT_NAME" ] || [ -z "$PARENT_PANE" ]; then
+  echo "Usage: notify-parent.sh <session-dir> <agent-name> <parent-pane>"
   exit 1
 fi
 
-CHANNEL="orch-done-${TMUX_SESSION}-${AGENT_NAME}"
+DONE_FILE="${SESSION_DIR}/.status/${AGENT_NAME}.done"
+STATUS=$(cat "$DONE_FILE" 2>/dev/null || echo "done")
 
-# tmux wait-for シグナルを送信
-tmux wait-for -S "$CHANNEL" 2>/dev/null || true
+tmux send-keys -t "$PARENT_PANE" "[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}" Enter
 
-echo "[${AGENT_NAME}] Notification sent on channel: ${CHANNEL}"
+echo "[${AGENT_NAME}] Notification sent to pane ${PARENT_PANE}: ${STATUS}"
