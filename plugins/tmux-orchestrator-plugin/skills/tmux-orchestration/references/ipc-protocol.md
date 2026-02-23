@@ -329,11 +329,12 @@ Explorer                        │
                 ┌───────────────┼───────────────┐
                 ▼               ▼               ▼
           Task Manager 1  Task Manager 2  Task Manager N
+          (tmux ペイン)   (tmux ペイン)   (tmux ペイン)
                 │               │               │
           task-1/         task-2/         task-N/
-          ├── implementer/    ...             ...
-          ├── code-reviewer/
-          ├── test-runner/
+          ├── implementer/    ...             ...  ← Task ツール
+          ├── code-reviewer/                       ← (サブエージェント)
+          ├── test-runner/                         ← ペイン増加なし
           ├── linter/
           ├── refactorer/
           └── task-manager/lifecycle.md
