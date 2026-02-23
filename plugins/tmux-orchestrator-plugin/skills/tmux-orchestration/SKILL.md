@@ -274,7 +274,7 @@ ls -d .orchestrator/????-* 2>/dev/null
 
 | CLI ツール | エージェント形式 | 配置先 | 実行方法 |
 |-----------|----------------|--------|---------|
-| Claude Code | YAML + Markdown | `.claude/instructions/` | `claude --dangerously-skip-permissions` (対話モード) |
+| Claude Code | YAML + Markdown | `.claude/instructions/` | `claude --permission-mode acceptEdits` (対話モード) |
 | GitHub Copilot | YAML + Markdown | `.github/agents/` | `gh copilot suggest` |
 | OpenAI Codex | 純粋 Markdown | `AGENTS.md` | `codex --approval-mode full-auto` |
 | 汎用 CLI | Markdown | 任意 | CLI固有コマンド |

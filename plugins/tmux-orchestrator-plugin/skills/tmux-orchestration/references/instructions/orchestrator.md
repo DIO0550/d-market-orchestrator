@@ -197,11 +197,11 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 
 ```bash
 # 対話モードで起動、プロンプトファイルの内容を初期プロンプトとして渡す
-claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
+claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
 ```
 
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- `--dangerously-skip-permissions` で権限確認なしの自律実行モードにすること
+- `--permission-mode acceptEdits` で権限確認なしの自律実行モードにすること
 - CLAUDE.md がプロジェクトルートにあれば自動適用される
 - エージェントは作業完了後、`.done` マーカーを書き出し `notify-parent.sh` で完了通知する
 

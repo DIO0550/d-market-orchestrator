@@ -21,6 +21,7 @@
 #   1. {session-dir}/.status/{agent-name}.done - 完了マーカー作成
 #   2. {session-dir}/.status/{agent-name}.exit - 終了コード記録
 #   3. tmux send-keys で親ペインに完了通知を送信
+#   4. ペインのシェルを終了（ペインが閉じる）
 
 set -euo pipefail
 
@@ -69,12 +70,12 @@ PROMPT_FILE_ABS=$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FIL
 SESSION_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DIR")
 STATUS_DIR_ABS="${SESSION_DIR_ABS}/.status"
 
-# 完了後の共通処理: .exit/.done 作成 → 親ペインに send-keys で通知
-COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; STATUS=\$(cat '${STATUS_DIR_ABS}/${AGENT_NAME}.done'); tmux send-keys -t '${PARENT_PANE}' \"[AGENT_COMPLETE] ${AGENT_NAME} \${STATUS}\" Enter"
+# 完了後の共通処理: .exit/.done 作成 → 親ペインに send-keys で通知 → ペイン終了
+COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; STATUS=\$(cat '${STATUS_DIR_ABS}/${AGENT_NAME}.done'); tmux send-keys -t '${PARENT_PANE}' \"[AGENT_COMPLETE] ${AGENT_NAME} \${STATUS}\" Enter; exit"
 
 case "$CLI_TOOL" in
   claude)
-    CMD="cd '${WORKING_DIR}' && claude --dangerously-skip-permissions \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
+    CMD="cd '${WORKING_DIR}' && claude --permission-mode acceptEdits \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
     CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"

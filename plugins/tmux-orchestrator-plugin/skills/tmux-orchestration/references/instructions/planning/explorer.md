@@ -108,7 +108,7 @@ color: cyan
 ### Claude Code の場合
 
 ```bash
-claude --dangerously-skip-permissions "$(cat '{PROMPT_FILE}')"
+claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
 ```
 
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
