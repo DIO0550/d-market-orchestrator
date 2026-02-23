@@ -309,16 +309,16 @@ get_member_name() {
 ## データフロー図
 
 ```
-                              Planner（ミニオーケストレーター）
+                              Planner（ミニオーケストレーター / tmux ペイン）
 Explorer                        │
   │                             ├── planner/plan.md
   └── explorer/result.md ──→   ├── planner/tasks.md
                                 │
-                                ├──→ Plan Reviewer (Lead)
-                                │       ├── plan-quality-reviewer
-                                │       ├── plan-bug-reviewer
-                                │       ├── plan-performance-reviewer
-                                │       ├── plan-security-reviewer
+                                ├──→ Plan Reviewer (Lead) ← Task ツール
+                                │       ├── plan-quality-reviewer  ← Task ツール
+                                │       ├── plan-bug-reviewer      ← Task ツール
+                                │       ├── plan-performance-reviewer ← Task ツール
+                                │       ├── plan-security-reviewer ← Task ツール
                                 │       └── plan-reviewer/review-{round}.md
                                 │                │
                                 │←── (Needs Revision: 修正ループ)
