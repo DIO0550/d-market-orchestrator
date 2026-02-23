@@ -59,5 +59,12 @@ tmux select-window -t "${SESSION_NAME}:control"
 
 echo "tmux session '$SESSION_NAME' created."
 echo "Windows: control, phase1, phase2, phase3, phase4"
-echo ""
-echo "Attach with: tmux attach -t $SESSION_NAME"
+
+# tmux 内で実行されている場合、作成したセッションに自動切り替え
+if [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "$SESSION_NAME"
+  echo "Switched to session '$SESSION_NAME'."
+else
+  echo ""
+  echo "Attach with: tmux attach -t $SESSION_NAME"
+fi

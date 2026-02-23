@@ -43,23 +43,10 @@ fi
 # ステータスディレクトリの確認
 mkdir -p "${SESSION_DIR}/.status"
 
-# 現在のペイン数を取得
-PANE_COUNT=$(tmux list-panes -t "${SESSION}:${WINDOW}" 2>/dev/null | wc -l | tr -d ' ')
-
-# 最初のペインが空（シェルプロンプトのみ）なら再利用、そうでなければ新しいペインを作成
-if [ "$PANE_COUNT" -eq 1 ]; then
-  # 最初のペインのコマンドを確認
-  FIRST_PANE_CMD=$(tmux display-message -t "${SESSION}:${WINDOW}.0" -p '#{pane_current_command}' 2>/dev/null || echo "")
-  if [ "$FIRST_PANE_CMD" = "zsh" ] || [ "$FIRST_PANE_CMD" = "bash" ] || [ "$FIRST_PANE_CMD" = "sh" ]; then
-    TARGET_PANE="${SESSION}:${WINDOW}.0"
-  else
-    tmux split-window -t "${SESSION}:${WINDOW}" -v
-    TARGET_PANE=$(tmux list-panes -t "${SESSION}:${WINDOW}" -F '#{pane_id}' | tail -1)
-  fi
-else
-  tmux split-window -t "${SESSION}:${WINDOW}" -v
-  TARGET_PANE=$(tmux list-panes -t "${SESSION}:${WINDOW}" -F '#{pane_id}' | tail -1)
-fi
+# 常に新しいペインを作成し、tiled レイアウトで均等配置
+tmux split-window -t "${SESSION}:${WINDOW}" -v
+TARGET_PANE=$(tmux list-panes -t "${SESSION}:${WINDOW}" -F '#{pane_id}' | tail -1)
+tmux select-layout -t "${SESSION}:${WINDOW}" tiled
 
 # チーム設定からメンバー表示名を取得
 DISPLAY_NAME="$AGENT_NAME"
