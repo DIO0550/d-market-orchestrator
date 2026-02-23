@@ -101,7 +101,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
    > `$PARENT_PANE` はエージェント完了時に `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
 7. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
-### Phase 1: 探索・計画・レビュー
+### Phase 1: 探索・計画
 
 1. **Explorer** のプロンプトファイルを `.prompts/explorer-prompt.md` に生成
 2. tmux でエージェントを起動:
@@ -112,16 +112,13 @@ tmux を使って全体フローを制御し、他のエージェントを適切
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
 3. エージェント完了時、入力に `[AGENT_COMPLETE] explorer done` メッセージが届く。`.done` ファイルの状態値を確認して次へ進む。
-4. **Planner** のプロンプトファイルを生成し、起動。`[AGENT_COMPLETE]` メッセージ受信で完了を検知。
-5. **Plan Reviewer**（Lead）のプロンプトファイルを生成し、起動。`[AGENT_COMPLETE]` メッセージ受信で完了を検知。（Plan Reviewer は内部で4つのスペシャリストを並列起動して統合判定する）
-6. `.status/plan-reviewer.done` の状態値を読んで分岐:
+4. **Planner** のプロンプトファイルを生成し、起動。Planner は内部で Plan Reviewer を起動してレビュー→修正ループを管理し、承認済みの計画が完成してから完了通知する。
+5. `[AGENT_COMPLETE] planner {status}` メッセージ受信で完了を検知。`.status/planner.done` の状態値を読んで分岐:
    ```bash
-   STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/plan-reviewer.done" 2>/dev/null)
+   STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/planner.done" 2>/dev/null)
    ```
-   - `Approved` → Phase 2 に進む
-   - `Needs Revision` → Plan Reviewer の指摘パスを含めて Planner のプロンプトを再生成し起動。マーカーを削除して Plan Reviewer を再実行（最大2回リトライ）
-   - `Rejected` → ユーザーに報告し代替案を提案
-7. Phase 2 に進む
+   - `done` → 計画が承認済み。Phase 2 に進む
+   - `rejected` → ユーザーに報告し代替案を提案
 
 ### Phase 2: 実装（タスクごとに Task Manager を起動）
 
@@ -236,18 +233,16 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 
 | パス | ソース | 渡し先 |
 |------|--------|--------|
-| {SESSION_DIR}/explorer/result.md | Explorer | Planner, Task Manager |
+| {SESSION_DIR}/explorer/result.md | Explorer | Planner |
 | {SESSION_DIR}/planner/plan.md | Planner | Task Manager, Committer, PR Creator |
 | {SESSION_DIR}/planner/tasks.md | Planner | Task Manager |
 | {SESSION_DIR}/.deps/tasks.json | Planner | check-dependencies.sh |
+| {SESSION_DIR}/plan-reviewer/review-{round}.md | Plan Reviewer (Lead) | Planner（修正時） |
 | {SESSION_DIR}/task-{id}/task-manager/lifecycle.md | Task Manager | Committer, PR Creator |
 | {SESSION_DIR}/task-{id}/implementer/result-{round}.md | Implementer | Code Reviewer |
 | {SESSION_DIR}/task-{id}/code-reviewer/review-{round}.md | Code Reviewer | Refactorer |
-| {SESSION_DIR}/plan-reviewer/review-{round}.md | Plan Reviewer (Lead) | Planner（修正時） |
-| {SESSION_DIR}/plan-reviewer/quality-review-{round}.md | Plan Quality Reviewer | Plan Reviewer (Lead) |
-| {SESSION_DIR}/plan-reviewer/bug-review-{round}.md | Plan Bug Reviewer | Plan Reviewer (Lead) |
-| {SESSION_DIR}/plan-reviewer/performance-review-{round}.md | Plan Performance Reviewer | Plan Reviewer (Lead) |
-| {SESSION_DIR}/plan-reviewer/security-review-{round}.md | Plan Security Reviewer | Plan Reviewer (Lead) |
+
+> Plan Reviewer ↔ Planner のレビューループは Planner が内部で管理する。Orchestrator はこのループに関与しない。
 
 ## 必要な操作
 

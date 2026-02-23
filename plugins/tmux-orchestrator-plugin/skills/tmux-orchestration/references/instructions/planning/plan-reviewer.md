@@ -30,7 +30,7 @@ Planner が作成した計画をレビューするにあたり、**4つのスペ
   - `{SESSION_DIR}/explorer/result.md` — 探索結果
   - 計画書で参照されている仕様書
 - **出力**: `{SESSION_DIR}/plan-reviewer/review-{round}.md` — 統合レビュー結果
-- **完了通知**: CLI プロセス終了時に `.status/plan-reviewer.done` が自動作成される
+- **完了通知**: CLI プロセス終了時に `.status/plan-reviewer.done` が自動作成され、Planner（親ペイン）に `[AGENT_COMPLETE]` メッセージが送信される
 
 ### セッション情報
 

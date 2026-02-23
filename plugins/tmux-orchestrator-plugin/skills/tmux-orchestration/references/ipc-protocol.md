@@ -80,7 +80,7 @@ Agent完了 → .done/.exit 作成 → notify-parent.sh
 PARENT_PANE=$(tmux display-message -p '#{pane_id}')
 ```
 
-### パターン 1: 直列パイプライン
+### パターン 1: 直列パイプライン（ミニオーケストレーター委譲）
 
 ```
 Orchestrator:
@@ -91,6 +91,16 @@ Orchestrator:
   4. explorer/result.md のパスを planner-prompt.md に含める
   5. tmux-agent-launch.sh で planner 起動（PARENT_PANE を第6引数に渡す）
   6. [AGENT_COMPLETE] planner done メッセージを受信 → .done 確認
+     （Planner 内部で Plan Reviewer のレビューループを管理済み）
+
+Planner（内部ループ）:
+  1. 計画書・タスク一覧を作成
+  2. plan-reviewer-prompt.md を生成
+  3. tmux-agent-launch.sh で plan-reviewer 起動（自身の PARENT_PANE を渡す）
+  4. [AGENT_COMPLETE] plan-reviewer {status} メッセージを受信
+  5. Approved → .done に "done" を書き出し
+  6. Needs Revision → レビュー結果を読んで修正 → Step 2 に戻る
+  7. Rejected → .done に "rejected" を書き出し
 ```
 
 ### パターン 2: 並列実行 + バリア
@@ -163,7 +173,8 @@ Orchestrator:
 
 | エージェント | 状態値 |
 |-------------|--------|
-| Explorer, Planner, Implementer 等 | `done`（デフォルト） |
+| Explorer, Implementer 等 | `done`（デフォルト） |
+| Planner | `done`（計画承認済み） / `rejected`（計画却下） |
 | Plan Reviewer | `Approved` / `Needs Revision` / `Rejected` |
 | Task Manager | `completed` / `rejected` |
 | Code Reviewer | `Approved` / `Approved with Suggestions` / `Request Changes` |
@@ -298,28 +309,32 @@ get_member_name() {
 ## データフロー図
 
 ```
-Explorer                    Planner                 Plan Reviewer (Lead)
-  │                           │                         │
-  └── explorer/result.md ──→  │                         │
-                              ├── planner/plan.md ───→  │
-                              └── planner/tasks.md      ├── plan-quality-reviewer
-                                    │                   ├── plan-bug-reviewer
-                                    │                   ├── plan-performance-reviewer
-                                    │                   ├── plan-security-reviewer
-                                    │                   └── plan-reviewer/review-{round}.md
-                                    │
-                                    ▼
-                              .deps/tasks.json
-                                    │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-              Task Manager 1  Task Manager 2  Task Manager N
-                    │               │               │
-              task-1/         task-2/         task-N/
-              ├── implementer/    ...             ...
-              ├── code-reviewer/
-              ├── test-runner/
-              ├── linter/
-              ├── refactorer/
-              └── task-manager/lifecycle.md
+                              Planner（ミニオーケストレーター）
+Explorer                        │
+  │                             ├── planner/plan.md
+  └── explorer/result.md ──→   ├── planner/tasks.md
+                                │
+                                ├──→ Plan Reviewer (Lead)
+                                │       ├── plan-quality-reviewer
+                                │       ├── plan-bug-reviewer
+                                │       ├── plan-performance-reviewer
+                                │       ├── plan-security-reviewer
+                                │       └── plan-reviewer/review-{round}.md
+                                │                │
+                                │←── (Needs Revision: 修正ループ)
+                                │
+                                ▼ (Approved)
+                          .deps/tasks.json
+                                │
+                ┌───────────────┼───────────────┐
+                ▼               ▼               ▼
+          Task Manager 1  Task Manager 2  Task Manager N
+                │               │               │
+          task-1/         task-2/         task-N/
+          ├── implementer/    ...             ...
+          ├── code-reviewer/
+          ├── test-runner/
+          ├── linter/
+          ├── refactorer/
+          └── task-manager/lifecycle.md
 ```

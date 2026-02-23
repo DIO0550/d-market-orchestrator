@@ -39,14 +39,13 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
     │
     ├── planner プロンプト生成 → tmux-agent-launch.sh で起動
     │   └── 探索結果を基に実装計画を作成
+    │       planner 内部（ミニオーケストレーター）:
+    │         1. plan-reviewer 起動 → スペシャリスト4名を並列起動 → 統合レビュー
+    │         2. Approved → .done に "done" を書き出し
+    │         3. Needs Revision → レビュー結果を読んで修正 → plan-reviewer 再起動（最大2回）
+    │         4. Rejected → .done に "rejected" を書き出し
     │
-    ▼ ([AGENT_COMPLETE] メッセージ受信で完了検知)
-    │
-    ├── plan-reviewer (Lead) プロンプト生成 → tmux-agent-launch.sh で起動
-    │   └── 4つのスペシャリスト（quality/bug/performance/security）を並列起動
-    │       → 統合レビュー + タスク依存関係チェック → .done に状態値を書き出し
-    │
-    ▼ ([AGENT_COMPLETE] 受信 → .done の状態値で分岐: Approved → Phase 2 / Needs Revision → planner 再起動)
+    ▼ ([AGENT_COMPLETE] 受信 → .done の状態値で分岐: done → Phase 2 / rejected → ユーザーに報告)
     │
 [Phase 2: 実装（タスクごと）] ─────────────────
     │
