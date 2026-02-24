@@ -69,9 +69,10 @@ tmux select-pane -t "$TARGET_PANE" -T "$DISPLAY_NAME"
 PROMPT_FILE_ABS=$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FILE")
 SESSION_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DIR")
 STATUS_DIR_ABS="${SESSION_DIR_ABS}/.status"
+SCRIPTS_DIR="$(dirname "$SESSION_DIR_ABS")/scripts"
 
-# 完了後の共通処理: .exit/.done 作成 → 親ペインに send-keys で通知 → ペイン終了
-COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; STATUS=\$(cat '${STATUS_DIR_ABS}/${AGENT_NAME}.done'); tmux send-keys -t '${PARENT_PANE}' \"[AGENT_COMPLETE] ${AGENT_NAME} \${STATUS}\" Enter; exit"
+# 完了後の共通処理: .exit/.done 作成 → notify-parent.sh で排他的に通知 → ペイン終了
+COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; bash '${SCRIPTS_DIR}/notify-parent.sh' '${SESSION_DIR_ABS}' '${AGENT_NAME}' '${PARENT_PANE}'; tmux kill-pane -t '${TARGET_PANE}' 2>/dev/null; exit"
 
 case "$CLI_TOOL" in
   claude)

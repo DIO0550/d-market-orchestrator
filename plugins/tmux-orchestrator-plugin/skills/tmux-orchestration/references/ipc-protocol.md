@@ -57,18 +57,30 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 
 ## 通信パターン
 
-### 通知メカニズム（send-keys 方式）
+### 通知メカニズム（send-keys 方式 + 排他制御）
 
-エージェント完了の通知には `tmux send-keys` を使用し、親ペインの入力にメッセージを送信する:
+エージェント完了の通知には `tmux send-keys` を使用し、親ペインの入力にメッセージを送信する。
+複数エージェントの同時完了による割り込みを防止するため、`notify-parent.sh` がロックベースの待ち行列で排他制御する:
 
 ```
 Agent完了 → .done/.exit 作成 → notify-parent.sh
-         → tmux send-keys -t {parent-pane} "[AGENT_COMPLETE] {agent-name} {status}" Enter
+         → ロック取得（他エージェントが送信中なら待機）
+         → tmux send-keys -t {parent-pane} "[AGENT_COMPLETE] {agent-name} {status}"
+         → sleep 0.3
+         → tmux send-keys -t {parent-pane} Enter
+         → 親の処理待ち（5秒）
+         → ロック解放
+         → ペイン終了（tmux kill-pane）
 
 親ペイン（Orchestrator/Plan Reviewer/Task Manager 等）
        → 入力に [AGENT_COMPLETE] メッセージを受信
        → .done ファイルの状態値を確認 → 次のアクション判断
 ```
+
+**排他制御の仕組み**:
+- ロックは `mkdir` によるアトミック操作（`.status/.notify-lock/` ディレクトリ）
+- 60秒以上保持されたロックは失効とみなし自動除去
+- 親が処理中に別の通知が割り込むとフリーズするため、送信後に親の処理時間を確保してからロックを解放する
 
 **メッセージ形式**: `[AGENT_COMPLETE] {agent-name} {status}`
 - 例: `[AGENT_COMPLETE] explorer done`

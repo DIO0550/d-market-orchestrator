@@ -1,6 +1,6 @@
 #!/bin/bash
 # notify-parent.sh
-# エージェント完了時に親ペインへ send-keys で通知する
+# エージェント完了時に親ペインへ排他的に通知を送信する（待ち行列）
 #
 # 使用方法:
 #   notify-parent.sh <session-dir> <agent-name> <parent-pane>
@@ -11,8 +11,15 @@
 #   parent-pane   - 通知先の親ペインID
 #
 # 動作:
-#   .done ファイルの状態値を読み取り、親ペインに [AGENT_COMPLETE] メッセージを送信する。
-#   オーケストレーター（Claude Code）はこのメッセージを入力として受け取り、次のアクションに進む。
+#   1. ロックを取得（他のエージェントが送信中なら待機）
+#   2. .done ファイルの状態値を読み取り、親ペインに [AGENT_COMPLETE] メッセージを送信
+#   3. 親の処理時間を待機（次の通知が割り込まないように）
+#   4. ロックを解放
+#
+# 排他制御:
+#   mkdir によるアトミックなロック取得で、複数エージェントの同時送信を防止する。
+#   親（Claude Code）が処理中に別の通知が割り込むとフリーズするため、
+#   送信後に親の処理完了を待ってからロックを解放する。
 
 set -euo pipefail
 
@@ -28,6 +35,53 @@ fi
 DONE_FILE="${SESSION_DIR}/.status/${AGENT_NAME}.done"
 STATUS=$(cat "$DONE_FILE" 2>/dev/null || echo "done")
 
-tmux send-keys -t "$PARENT_PANE" "[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}" Enter
+LOCK_DIR="${SESSION_DIR}/.status/.notify-lock"
+LOCK_TIMESTAMP="${LOCK_DIR}/timestamp"
+MAX_WAIT=300          # ロック取得の最大待機時間（秒）
+STALE_THRESHOLD=60    # これ以上古いロックは失効とみなす（秒）
+PROCESS_WAIT=5        # 送信後の親処理待ち時間（秒）
+
+# --- 失効ロックの検出・除去 ---
+if [ -d "$LOCK_DIR" ]; then
+  LOCK_TIME=$(cat "$LOCK_TIMESTAMP" 2>/dev/null || echo "0")
+  NOW=$(date +%s)
+  if [ $((NOW - LOCK_TIME)) -gt $STALE_THRESHOLD ]; then
+    echo "[${AGENT_NAME}] Removing stale lock (age: $((NOW - LOCK_TIME))s)"
+    rm -rf "$LOCK_DIR"
+  fi
+fi
+
+# --- ロック取得（待ち行列） ---
+WAITED=0
+while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+  sleep 1
+  WAITED=$((WAITED + 1))
+  if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "[${AGENT_NAME}] Lock timeout (${MAX_WAIT}s), forcing lock acquisition"
+    rm -rf "$LOCK_DIR"
+    mkdir -p "$LOCK_DIR" 2>/dev/null || true
+    break
+  fi
+done
+
+# ロックにタイムスタンプを記録（失効検出用）
+date +%s > "$LOCK_TIMESTAMP" 2>/dev/null || true
+
+echo "[${AGENT_NAME}] Lock acquired, sending notification..."
+
+# --- 通知送信 ---
+tmux send-keys -t "$PARENT_PANE" "[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}"
+sleep 0.3
+tmux send-keys -t "$PARENT_PANE" Enter
 
 echo "[${AGENT_NAME}] Notification sent to pane ${PARENT_PANE}: ${STATUS}"
+
+# --- 親の処理待ち ---
+# 親（Claude Code）が [AGENT_COMPLETE] メッセージを受信・処理する時間を確保する。
+# この間にロックを保持することで、次の通知が割り込まない。
+sleep "$PROCESS_WAIT"
+
+# --- ロック解放 ---
+rm -rf "$LOCK_DIR" 2>/dev/null || true
+
+echo "[${AGENT_NAME}] Lock released"
