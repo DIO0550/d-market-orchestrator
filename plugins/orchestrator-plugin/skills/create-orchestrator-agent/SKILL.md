@@ -47,17 +47,25 @@ description: "オーケストレーターフロー用のエージェント定義
 
 ### 個別選択
 
-**制御**: [Orchestrator](references/agents/orchestrator.md), [Orchestrator Copilot版](references/agents/orchestrator-copilot.md)
+テンプレートは `references/agents/{platform}/` 配下にプラットフォーム別で配置されている。Step 1 で決定したターゲットツールに応じて適切なディレクトリを参照すること。
 
-**計画**: [Explorer](references/agents/explorer.md), [Planner](references/agents/planner.md), [Plan Reviewer](references/agents/plan-reviewer.md)
+| プラットフォーム | ディレクトリ |
+|----------------|-------------|
+| Claude Code | `references/agents/claude-code/` |
+| GitHub Copilot | `references/agents/copilot/` |
+| OpenAI Codex | `references/agents/codex/` |
 
-**実装**: [Implementer](references/agents/implementer.md), [Task Manager](references/agents/task-manager.md), [Task Manager Copilot版](references/agents/task-manager-copilot.md)
+**制御**: orchestrator, task-manager
 
-**検証**: [Code Reviewer](references/agents/code-reviewer.md), [Test Runner](references/agents/test-runner.md), [Linter](references/agents/linter.md), [Security Scanner](references/agents/security-scanner.md)
+**計画**: explorer, planner, plan-reviewer
 
-**修正**: [Debugger](references/agents/debugger.md), [Refactorer](references/agents/refactorer.md)
+**実装**: implementer
 
-**Git**: [Committer](references/agents/committer.md), [PR Creator](references/agents/pr-creator.md)
+**検証**: code-reviewer, test-runner, linter, security-scanner
+
+**修正**: debugger, refactorer
+
+**Git**: committer, pr-creator
 
 ### モデル選択
 
@@ -139,7 +147,8 @@ Step 2 で選択した各エージェント種別に対し、以下を並列実�
     {Phase A で取得した該当種別のプロファイル全文}
 
     ## テンプレートパス
-    references/agents/{種別}.md
+    references/agents/{platform}/{種別}.md
+    （{platform} = claude-code / copilot / codex）
 
     ## ターゲットツール
     {Claude Code / GitHub Copilot / OpenAI Codex}
@@ -189,9 +198,9 @@ Phase B: generator × 7 を同時にバックグラウンド起動
 
 ### テンプレートの位置づけ
 
-**テンプレート（`references/agents/*.md`）は出力そのものではなく、構造のリファレンスである。**
+**テンプレート（`references/agents/{platform}/*.md`）は出力そのものではなく、構造のリファレンスである。**
 
-各 generator はテンプレートを Read して構造・必須セクションを把握した上で、analyzer のプロファイルに基づいてプロジェクト固有のエージェント定義を生成する。テンプレートをそのままコピーしてはならない。
+テンプレートはプラットフォーム別に分離されている（`claude-code/`, `copilot/`, `codex/`）。各 generator はターゲットプラットフォームに対応するテンプレートを Read して構造・必須セクションを把握した上で、analyzer のプロファイルに基づいてプロジェクト固有のエージェント定義を生成する。テンプレートをそのままコピーしてはならない。
 
 ### ツール別の調整
 

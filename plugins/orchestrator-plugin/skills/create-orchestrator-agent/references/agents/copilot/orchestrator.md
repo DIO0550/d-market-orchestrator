@@ -14,7 +14,6 @@ Copilot 用。サブエージェントネスト不可のため、Phase 2 はフ�
 ---
 name: orchestrator
 description: "オーケストレーションの司令塔。タスクを受け取り、適切なエージェントを起動して全体フローを制御する。タスク状態を監視し、適切なタイミングでエージェントを起動する。"
-tools: ["search", "codebase", "fetch", "githubRepo", "usages", "editFiles", "terminalLastCommand", "execute", "agent"]
 ---
 
 # Orchestrator エージェント
@@ -136,7 +135,7 @@ Copilot ではサブエージェントからサブエージェントを呼び出
 - agentName: explorer
 ```
 
-**前提（VS Code）**: フロントマターの `tools` に全ツールを明示的にリストすること。VS Code では `["*"]` が機能しないため省略や `["*"]` では不十分。親エージェントのツール設定がサブエージェントに継承されるため、Orchestrator で漏れがあるとサブエージェントもそのツールを使えなくなる。カスタムエージェントを呼び出すには VS Code 設定 `chat.customAgentInSubagent.enabled: true` も必要。
+**前提（VS Code）**: フロントマターの `tools` を省略すると、すべての組み込みツールが利用可能になる。`tools` を明示的に指定するとリストしたツールのみに制限されるため、Orchestrator では `tools` を指定しないこと。カスタムエージェントを呼び出すには VS Code 設定 `chat.customAgentInSubagent.enabled: true` も必要。
 
 ## タスク状態の監視
 

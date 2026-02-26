@@ -13,6 +13,7 @@ Copilot ではサブエージェントのネストができないため、各エ
 ```markdown
 ---
 name: task-manager
+user-invokable: false
 description: "タスク完了判定エージェント（Copilot判定専用版）。Orchestrator から渡される実装結果・テスト結果・Lint結果・レビュー結果を読み取り、タスクの完了判定を行う。サブエージェントの起動は行わない。"
 tools: ["search", "codebase"]
 ---
