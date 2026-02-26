@@ -66,10 +66,11 @@ split-window → send-keys(cli "$(cat prompt)") → 完了 → kill-pane
 
 **tmux-team**:
 ```
-split-window → send-keys(cli) → [Ready] → send-keys(指示) → 完了通知 → send-keys(次の指示) → ...
+split-window → send-keys(cli --system-prompt "キャラ情報") → [Ready] → send-keys(指示) → 完了通知 → send-keys(次の指示) → ...
 ```
 - ペインはセッションの寿命と同じ
 - 完了通知はエージェント自身が Bash ツールで実行
+- キャラ情報は `--system-prompt` でシステムプロンプトに注入（compact の影響を受けない）
 
 ## セッションディレクトリ構造
 

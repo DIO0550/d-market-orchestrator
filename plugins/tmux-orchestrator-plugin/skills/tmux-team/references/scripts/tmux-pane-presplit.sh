@@ -85,15 +85,37 @@ for i in $(seq 1 "$PANE_COUNT"); do
     fi
   fi
 
+  # team-config.json からキャラ情報を構築（--system-prompt 用）
+  SYSTEM_PROMPT=""
+  if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+    TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+    MEMBER_CUSTOM_NAME=$(jq -r ".members.\"${MEMBER_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
+    MEMBER_PERSONALITY=$(jq -r ".members.\"${MEMBER_NAME}\".personality // empty" "$TEAM_CONFIG" 2>/dev/null)
+
+    if [ -n "$MEMBER_CUSTOM_NAME" ] && [ -n "$TEAM_NAME" ]; then
+      SYSTEM_PROMPT="あなたは **${TEAM_NAME}** の **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
+    elif [ -n "$MEMBER_CUSTOM_NAME" ]; then
+      SYSTEM_PROMPT="あなたは **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
+    else
+      SYSTEM_PROMPT="あなたは ${MEMBER_NAME} です。"
+    fi
+
+    if [ -n "$MEMBER_PERSONALITY" ]; then
+      SYSTEM_PROMPT="${SYSTEM_PROMPT} あなたの性格・話し方: ${MEMBER_PERSONALITY}"
+    fi
+  else
+    SYSTEM_PROMPT="あなたは ${MEMBER_NAME} です。"
+  fi
+
   # CLIツールに応じたコマンドを構築
   case "$MEMBER_CLI" in
     claude)
-      CLI_CMD="claude --permission-mode acceptEdits"
+      CLI_CMD="claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'"
       ;;
     *)
       echo "Warning: ${MEMBER_CLI} does not support interactive persistent mode. Using claude instead."
       MEMBER_CLI="claude"
-      CLI_CMD="claude --permission-mode acceptEdits"
+      CLI_CMD="claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'"
       ;;
   esac
 

@@ -119,6 +119,8 @@ bash .orchestrator/scripts/tmux-pane-presplit.sh \
 
 出力から `PANE_REGISTRY` のパスを取得し、pane-registry.json を Read してペインIDを記録する。
 
+**キャラ情報の永続化**: `tmux-pane-presplit.sh` は `team-config.json` からメンバーのキャラ情報（名前・性格）を読み取り、`--system-prompt` フラグで CLI に渡す。システムプロンプトはコンテキスト圧縮（compact）の影響を受けないため、セッション中ずっとキャラ設定が維持される。
+
 ### Step 7: Ready 検知
 
 CLI の起動完了を待機する:
