@@ -1,6 +1,7 @@
 ---
 name: tmux-orchestrator-setup
 description: "tmux オーケストレーション環境のセットアップ。テンプレート・スクリプトを .orchestrator/ に配置する。「tmuxセットアップ」「tmuxオーケストレーターをセットアップ」「オーケストレーション環境を初期化」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # tmux Orchestrator Setup

@@ -1,3 +1,9 @@
+---
+name: orchestration
+description: "タスクを専門エージェントに分散して並列実行するオーケストレーションワークフロー。Task ツール（サブエージェント）を使用。"
+disable-model-invocation: true
+---
+
 # Orchestration Skill
 
 タスクを専門エージェントに分散して並列実行するオーケストレーションワークフロー。

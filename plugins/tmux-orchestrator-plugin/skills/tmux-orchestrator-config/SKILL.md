@@ -1,6 +1,7 @@
 ---
 name: tmux-orchestrator-config
 description: "tmux オーケストレーターの設定カスタマイズ。CLI割り当て（cli-assignments.json）やチーム設定（team-config.json）を対話的に作成・編集する。「tmux設定」「CLI割り当て変更」「チーム設定」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # tmux Orchestrator Config

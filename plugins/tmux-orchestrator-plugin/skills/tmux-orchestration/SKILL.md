@@ -1,6 +1,7 @@
 ---
 name: tmux-orchestration
 description: "tmuxセッションを使ってタスクを専門エージェントに分散し、複数のAI CLIプロセスとして並列実行するオーケストレーションワークフロー。/tmux-orchestrate コマンド実行時、「tmuxでオーケストレーション」「tmuxで並列実行」、「セッション確認」「セッション破棄」、「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # tmux Orchestration Skill

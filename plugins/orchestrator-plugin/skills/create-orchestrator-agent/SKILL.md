@@ -1,6 +1,7 @@
 ---
 name: create-orchestrator-agent
 description: "オーケストレーターフロー用のエージェント定義ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。13種類のエージェントテンプレートから必要なものだけを選択して作成可能。ツール非依存の汎用的な指示形式。「エージェント作成」「オーケストレーターにエージェント追加」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # Create Orchestrator Agent

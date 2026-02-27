@@ -1,6 +1,7 @@
 ---
 name: tmux-team
 description: "tmuxセッションに事前分割した永続ペインでAI CLIチームを編成し、ボスが動的にタスクを割り振るオーケストレーション。/tmux-team コマンド実行時、「チームで作業」「tmuxチーム」「チーム編成」「N人のチームで」「セッション確認」「セッション破棄」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # tmux Team Skill

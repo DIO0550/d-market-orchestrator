@@ -1,6 +1,7 @@
 ---
 name: create-orchestrator-agent-file-based
 description: "オーケストレーターフロー用のエージェント定義ファイルを作成（ファイルベース出力版）。エージェント間の結果受け渡しに .orchestrator/ ディレクトリへのファイル出力を使用。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。13種類のエージェントテンプレートから必要なものだけを選択して作成可能。ツール非依存の汎用的な指示形式。「エージェント作成」「オーケストレーターにエージェント追加」などのリクエスト時に使用。"
+disable-model-invocation: true
 ---
 
 # Create Orchestrator Agent
