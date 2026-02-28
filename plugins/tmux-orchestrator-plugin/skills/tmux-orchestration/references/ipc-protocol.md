@@ -65,12 +65,13 @@ tmux-orchestrator ではエージェント間の通信にファイルシステ�
 ```
 Agent完了 → .done/.exit 作成 → notify-parent.sh
          → ロック取得（他エージェントが送信中なら待機）
-         → tmux send-keys -t {parent-pane} "[AGENT_COMPLETE] {agent-name} {status}"
-         → sleep 0.3
-         → tmux send-keys -t {parent-pane} Enter
+         → tmux send-keys -l -t {parent-pane} "[AGENT_COMPLETE] {agent-name} {status}"
+         → Enter 送信 + capture-pane で submit 検証（リトライあり）
          → 親の処理待ち（5秒）
          → ロック解放
-         → ペイン終了（tmux kill-pane）
+         → エージェント自身が tmux kill-pane で自ペインを終了
+           （対話モードでは CLIプロセスが自動終了しないため、エージェントが明示的にペインを閉じる）
+           （非対話モードでは COMPLETION_SUFFIX がペインを自動閉じる）
 
 親ペイン（Orchestrator/Plan Reviewer/Task Manager 等）
        → 入力に [AGENT_COMPLETE] メッセージを受信
