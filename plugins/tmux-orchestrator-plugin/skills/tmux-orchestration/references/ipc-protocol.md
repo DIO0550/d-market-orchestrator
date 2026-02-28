@@ -77,6 +77,8 @@ Agent完了 → .done/.exit 作成 → notify-parent.sh
        → .done ファイルの状態値を確認 → 次のアクション判断
 ```
 
+**⚠️ ポーリング禁止**: 親エージェント（Orchestrator、Planner、Task Manager 等）はサブエージェントの `.done` ファイルをポーリングしてはならない。`while [ ! -f ... ]; do sleep; done` や `sleep N && cat` は**絶対禁止**。サブエージェント起動後はテキスト出力のみでターンを終了し、`[AGENT_COMPLETE]` メッセージが入力として届くのを待つこと。
+
 **排他制御の仕組み**:
 - ロックは `mkdir` によるアトミック操作（`.status/.notify-lock/` ディレクトリ）
 - 60秒以上保持されたロックは失効とみなし自動除去

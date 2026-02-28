@@ -70,9 +70,32 @@ date +%s > "$LOCK_TIMESTAMP" 2>/dev/null || true
 echo "[${AGENT_NAME}] Lock acquired, sending notification..."
 
 # --- 通知送信 ---
-tmux send-keys -t "$PARENT_PANE" "[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}"
-sleep 0.3
-tmux send-keys -t "$PARENT_PANE" Enter
+# テキストを -l（リテラル）で送信（括弧等の特殊文字の誤解釈を防止）
+tmux send-keys -l -t "$PARENT_PANE" "[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}"
+
+# Enter をリトライ付きで送信
+# Claude Code が処理中・描画中だと Enter が効かないことがあるため、
+# capture-pane でメッセージが入力行に残っているか検証し、残っていたら再送する
+MAX_ENTER_RETRIES=5
+for i in $(seq 1 $MAX_ENTER_RETRIES); do
+  sleep 1
+  tmux send-keys -t "$PARENT_PANE" Enter
+  sleep 1
+
+  # 親ペインの末尾数行をキャプチャし、メッセージがまだ入力行に残っているか確認
+  PANE_TAIL=$(tmux capture-pane -t "$PARENT_PANE" -p -S -5 2>/dev/null || true)
+  if ! echo "$PANE_TAIL" | grep -qF "[AGENT_COMPLETE] ${AGENT_NAME}"; then
+    # メッセージが表示から消えた = submit されたと判断
+    echo "[${AGENT_NAME}] Notification submitted (attempt ${i})"
+    break
+  fi
+
+  if [ "$i" -lt "$MAX_ENTER_RETRIES" ]; then
+    echo "[${AGENT_NAME}] Enter not registered, retrying (${i}/${MAX_ENTER_RETRIES})..."
+  else
+    echo "[${AGENT_NAME}] Enter retries exhausted (${MAX_ENTER_RETRIES}), proceeding anyway"
+  fi
+done
 
 echo "[${AGENT_NAME}] Notification sent to pane ${PARENT_PANE}: ${STATUS}"
 

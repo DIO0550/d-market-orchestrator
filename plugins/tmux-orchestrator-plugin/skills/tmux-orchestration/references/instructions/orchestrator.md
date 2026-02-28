@@ -76,6 +76,54 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 - **結果ファイルを Read しない**: 他エージェントの結果ファイル（plan.md, lifecycle.md, review.md 等）は**絶対に読まない**。分岐判断は `.status/{agent}.done` の状態値のみで行う
 - **自律実行**: Phase 1〜2 はユーザー確認なしで自動完了する
 - **tmux コマンドのみで制御**: Task ツールは使用せず、Bash ツールで tmux スクリプトを実行する
+- **ポーリング禁止（最重要）**: `while [ ! -f ... ]; do sleep; done` のようなポーリングループは**絶対に使用しない**。詳細は「完了待機の方法」セクションを参照
+
+## 完了待機の方法（最重要）
+
+エージェントを起動した後の完了待機は **push 型通知** で行う。**ポーリングは一切禁止**。
+
+### 仕組み
+
+1. エージェントが完了すると `notify-parent.sh` が `tmux send-keys` であなたの入力に `[AGENT_COMPLETE] {agent-name} {status}` メッセージを送信する
+2. このメッセージはユーザー入力として届くため、自動的に次のターンが始まる
+3. メッセージ受信後に `.done` ファイルを `cat` で読んで分岐判断する
+
+### 正しいパターン
+
+エージェント起動後は **テキスト出力だけして、ツール呼び出しをせずにターンを終了** する:
+
+```
+Explorer を起動しました。完了通知を待機中...
+```
+
+→ `notify-parent.sh` が `[AGENT_COMPLETE] explorer done` をあなたの入力に送信
+→ 次のターンで `.done` を `cat` して分岐判断
+
+### 禁止パターン
+
+```bash
+# ❌ 絶対禁止: ポーリングループ
+while [ ! -f ".orchestrator/{SESSION_ID}/.status/explorer.done" ]; do sleep 10; done
+
+# ❌ 絶対禁止: sleep で待ってから確認
+sleep 60 && cat ".orchestrator/{SESSION_ID}/.status/explorer.done"
+
+# ❌ 絶対禁止: Bash の run_in_background でポーリング
+# （ポーリング自体が不要。push 通知が届く）
+```
+
+### 複数エージェントの並列待機
+
+複数エージェントを並列起動した場合も同じ。`[AGENT_COMPLETE]` メッセージが到着順に届くので、全員分のメッセージが届くまで1つずつ処理する:
+
+```
+Test Runner と Linter を並列起動しました。完了通知を待機中...
+```
+
+→ `[AGENT_COMPLETE] test-runner PASS` が届く → 1/2 完了
+→ テキスト出力:「Test Runner 完了（PASS）。Linter の完了を待機中...」
+→ `[AGENT_COMPLETE] linter PASS` が届く → 2/2 完了
+→ `.done` を確認して次のフェーズへ
 
 ## 実行手順
 
@@ -111,9 +159,9 @@ tmux を使って全体フローを制御し、他のエージェントを適切
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
-3. エージェント完了時、入力に `[AGENT_COMPLETE] explorer done` メッセージが届く。`.done` ファイルの状態値を確認して次へ進む。
+3. 「Explorer を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] explorer done` メッセージが入力に届いたら、`.done` の状態値を確認して次へ進む。
 4. **Planner** のプロンプトファイルを生成し、起動。Planner は内部で Plan Reviewer を起動してレビュー→修正ループを管理し、承認済みの計画が完成してから完了通知する。
-5. `[AGENT_COMPLETE] planner {status}` メッセージ受信で完了を検知。`.status/planner.done` の状態値を読んで分岐:
+5. 「Planner を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] planner {status}` メッセージが入力に届いたら、`.status/planner.done` の状態値を読んで分岐:
    ```bash
    STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/planner.done" 2>/dev/null)
    ```
@@ -139,13 +187,13 @@ tmux を使って全体フローを制御し、他のエージェントを適切
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
-4. 各 task-manager 完了時、入力に `[AGENT_COMPLETE] task-{taskId}-task-manager {status}` メッセージが届く。`.done` ファイルの状態値を確認。
+4. 「Task Manager を N 件起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] task-{taskId}-task-manager {status}` メッセージが入力に届くたびに `.done` の状態値を確認。
 5. 全タスク完了まで繰り返し（新たにブロック解除されたタスクがあれば 1 に戻る）
 
 ### Phase 3: 検証
 
 1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動（`$PARENT_PANE` を第6引数に含める）
-2. 両方の `[AGENT_COMPLETE]` メッセージを受信
+2. 「Test Runner と Linter を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。両方の `[AGENT_COMPLETE]` メッセージが入力に届くまで待つ
 3. `.done` ファイルの状態値を確認:
    ```bash
    TR_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.done" 2>/dev/null)

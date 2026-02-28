@@ -49,6 +49,24 @@
 - {出力先パス} に結果が書き出されていること
 - {その他の完了条件}
 
+## サブエージェントを起動する場合の待機方法（該当エージェントのみ）
+
+> この節は tmux で他エージェントを起動するミニオーケストレーター（Planner, Task Manager, Plan Reviewer Lead, Code Reviewer Lead 等）にのみ適用される。
+
+サブエージェントの完了待機は **push 型通知** で行う。**ポーリングは絶対禁止**。
+
+- サブエージェント起動後は「{エージェント名} を起動しました。完了通知を待機中...」とだけ出力して **ツール呼び出しをせずにターンを終了する**
+- サブエージェントが完了すると `notify-parent.sh` が `tmux send-keys` で `[AGENT_COMPLETE] {agent-name} {status}` メッセージをあなたの入力に送信する
+- このメッセージが届いたら `.done` を `cat` して分岐判断する
+
+```bash
+# ❌ 絶対禁止: ポーリングループ
+while [ ! -f "{SESSION_DIR}/.status/{agent}.done" ]; do sleep 10; done
+
+# ❌ 絶対禁止: sleep で待機
+sleep 60 && cat "{SESSION_DIR}/.status/{agent}.done"
+```
+
 ## 完了手順（必須）
 
 すべての作業が完了したら、以下を **必ず** 実行してください:
