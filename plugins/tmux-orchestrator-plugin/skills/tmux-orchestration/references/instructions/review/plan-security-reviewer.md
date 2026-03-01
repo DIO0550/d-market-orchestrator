@@ -76,7 +76,7 @@ color: yellow
 
 ### 3. 結果出力
 
-`.orchestrator/templates/plan-specialist-review-result.md` を Read してフォーマットに従って結果を出力する。
+プロンプトの「出力フォーマット」セクションに従って結果を出力する。
 
 ## CLI別の注意事項
 

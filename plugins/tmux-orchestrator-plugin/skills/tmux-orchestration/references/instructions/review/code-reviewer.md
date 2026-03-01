@@ -75,7 +75,7 @@ Task ツール呼び出し:
     コードの品質観点（可読性・保守性・DRY・一貫性）でレビューしてください。
     実装結果: {SESSION_DIR}/task-{taskId}/implementer/result-{round}.md
     出力先: {SESSION_DIR}/task-{taskId}/code-reviewer/quality-review-{round}.md
-    フォーマット: .orchestrator/templates/specialist-review-result.md を参照
+    フォーマット: プロンプトの「サブエージェント用出力フォーマット」セクションの specialist-review-result を使用
   subagent_type: general-purpose
 
 # Bug/Performance/Security Reviewer も同様に並列呼び出し
@@ -91,7 +91,7 @@ Task ツール呼び出し:
 - スコープ逸脱の確認
 
 ### 5. 統合レビュー結果の出力
-`.orchestrator/templates/code-review-result.md` を Read してフォーマットに従って統合結果を出力する。
+プロンプトの「出力フォーマット」セクションに従って統合結果を出力する。
 
 ### 6. 判定の記載
 

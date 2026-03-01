@@ -1,96 +1,49 @@
 ---
 name: tmux-orchestrator-setup
-description: "tmux オーケストレーション環境のセットアップ。テンプレート・スクリプトを .orchestrator/ に配置する。「tmuxセットアップ」「tmuxオーケストレーターをセットアップ」「オーケストレーション環境を初期化」などのリクエスト時に使用。"
+description: "tmux オーケストレーション環境の確認。「tmuxセットアップ」「tmuxオーケストレーターをセットアップ」「オーケストレーション環境を初期化」などのリクエスト時に使用。"
 disable-model-invocation: true
 ---
 
 # tmux Orchestrator Setup
 
-tmux オーケストレーションに必要なテンプレートとスクリプトを `.orchestrator/` に配置するセットアップスキル。
+tmux オーケストレーション環境の準備状態を確認する。
+
+スクリプトとテンプレートはスキルの `references/` に配置されており、オーケストレーターがスキル参照から直接読み込む。`.orchestrator/` へのコピーは不要。
 
 ## トリガー
 
 - `/tmux-setup` コマンドが実行されたとき
 - ユーザーが「tmuxセットアップ」「tmuxオーケストレーターをセットアップ」と指示したとき
-- ユーザーが「オーケストレーション環境を初期化」と指示したとき
 
 ---
 
-## セットアップ手順
+## 確認手順
 
-### Step 1: 既存環境の確認
-
-`.orchestrator/` ディレクトリが既に存在するか確認する。
-
-- **存在しない場合**: Step 2 に進む
-- **存在する場合**: テンプレート・スクリプトの上書き確認をユーザーに行う
-
-### Step 2: ディレクトリ作成
+### Step 1: tmux の存在確認
 
 ```bash
-mkdir -p .orchestrator/templates
-mkdir -p .orchestrator/scripts
+tmux -V
 ```
 
-### Step 3: テンプレートの配置
+tmux がインストールされていない場合はインストール方法を案内する。
 
-以下の 14 ファイルを **1つずつ Read → Write** でコピーする:
+### Step 2: スキル参照の確認
 
-| # | Read 対象（このスキルの参照ファイル） | Write 先 |
-|---|--------------------------------------|----------|
-| 1 | [exploration-result.md](../tmux-orchestration/references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
-| 2 | [implementation-plan.md](../tmux-orchestration/references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
-| 3 | [code-review-result.md](../tmux-orchestration/references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
-| 4 | [specialist-review-result.md](../tmux-orchestration/references/templates/specialist-review-result.md) | `.orchestrator/templates/specialist-review-result.md` |
-| 5 | [plan-specialist-review-result.md](../tmux-orchestration/references/templates/plan-specialist-review-result.md) | `.orchestrator/templates/plan-specialist-review-result.md` |
-| 6 | [test-result.md](../tmux-orchestration/references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
-| 7 | [plan-review-result.md](../tmux-orchestration/references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
-| 8 | [task-lifecycle-result.md](../tmux-orchestration/references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
-| 9 | [tasks.md](../tmux-orchestration/references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
-| 10 | [agent-prompt.md](../tmux-orchestration/references/templates/agent-prompt.md) | `.orchestrator/templates/agent-prompt.md` |
-| 11 | [completion-marker.md](../tmux-orchestration/references/templates/completion-marker.md) | `.orchestrator/templates/completion-marker.md` |
-| 12 | [orchestration-launcher-prompt.md](../tmux-orchestration/references/templates/orchestration-launcher-prompt.md) | `.orchestrator/templates/orchestration-launcher-prompt.md` |
-| 13 | [team-launcher-prompt.md](../tmux-team/references/templates/team-launcher-prompt.md) | `.orchestrator/templates/team-launcher-prompt.md` |
-| 14 | [team-member-prompt.md](../tmux-team/references/templates/team-member-prompt.md) | `.orchestrator/templates/team-member-prompt.md` |
+以下のスキルが利用可能であることを確認:
 
-### Step 4: スクリプトの配置
+- `tmux-orchestration` — オーケストレーション本体
+- `tmux-team` — チームオーケストレーション
+- `tmux-orchestrator-config` — 設定カスタマイズ
 
-以下の 11 ファイルを **Read → Write** でコピーする:
-
-| # | Read 対象（このスキルの参照ファイル） | Write 先 |
-|---|--------------------------------------|----------|
-| 1 | [tmux-session-create.sh](../tmux-orchestration/references/scripts/tmux-session-create.sh) | `.orchestrator/scripts/tmux-session-create.sh` |
-| 2 | [tmux-session-destroy.sh](../tmux-orchestration/references/scripts/tmux-session-destroy.sh) | `.orchestrator/scripts/tmux-session-destroy.sh` |
-| 3 | [tmux-agent-launch.sh](../tmux-orchestration/references/scripts/tmux-agent-launch.sh) | `.orchestrator/scripts/tmux-agent-launch.sh` |
-| 4 | [tmux-status-monitor.sh](../tmux-orchestration/references/scripts/tmux-status-monitor.sh) | `.orchestrator/scripts/tmux-status-monitor.sh` |
-| 5 | [tmux-result-collector.sh](../tmux-orchestration/references/scripts/tmux-result-collector.sh) | `.orchestrator/scripts/tmux-result-collector.sh` |
-| 6 | [notify-parent.sh](../tmux-orchestration/references/scripts/notify-parent.sh) | `.orchestrator/scripts/notify-parent.sh` |
-| 7 | [check-dependencies.sh](../tmux-orchestration/references/scripts/check-dependencies.sh) | `.orchestrator/scripts/check-dependencies.sh` |
-| 8 | [init-session.sh](../tmux-orchestration/references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
-| 9 | [init-task.sh](../tmux-orchestration/references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
-| 10 | [tmux-pane-presplit.sh](../tmux-team/references/scripts/tmux-pane-presplit.sh) | `.orchestrator/scripts/tmux-pane-presplit.sh` |
-| 11 | [init-team-session.sh](../tmux-team/references/scripts/init-team-session.sh) | `.orchestrator/scripts/init-team-session.sh` |
-
-コピー後、実行権限を付与:
-
-```bash
-chmod +x .orchestrator/scripts/*.sh
-```
-
-### Step 5: 完了確認
-
-以下のチェックリストを確認して結果を報告:
-
-- [ ] `.orchestrator/templates/` に 14 ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に 11 スクリプトが配置されている
-- [ ] 全スクリプトに実行権限が付与されている
-
-完了後、以下を案内:
+### Step 3: 完了報告
 
 ```
-セットアップが完了しました。
+環境は準備完了です。スクリプトとテンプレートはスキルから直接参照されるため、追加のセットアップは不要です。
 
 次のステップ:
-  /tmux-config   — CLI割り当てやチーム設定をカスタマイズ
-  /tmux-orchestrate "タスクの説明" — オーケストレーションを開始
+  /tmux-config        — CLI割り当てやチーム設定をカスタマイズ
+  /tmux-orchestrate   — オーケストレーションを開始
+  /tmux-team          — チームオーケストレーションを開始
 ```
+
+> **Note**: 以前のバージョンではスクリプトを `.orchestrator/scripts/` にコピーする必要がありましたが、現在はスキル参照から直接実行されるため不要です。

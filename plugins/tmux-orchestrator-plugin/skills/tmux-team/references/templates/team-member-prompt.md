@@ -61,7 +61,7 @@
 echo "{状態値}" > {SESSION_DIR}/.status/{member-id}.done
 
 # 2. 親に完了を通知する
-bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {member-id} {PARENT_PANE}
+bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {member-id} {PARENT_PANE}
 ```
 
 - 状態値の例: `done`（通常完了）、`PASS`/`FAIL`（テスト系）、`approved`/`needs-revision`（レビュー系）

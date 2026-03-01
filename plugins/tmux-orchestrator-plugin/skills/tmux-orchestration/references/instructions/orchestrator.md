@@ -134,11 +134,11 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 3. 新しいセッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
 4. セッション初期化スクリプトを実行:
    ```bash
-   bash .orchestrator/scripts/init-session.sh .orchestrator/{SESSION_ID}
+   bash $SCRIPTS_DIR/init-session.sh .orchestrator/{SESSION_ID}
    ```
 5. セッション名を取得:
    ```bash
-   OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
+   OUTPUT=$(bash $SCRIPTS_DIR/tmux-session-create.sh "orch-{SESSION_ID}")
    TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
    ```
    > tmux 内で実行した場合は現在のセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
@@ -154,7 +154,7 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 1. **Explorer** のプロンプトファイルを `.prompts/explorer-prompt.md` に生成
 2. tmux でエージェントを起動:
    ```bash
-   bash .orchestrator/scripts/tmux-agent-launch.sh \
+   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
      "{TMUX_SESSION}" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -172,17 +172,17 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 1. `check-dependencies.sh` で実行可能タスクを取得:
    ```bash
-   bash .orchestrator/scripts/check-dependencies.sh \
+   bash $SCRIPTS_DIR/check-dependencies.sh \
      ".orchestrator/{SESSION_ID}/.deps/tasks.json" \
      ".orchestrator/{SESSION_ID}/.status"
    ```
 2. 各タスクのディレクトリを初期化:
    ```bash
-   bash .orchestrator/scripts/init-task.sh {SESSION_DIR} {taskId}
+   bash $SCRIPTS_DIR/init-task.sh {SESSION_DIR} {taskId}
    ```
 3. 各タスクの **Task Manager** プロンプトを生成し、tmux ペインで起動（独立タスクは並列）:
    ```bash
-   bash .orchestrator/scripts/tmux-agent-launch.sh \
+   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
      "{TMUX_SESSION}" "task-{taskId}-task-manager" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -209,7 +209,20 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 ## プロンプトファイル生成
 
-各エージェントの起動前に `.orchestrator/templates/agent-prompt.md` を参考にプロンプトファイルを生成する。
+各エージェントの起動前に [agent-prompt.md](../templates/agent-prompt.md) を参考にプロンプトファイルを生成する。
+
+出力フォーマットテンプレートはスキルの `references/templates/` にある。プロンプト生成時にテンプレート内容を Read し、「出力フォーマット」セクションに直接埋め込む。
+
+### エージェント別テンプレート
+
+| エージェント | 出力フォーマット | サブエージェント用フォーマット |
+|------------|----------------|--------------------------|
+| Explorer | [exploration-result.md](../templates/exploration-result.md) | — |
+| Planner | [implementation-plan.md](../templates/implementation-plan.md), [tasks.md](../templates/tasks.md) | — |
+| Plan Reviewer | [plan-review-result.md](../templates/plan-review-result.md) | [plan-specialist-review-result.md](../templates/plan-specialist-review-result.md) |
+| Code Reviewer | [code-review-result.md](../templates/code-review-result.md) | [specialist-review-result.md](../templates/specialist-review-result.md) |
+| Task Manager | [task-lifecycle-result.md](../templates/task-lifecycle-result.md) | 起動するサブエージェントに応じた形式 |
+| Test Runner | [test-result.md](../templates/test-result.md) | — |
 
 ### プロンプトファイルの例（Explorer 用）
 
@@ -229,7 +242,9 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 ## 出力フォーマット
 
-`.orchestrator/templates/exploration-result.md` を読んでフォーマットに従ってください。
+以下のフォーマットに従って結果を出力してください:
+
+{exploration-result.md の内容をここに埋め込む}
 
 ## 完了条件
 

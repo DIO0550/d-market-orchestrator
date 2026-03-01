@@ -15,7 +15,7 @@ tmuxオーケストレーションセッションの作成から破棄までの�
 セッション名を取得する。tmux 内なら現在のセッション名を返し、tmux 外なら新規セッションを作成。
 
 ```bash
-OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-0001-user-auth")
+OUTPUT=$(bash "$SCRIPTS_DIR/tmux-session-create.sh" "orch-0001-user-auth")
 TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 ```
 
@@ -32,7 +32,7 @@ TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 セッションディレクトリとメタデータを初期化する。
 
 ```bash
-bash .orchestrator/scripts/init-session.sh ".orchestrator/0001-user-auth"
+bash "$SCRIPTS_DIR/init-session.sh" ".orchestrator/0001-user-auth"
 ```
 
 **結果**:
@@ -49,7 +49,7 @@ Orchestrator がエージェントを tmux ペインに順次起動する。
 PARENT_PANE=$(tmux display-message -p '#{pane_id}')
 
 # エージェント起動（第6引数に PARENT_PANE を渡す）
-bash .orchestrator/scripts/tmux-agent-launch.sh \
+bash "$SCRIPTS_DIR/tmux-agent-launch.sh" \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/0001-user-auth/.prompts/explorer-prompt.md" \
   ".orchestrator/0001-user-auth" "$PARENT_PANE"
@@ -67,7 +67,7 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 # オーケストレーターは .done ファイルの状態値を確認して次のアクションを判断
 
 # リアルタイムモニター（control ウィンドウ表示用）
-bash .orchestrator/scripts/tmux-status-monitor.sh \
+bash "$SCRIPTS_DIR/tmux-status-monitor.sh" \
   ".orchestrator/0001-user-auth"
 ```
 
@@ -76,7 +76,7 @@ bash .orchestrator/scripts/tmux-status-monitor.sh \
 全エージェントの結果をサマリーファイルに集約する。
 
 ```bash
-bash .orchestrator/scripts/tmux-result-collector.sh \
+bash "$SCRIPTS_DIR/tmux-result-collector.sh" \
   ".orchestrator/0001-user-auth"
 ```
 
@@ -88,7 +88,7 @@ bash .orchestrator/scripts/tmux-result-collector.sh \
 tmux セッションを破棄する。セッションディレクトリは保持される（履歴として）。
 
 ```bash
-bash .orchestrator/scripts/tmux-session-destroy.sh "{TMUX_SESSION}"
+bash "$SCRIPTS_DIR/tmux-session-destroy.sh" "{TMUX_SESSION}"
 ```
 
 ## セッション ID の採番

@@ -82,7 +82,7 @@ disable-model-invocation: true
    mkdir -p .orchestrator/${SESSION_ID}/.status
    ```
 
-3. `.orchestrator/templates/team-launcher-prompt.md` を Read し、パラメータ（SESSION_ID, PANE_COUNT, CLI_TOOL, WORKING_DIR, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
+3. [team-launcher-prompt.md](references/templates/team-launcher-prompt.md) を Read し、パラメータ（SESSION_ID, PANE_COUNT, CLI_TOOL, WORKING_DIR, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
 
 4. 自身のペイン ID を取得:
    ```bash
@@ -91,7 +91,7 @@ disable-model-invocation: true
 
 5. Launcher を起動:
    ```bash
-   bash .orchestrator/scripts/tmux-agent-launch.sh \
+   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
      "$(tmux display-message -p '#{session_name}')" "launcher" "claude" \
      ".orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md" \
      ".orchestrator/${SESSION_ID}" "$PARENT_PANE"
@@ -117,7 +117,7 @@ disable-model-invocation: true
 
 ### 1. プロンプトファイル生成
 
-`.orchestrator/templates/team-member-prompt.md` を参照してプロンプトファイルを生成する。
+[team-member-prompt.md](references/templates/team-member-prompt.md) を参照してプロンプトファイルを生成する。
 
 ```
 生成先: .orchestrator/{SESSION_ID}/.prompts/member-{N}-task-{M}.md
@@ -191,7 +191,7 @@ tmux send-keys -t "$PANE_ID_2" \
 2. `.done` がなければ、リマインダーを送信:
    ```bash
    tmux send-keys -t "$PANE_ID" \
-     "作業が完了していたら、完了手順を実行してください: echo 'done' > .orchestrator/${SESSION_ID}/.status/member-{N}.done && bash .orchestrator/scripts/notify-parent.sh .orchestrator/${SESSION_ID} member-{N} ${PARENT_PANE}" Enter
+     "作業が完了していたら、完了手順を実行してください: echo 'done' > .orchestrator/${SESSION_ID}/.status/member-{N}.done && bash $SCRIPTS_DIR/notify-parent.sh .orchestrator/${SESSION_ID} member-{N} ${PARENT_PANE}" Enter
    ```
 3. それでも応答なし → ユーザーに報告し「待機継続」「中断」を選択
 
@@ -237,13 +237,13 @@ tmux send-keys -t "$PANE_ID_2" \
 
 ```bash
 # ステータスモニターを起動（任意）
-bash .orchestrator/scripts/tmux-status-monitor.sh ".orchestrator/${SESSION_ID}"
+bash $SCRIPTS_DIR/tmux-status-monitor.sh ".orchestrator/${SESSION_ID}"
 ```
 
 ### セッション破棄
 
 ```bash
-bash .orchestrator/scripts/tmux-session-destroy.sh "${TMUX_SESSION}"
+bash $SCRIPTS_DIR/tmux-session-destroy.sh "${TMUX_SESSION}"
 ```
 
 ### セッション一覧
@@ -357,7 +357,15 @@ Launcher が `[AGENT_COMPLETE] launcher error` を返した場合:
 ## 前提条件
 
 - tmux がインストールされていること
-- `/tmux-setup` が実行済みで `.orchestrator/scripts/` と `.orchestrator/templates/` にファイルが配置されていること
+
+## スクリプトパス
+
+スクリプトはスキルの `references/scripts/` に配置されている（`.orchestrator/scripts/` へのコピーは不要）。
+
+- 共有スクリプト: tmux-orchestration スキルの [references/scripts/](../tmux-orchestration/references/scripts/) → `SCRIPTS_DIR`
+- チーム専用スクリプト: このスキルの [references/scripts/](references/scripts/) → `TEAM_SCRIPTS_DIR`
+
+オーケストレーターは起動時にスクリプトパスを解決し、Launcher やメンバーのプロンプト生成時に `{SCRIPTS_DIR}` / `{TEAM_SCRIPTS_DIR}` プレースホルダを実パスに置換する。
 
 ## チーム設定のカスタマイズ（任意）
 

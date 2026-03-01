@@ -74,7 +74,7 @@ tmux版では Orchestrator が `Bash` ツールを使って tmux コマンドを
 PARENT_PANE=$(tmux display-message -p '#{pane_id}')
 
 # エージェント起動（第6引数に PARENT_PANE を渡す）
-bash .orchestrator/scripts/tmux-agent-launch.sh \
+bash "$SCRIPTS_DIR/tmux-agent-launch.sh" \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}" "$PARENT_PANE"

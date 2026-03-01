@@ -162,7 +162,7 @@ requirements/   # 要件定義
 
 #### {SESSION_DIR}/planner/plan.md
 
-テンプレート: `.orchestrator/templates/implementation-plan.md` を Read してフォーマットに従う。
+プロンプトの「出力フォーマット」セクションに従う。
 
 以下の要素を含む:
 - **ユーザーレビューが必要な点**: 確認してほしい判断事項、トレードオフ
@@ -172,7 +172,7 @@ requirements/   # 要件定義
 
 #### {SESSION_DIR}/planner/tasks.md
 
-テンプレート: `.orchestrator/templates/tasks.md` を Read してフォーマットに従う。
+プロンプトの「出力フォーマット」セクションに従う。
 
 以下の構成で出力する:
 - **依存関係グラフ**: タスク間の依存関係を ASCII 図で図示
@@ -230,7 +230,7 @@ Task ツール呼び出し:
     - {SESSION_DIR}/explorer/result.md（探索結果）
 
     出力先: {SESSION_DIR}/plan-reviewer/review-{round}.md
-    出力フォーマット: .orchestrator/templates/plan-review-result.md を参照
+    出力フォーマット: プロンプトの「サブエージェント用出力フォーマット」セクションの plan-review-result を使用
 
     結果ファイルの末尾に判定を必ず記載すること:
     「判定: Approved」「判定: Needs Revision」「判定: Rejected」

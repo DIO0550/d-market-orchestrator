@@ -101,7 +101,7 @@ color: cyan
 
 ### 6. 結果の出力
 
-`.orchestrator/templates/exploration-result.md` を Read してフォーマットに従って `{SESSION_DIR}/explorer/result.md` に結果を書き出す。
+プロンプトの「出力フォーマット」セクションに従って `{SESSION_DIR}/explorer/result.md` に結果を書き出す。
 
 ## CLI別の注意事項
 

@@ -61,7 +61,7 @@ color: blue
 
 ### 4. 結果出力
 
-`.orchestrator/templates/test-result.md` を Read してフォーマットに従って結果を出力する。
+プロンプトの「出力フォーマット」セクションに従って結果を出力する。
 
 **出力先パス**: 呼び出し元のプロンプトに `タスクID` が含まれるかで分岐:
 - タスクID あり（Phase 2）: `{SESSION_DIR}/task-{id}/test-runner/result-{round}.md`

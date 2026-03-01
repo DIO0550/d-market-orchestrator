@@ -109,7 +109,7 @@ Task ツール呼び出し:
     - ラウンド: {round}
     - 出力先: {SESSION_DIR}/task-{taskId}/implementer/result-{round}.md
     - 計画書: {SESSION_DIR}/planner/plan.md を Read して従うこと
-    - 出力フォーマット: .orchestrator/templates/ 内のテンプレートを参照
+    - 出力フォーマット: プロンプトの「サブエージェント用出力フォーマット」セクションを参照
   subagent_type: general-purpose
 ```
 
@@ -207,7 +207,7 @@ Step 10 の完了判定に進む。
 
 ### 11. 結果の出力
 
-`.orchestrator/templates/task-lifecycle-result.md` を Read してフォーマットに従って `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` に結果を書き出す。
+プロンプトの「出力フォーマット」セクションに従って `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` に結果を書き出す。
 
 ### 12. 判定マーカーの書き出し
 

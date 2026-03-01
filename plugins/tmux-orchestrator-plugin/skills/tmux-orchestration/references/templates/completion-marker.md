@@ -50,7 +50,7 @@ tmux-orchestrator のエージェント間同期メカニズム。
 # Step 1: 状態値を書き出す
 echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
 # Step 2: 親に完了を通知する
-bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE}
+bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE}
 # Step 3: 自分のペインを終了する（対話モードではプロセスが自動終了しないため必須）
 tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 ```
@@ -59,7 +59,7 @@ tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 
 ```bash
 echo "done" > {SESSION_DIR}/.status/{agent-name}.done
-bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
+bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
 tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 ```
 

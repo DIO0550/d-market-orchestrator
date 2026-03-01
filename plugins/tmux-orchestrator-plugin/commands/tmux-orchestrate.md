@@ -71,7 +71,7 @@ FEATURE_NAME="{タスクから生成した英小文字ハイフン区切り名}"
 SESSION_ID="${NEXT_ID}-${FEATURE_NAME}"
 
 # ディレクトリ初期化
-bash .orchestrator/scripts/init-session.sh ".orchestrator/${SESSION_ID}"
+bash "$SCRIPTS_DIR/init-session.sh" ".orchestrator/${SESSION_ID}"
 
 # チーム設定の読み込み（存在する場合）
 TEAM_CONFIG=".orchestrator/team-config.json"
@@ -80,7 +80,7 @@ if [ -f "$TEAM_CONFIG" ]; then
 fi
 
 # tmuxセッション作成（チーム名があればセッション名プレフィックスに反映）
-bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}"
+bash "$SCRIPTS_DIR/tmux-session-create.sh" "orch-${SESSION_ID}"
 
 # CLI割り当て設定（デフォルト）
 # .orchestrator/${SESSION_ID}/.config/cli-assignments.json に書き出す
@@ -93,13 +93,13 @@ bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}"
    .orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md
 
 2. tmux ペインで起動:
-   bash .orchestrator/scripts/tmux-agent-launch.sh \
+   bash "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "orch-{SESSION_ID}" "phase1" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}"
 
 3. 完了通知を待機:
-   bash .orchestrator/scripts/wait-for-notification.sh \
+   bash "$SCRIPTS_DIR/wait-for-notification.sh" \
      ".orchestrator/{SESSION_ID}" "explorer" "orch-{SESSION_ID}" 600
 ```
 

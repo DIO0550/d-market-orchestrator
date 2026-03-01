@@ -12,10 +12,10 @@
 
 ### Step 1: スクリプト確認
 
-共有スクリプトが `.orchestrator/scripts/` に存在することを確認する。
+共有スクリプトが `{SCRIPTS_DIR}/` に存在することを確認する。
 
 ```bash
-ls .orchestrator/scripts/init-session.sh .orchestrator/scripts/tmux-session-create.sh
+ls {SCRIPTS_DIR}/init-session.sh {SCRIPTS_DIR}/tmux-session-create.sh
 ```
 
 存在しない場合は `.done` に "error" を書き出し、`launcher/error.md` にエラー内容（`/tmux-setup` の実行が必要）を記録して完了手順へ進む。
@@ -23,13 +23,13 @@ ls .orchestrator/scripts/init-session.sh .orchestrator/scripts/tmux-session-crea
 ### Step 2: セッションディレクトリ初期化
 
 ```bash
-bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
+bash {SCRIPTS_DIR}/init-session.sh ".orchestrator/{SESSION_ID}"
 ```
 
 ### Step 3: tmux セッション作成
 
 ```bash
-OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
+OUTPUT=$(bash {SCRIPTS_DIR}/tmux-session-create.sh "orch-{SESSION_ID}")
 TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
 echo "$TMUX_SESSION" > .orchestrator/{SESSION_ID}/.config/tmux-session.txt
 ```
@@ -69,7 +69,7 @@ echo "{PARENT_PANE}" > .orchestrator/{SESSION_ID}/.config/parent-pane.txt
 echo "done" > .orchestrator/{SESSION_ID}/.status/launcher.done
 
 # 2. 親に完了を通知する
-bash .orchestrator/scripts/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
+bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
 
 # 3. 自分のペインを終了する
 tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
@@ -79,7 +79,7 @@ tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 
 ```bash
 echo "error" > .orchestrator/{SESSION_ID}/.status/launcher.done
-bash .orchestrator/scripts/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
+bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
 tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 ```
 

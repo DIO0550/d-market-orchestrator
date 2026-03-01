@@ -36,7 +36,16 @@
 
 ## 出力フォーマット
 
-`.orchestrator/templates/{テンプレート名}` を読んでフォーマットに従ってください。
+以下のフォーマットに従って結果を出力してください:
+
+{OUTPUT_FORMAT}
+
+## サブエージェント用出力フォーマット（該当エージェントのみ）
+
+> この節はサブエージェントを起動するエージェント（Planner, Task Manager, Plan Reviewer, Code Reviewer）にのみ含まれる。
+> サブエージェントのプロンプトを生成する際、該当する出力フォーマットを「出力フォーマット」セクションに埋め込んでください。
+
+{SUB_AGENT_FORMATS}
 
 ## 実行手順
 
@@ -80,7 +89,7 @@ sleep 60 && cat "{SESSION_DIR}/.status/{agent}.done"
 
 2. 親に完了を通知する:
    ```bash
-   bash .orchestrator/scripts/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
+   bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
    ```
 
 3. 自分のペインを終了する（**必須**）:

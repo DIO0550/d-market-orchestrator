@@ -48,7 +48,7 @@ Task ツール呼び出し:
     計画の品質観点でレビューしてください。
     入力: {SESSION_DIR}/planner/plan.md, tasks.md, explorer/result.md
     出力先: {SESSION_DIR}/plan-reviewer/quality-review-{round}.md
-    フォーマット: .orchestrator/templates/plan-specialist-review-result.md を参照
+    フォーマット: プロンプトの「サブエージェント用出力フォーマット」セクションの plan-specialist-review-result を使用
   subagent_type: general-purpose
 
 # Bug/Performance/Security Reviewer も同様に並列呼び出し
@@ -89,7 +89,7 @@ Task ツール呼び出し:
     - {SESSION_DIR}/explorer/result.md（探索結果）
 
     出力先: {SESSION_DIR}/plan-reviewer/quality-review-{round}.md
-    フォーマット: .orchestrator/templates/plan-specialist-review-result.md を参照
+    フォーマット: プロンプトの「サブエージェント用出力フォーマット」セクションの plan-specialist-review-result を使用
   subagent_type: general-purpose
 
 # Bug Reviewer（Task ツール並列呼び出し 2）
@@ -132,7 +132,7 @@ Task ツール呼び出し:
 
 ### 5. 統合レビュー結果の出力
 
-`.orchestrator/templates/plan-review-result.md` を Read してフォーマットに従って `{SESSION_DIR}/plan-reviewer/review-{round}.md` に統合レビュー結果を出力する。
+プロンプトの「出力フォーマット」セクションに従って `{SESSION_DIR}/plan-reviewer/review-{round}.md` に統合レビュー結果を出力する。
 
 #### 統合ルール
 

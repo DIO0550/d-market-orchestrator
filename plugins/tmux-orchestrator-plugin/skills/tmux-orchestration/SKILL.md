@@ -97,6 +97,14 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 | `.deps/` | `tasks.json` | タスク依存グラフ |
 | `{agent}/` | `result.md`, `plan.md` 等 | エージェント結果出力 |
 
+## スクリプトパス
+
+スクリプトはこのスキルの `references/scripts/` に配置されている（`.orchestrator/scripts/` へのコピーは不要）。
+
+オーケストレーターは起動時に [tmux-agent-launch.sh](references/scripts/tmux-agent-launch.sh) のパスからディレクトリを取得し、`SCRIPTS_DIR` として保持する。Launcher やエージェントのプロンプト生成時に `{SCRIPTS_DIR}` プレースホルダを実パスに置換する。
+
+以降のコード例では `$SCRIPTS_DIR` を使用する。
+
 ## エージェント起動パターン
 
 ### tmux ペインでの起動
@@ -106,7 +114,7 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 # .orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md に書き出す
 
 # 2. tmux ペインでエージェント起動
-bash .orchestrator/scripts/tmux-agent-launch.sh \
+bash $SCRIPTS_DIR/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
   ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -123,12 +131,12 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ```bash
 # test-runner と linter を同時起動
-bash .orchestrator/scripts/tmux-agent-launch.sh \
+bash $SCRIPTS_DIR/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "test-runner" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/test-runner-prompt.md" \
   ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
 
-bash .orchestrator/scripts/tmux-agent-launch.sh \
+bash $SCRIPTS_DIR/tmux-agent-launch.sh \
   "{TMUX_SESSION}" "linter" "claude" \
   ".orchestrator/{SESSION_ID}/.prompts/linter-prompt.md" \
   ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -143,16 +151,16 @@ bash .orchestrator/scripts/tmux-agent-launch.sh \
 
 ```bash
 # 実行可能なタスクを取得
-READY_TASKS=$(bash .orchestrator/scripts/check-dependencies.sh \
+READY_TASKS=$(bash $SCRIPTS_DIR/check-dependencies.sh \
   ".orchestrator/{SESSION_ID}")
 
 # 各タスクを起動
 for TASK_ID in $READY_TASKS; do
-  bash .orchestrator/scripts/init-task.sh \
+  bash $SCRIPTS_DIR/init-task.sh \
     ".orchestrator/{SESSION_ID}" "$TASK_ID"
 
   # プロンプト生成してtmux起動
-  bash .orchestrator/scripts/tmux-agent-launch.sh \
+  bash $SCRIPTS_DIR/tmux-agent-launch.sh \
     "{TMUX_SESSION}" "task-${TASK_ID}-task-manager" "claude" \
     ".orchestrator/{SESSION_ID}/.prompts/task-${TASK_ID}-task-manager-prompt.md" \
     ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -182,7 +190,7 @@ done
    mkdir -p .orchestrator/${SESSION_ID}/.status
    ```
 
-3. `.orchestrator/templates/orchestration-launcher-prompt.md` を Read し、パラメータ（SESSION_ID, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
+3. [orchestration-launcher-prompt.md](references/templates/orchestration-launcher-prompt.md) を Read し、パラメータ（SESSION_ID, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
 
 4. 自身のペイン ID を取得:
    ```bash
@@ -191,7 +199,7 @@ done
 
 5. Launcher を起動:
    ```bash
-   bash .orchestrator/scripts/tmux-agent-launch.sh \
+   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
      "$(tmux display-message -p '#{session_name}')" "launcher" "claude" \
      ".orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md" \
      ".orchestrator/${SESSION_ID}" "$PARENT_PANE"
@@ -214,21 +222,21 @@ done
 
 ```bash
 # ステータスモニターを起動（control ウィンドウで実行）
-bash .orchestrator/scripts/tmux-status-monitor.sh ".orchestrator/{SESSION_ID}"
+bash $SCRIPTS_DIR/tmux-status-monitor.sh ".orchestrator/{SESSION_ID}"
 ```
 
 ### セッション破棄
 
 ```bash
 # tmuxセッションを破棄
-bash .orchestrator/scripts/tmux-session-destroy.sh "{TMUX_SESSION}"
+bash $SCRIPTS_DIR/tmux-session-destroy.sh "{TMUX_SESSION}"
 ```
 
 ### 結果収集
 
 ```bash
 # 全エージェントの結果をサマリーファイルに集約
-bash .orchestrator/scripts/tmux-result-collector.sh ".orchestrator/{SESSION_ID}"
+bash $SCRIPTS_DIR/tmux-result-collector.sh ".orchestrator/{SESSION_ID}"
 ```
 
 ### セッション一覧の確認
@@ -379,8 +387,6 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 ```
 .orchestrator/
-├── scripts/                     # tmux管理スクリプト
-├── templates/                   # 共通テンプレート
 ├── {連番}-{feature名}/          # セッションフォルダ
 │   ├── .config/                 # ランタイム設定
 │   │   └── cli-assignments.json # エージェント→CLI割り当て
@@ -431,18 +437,11 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 │       └── result.md
 ```
 
-## Step 6: テンプレート・スクリプト・設定の配置（必須）
+## Step 6: 設定の配置
 
-エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して出力フォーマットを決定する。
-**このステップを省略するとエージェントが正しく動作しない。**
+スクリプトはスキルの `references/scripts/` から直接実行される（コピー不要）。
 
-`/tmux-setup` コマンドを実行すると、以下が自動で配置される:
-
-- `.orchestrator/templates/` — 14 テンプレートファイル
-- `.orchestrator/scripts/` — 11 スクリプトファイル（実行権限付き）
-- `.orchestrator/default-cli-assignments.json` — デフォルト CLI 割り当て設定
-
-詳細: [tmux-orchestrator-setup スキル](../tmux-orchestrator-setup/SKILL.md)
+出力フォーマットテンプレートはスキルの `references/templates/` にある。オーケストレーターがプロンプト生成時にテンプレート内容を読み込み、エージェントのプロンプトに直接埋め込む。
 
 CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行う。
 詳細: [tmux-orchestrator-config スキル](../tmux-orchestrator-config/SKILL.md)
@@ -503,9 +502,6 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 
 ## 生成後チェックリスト
 
-- [ ] `.orchestrator/templates/` に14ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に11スクリプトが配置されている
-- [ ] 全スクリプトに実行権限が付与されている
 - [ ] ターゲットCLIの形式に従っている
 - [ ] description にトリガー条件が含まれている
 - [ ] model が適切に設定されている（🧠/⚡/💨）
