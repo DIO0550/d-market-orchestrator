@@ -34,7 +34,7 @@ mkdir -p .orchestrator/scripts
 
 ### Step 3: テンプレートの配置
 
-以下の 11 ファイルを **1つずつ Read → Write** でコピーする:
+以下の 14 ファイルを **1つずつ Read → Write** でコピーする:
 
 | # | Read 対象（このスキルの参照ファイル） | Write 先 |
 |---|--------------------------------------|----------|
@@ -49,10 +49,13 @@ mkdir -p .orchestrator/scripts
 | 9 | [tasks.md](../tmux-orchestration/references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
 | 10 | [agent-prompt.md](../tmux-orchestration/references/templates/agent-prompt.md) | `.orchestrator/templates/agent-prompt.md` |
 | 11 | [completion-marker.md](../tmux-orchestration/references/templates/completion-marker.md) | `.orchestrator/templates/completion-marker.md` |
+| 12 | [orchestration-launcher-prompt.md](../tmux-orchestration/references/templates/orchestration-launcher-prompt.md) | `.orchestrator/templates/orchestration-launcher-prompt.md` |
+| 13 | [team-launcher-prompt.md](../tmux-team/references/templates/team-launcher-prompt.md) | `.orchestrator/templates/team-launcher-prompt.md` |
+| 14 | [team-member-prompt.md](../tmux-team/references/templates/team-member-prompt.md) | `.orchestrator/templates/team-member-prompt.md` |
 
 ### Step 4: スクリプトの配置
 
-以下の 9 ファイルを **Read → Write** でコピーする:
+以下の 11 ファイルを **Read → Write** でコピーする:
 
 | # | Read 対象（このスキルの参照ファイル） | Write 先 |
 |---|--------------------------------------|----------|
@@ -65,6 +68,8 @@ mkdir -p .orchestrator/scripts
 | 7 | [check-dependencies.sh](../tmux-orchestration/references/scripts/check-dependencies.sh) | `.orchestrator/scripts/check-dependencies.sh` |
 | 8 | [init-session.sh](../tmux-orchestration/references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
 | 9 | [init-task.sh](../tmux-orchestration/references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
+| 10 | [tmux-pane-presplit.sh](../tmux-team/references/scripts/tmux-pane-presplit.sh) | `.orchestrator/scripts/tmux-pane-presplit.sh` |
+| 11 | [init-team-session.sh](../tmux-team/references/scripts/init-team-session.sh) | `.orchestrator/scripts/init-team-session.sh` |
 
 コピー後、実行権限を付与:
 
@@ -76,8 +81,8 @@ chmod +x .orchestrator/scripts/*.sh
 
 以下のチェックリストを確認して結果を報告:
 
-- [ ] `.orchestrator/templates/` に 11 ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に 9 スクリプトが配置されている
+- [ ] `.orchestrator/templates/` に 14 ファイルが配置されている
+- [ ] `.orchestrator/scripts/` に 11 スクリプトが配置されている
 - [ ] 全スクリプトに実行権限が付与されている
 
 完了後、以下を案内:

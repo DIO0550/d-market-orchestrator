@@ -24,12 +24,12 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
 ## ワークフロー概要
 
 ```
-[Phase 0: 初期化] ──────────────────────────────
+[Phase 0: 初期化（Launcher 委譲）] ─────────────
     │
-    ├── チーム設定読み込み（team-config.json、存在する場合）
-    ├── tmuxセッション作成（tmux-session-create.sh）
-    ├── セッションディレクトリ初期化（init-session.sh）
-    └── CLI割り当て設定（cli-assignments.json）
+    ├── Launcher プロンプト生成（SESSION_ID, PARENT_PANE）
+    ├── tmux-agent-launch.sh で Launcher 起動
+    ├── [AGENT_COMPLETE] launcher done 受信
+    └── .config/ から TMUX_SESSION, PARENT_PANE, cli-assignments を取得
     │
 [Phase 1: 探索・計画] ──────────────────────────
     │
@@ -163,30 +163,52 @@ done
 #   [AGENT_COMPLETE] task-2-task-manager completed
 ```
 
+## セッション初期化（Launcher 委譲）
+
+セッション構築はすべて **Launcher エージェント** に委譲する。
+
+### Launcher 起動手順
+
+1. セッション ID を生成:
+   ```bash
+   NEXT_ID=$(printf "%04d" $(($(ls -d .orchestrator/????-* 2>/dev/null | sed 's/.*\///' | cut -d'-' -f1 | sort -n | tail -1 || echo 0) + 1)))
+   FEATURE_NAME="{タスクから生成した英小文字ハイフン区切り名}"
+   SESSION_ID="${NEXT_ID}-${FEATURE_NAME}"
+   ```
+
+2. Launcher プロンプトディレクトリを作成:
+   ```bash
+   mkdir -p .orchestrator/${SESSION_ID}/.prompts
+   mkdir -p .orchestrator/${SESSION_ID}/.status
+   ```
+
+3. `.orchestrator/templates/orchestration-launcher-prompt.md` を Read し、パラメータ（SESSION_ID, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
+
+4. 自身のペイン ID を取得:
+   ```bash
+   PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+   ```
+
+5. Launcher を起動:
+   ```bash
+   bash .orchestrator/scripts/tmux-agent-launch.sh \
+     "$(tmux display-message -p '#{session_name}')" "launcher" "claude" \
+     ".orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md" \
+     ".orchestrator/${SESSION_ID}" "$PARENT_PANE"
+   ```
+
+6. 「Launcher を起動しました。完了通知を待機中...」と出力して **ターンを終了する**
+
+7. `[AGENT_COMPLETE] launcher done` を受信したら:
+   - `.orchestrator/${SESSION_ID}/.config/tmux-session.txt` を Read して TMUX_SESSION を取得
+   - `.orchestrator/${SESSION_ID}/.config/parent-pane.txt` を Read して PARENT_PANE を確認
+   - Phase 1 へ進む
+
+8. `[AGENT_COMPLETE] launcher error` の場合:
+   - `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
+   - ユーザーにエラーを報告
+
 ## セッション管理
-
-### セッション作成
-
-```bash
-# 1. セッションディレクトリを初期化
-bash .orchestrator/scripts/init-session.sh ".orchestrator/{SESSION_ID}"
-
-# 2. セッション名を取得
-#    tmux 内: 現在のセッション名を返す（新セッション不要）
-#    tmux 外: 新しいセッションを作成
-OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-{SESSION_ID}")
-TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
-
-# 3. 自身のペインIDを取得（エージェント完了通知の受信先）
-PARENT_PANE=$(tmux display-message -p '#{pane_id}')
-
-# 4. CLI割り当て設定を作成
-# .orchestrator/{SESSION_ID}/.config/cli-assignments.json に書き出す
-```
-
-**重要**: `tmux-session-create.sh` の出力から `TMUX_SESSION=` の値を取得し、以降の全 tmux コマンドでこの値を使用すること。tmux 内では現在のセッション名、tmux 外では新規作成されたセッション名が返される。
-
-**重要**: `PARENT_PANE` はエージェント完了時に `tmux send-keys` で `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
 
 ### セッション監視
 
@@ -236,6 +258,7 @@ ls -d .orchestrator/????-* 2>/dev/null
 - **ユーザーが URL を提示した場合**: Explorer のプロンプトに含めて委譲
 - **Orchestrator の役割は指揮・監視・報告のみ**: tmux コマンドによるエージェント起動、.status/ の監視、結果のユーザーへの報告に専念
 - **結果ファイルを Read しない**: 分岐判断は `.status/{agent}.done` の状態値のみで行う。plan.md, lifecycle.md, review.md 等の中身は読まない
+- **ポーリング禁止**: Bash の sleep ループで `.done` や `.ready` ファイルを待機してはならない。エージェント完了は `[AGENT_COMPLETE]` プッシュ通知で検知する
 - **自律実行**: Phase 1〜2 はユーザー確認なしで自動完了
 
 ## エラーハンドリング
@@ -415,8 +438,8 @@ CLIツール間の能力比較: [cli-profiles.md](references/cli-profiles.md)
 
 `/tmux-setup` コマンドを実行すると、以下が自動で配置される:
 
-- `.orchestrator/templates/` — 11 テンプレートファイル
-- `.orchestrator/scripts/` — 9 スクリプトファイル（実行権限付き）
+- `.orchestrator/templates/` — 14 テンプレートファイル
+- `.orchestrator/scripts/` — 11 スクリプトファイル（実行権限付き）
 - `.orchestrator/default-cli-assignments.json` — デフォルト CLI 割り当て設定
 
 詳細: [tmux-orchestrator-setup スキル](../tmux-orchestrator-setup/SKILL.md)
@@ -480,8 +503,8 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 
 ## 生成後チェックリスト
 
-- [ ] `.orchestrator/templates/` に11ファイルが配置されている
-- [ ] `.orchestrator/scripts/` に9スクリプトが配置されている
+- [ ] `.orchestrator/templates/` に14ファイルが配置されている
+- [ ] `.orchestrator/scripts/` に11スクリプトが配置されている
 - [ ] 全スクリプトに実行権限が付与されている
 - [ ] ターゲットCLIの形式に従っている
 - [ ] description にトリガー条件が含まれている
@@ -506,6 +529,10 @@ CLI 割り当てやチーム設定のカスタマイズは `/tmux-config` で行
 - [agent-catalog.md](references/agent-catalog.md) - エージェント一覧・選択ガイド
 - [agent-roles.md](references/agent-roles.md) - エージェントの役割定義
 - [cli-profiles.md](references/cli-profiles.md) - CLIツール間の能力比較
+
+## テンプレート
+
+- [orchestration-launcher-prompt.md](references/templates/orchestration-launcher-prompt.md) - Launcher エージェント用プロンプトテンプレート
 
 ## CLI フォーマット
 

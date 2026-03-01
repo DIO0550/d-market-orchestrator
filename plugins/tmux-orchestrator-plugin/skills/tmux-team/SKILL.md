@@ -23,13 +23,18 @@ disable-model-invocation: true
 ## ワークフロー概要
 
 ```
-[チーム編成] ──────────────────────────────
+[Launcher セットアップ] ─── Launcher エージェントが環境構築
     │
-    ├── チーム設定読み込み（team-config.json、存在する場合）
-    ├── tmuxセッション作成（tmux-session-create.sh）
-    ├── チームセッションディレクトリ初期化（init-team-session.sh）
-    ├── ペイン事前分割＋CLI起動（tmux-pane-presplit.sh）
-    └── 全メンバーの Ready 検知
+    ├── オーケストレーターが Launcher プロンプトを生成
+    ├── tmux-agent-launch.sh で Launcher 起動
+    ├── Launcher が実行:
+    │   ├── セッションディレクトリ初期化
+    │   ├── tmux セッション作成
+    │   ├── ペイン事前分割 + CLI 起動
+    │   └── 全メンバーの Ready 検知
+    ├── [AGENT_COMPLETE] launcher done 受信
+    ├── pane-registry.json を Read してペインID取得
+    └── member-status.json を初期化
     │
 [タスク委任（自由）] ────────────────────────
     │
@@ -50,60 +55,11 @@ disable-model-invocation: true
 
 **重要**: このスキルには固定のフェーズ構造がない。タスクの分解方法、割り当て順序、レビューの要否はすべてオーケストレーター（ボス）の判断に委ねられる。
 
-## チーム編成
+## チームセットアップ（Launcher 委譲）
 
-### Step 1: セッション連番の取得
+セッション構築はすべて **Launcher エージェント** に委譲する。オーケストレーターが直接セットアップを行わないことで、コンテキストの消費を防ぐ。
 
-```bash
-NEXT_ID=$(printf "%04d" $(($(ls -d .orchestrator/????-* 2>/dev/null | sed 's/.*\///' | cut -d'-' -f1 | sort -n | tail -1 || echo 0) + 1)))
-FEATURE_NAME="{タスクから生成した英小文字ハイフン区切り名}"
-SESSION_ID="${NEXT_ID}-${FEATURE_NAME}"
-```
-
-### Step 2: スクリプト配置（初回のみ）
-
-共有スクリプト（`tmux-session-create.sh`, `notify-parent.sh` 等）が `.orchestrator/scripts/` に存在することを確認する。存在しない場合は `/tmux-setup` の実行を案内する。
-
-チーム専用スクリプトが存在しない場合、Read → Write でコピーする:
-
-| Read 対象 | Write 先 |
-|-----------|---------|
-| [tmux-pane-presplit.sh](references/scripts/tmux-pane-presplit.sh) | `.orchestrator/scripts/tmux-pane-presplit.sh` |
-| [init-team-session.sh](references/scripts/init-team-session.sh) | `.orchestrator/scripts/init-team-session.sh` |
-| [team-member-prompt.md](references/templates/team-member-prompt.md) | `.orchestrator/templates/team-member-prompt.md` |
-
-コピー後:
-
-```bash
-chmod +x .orchestrator/scripts/tmux-pane-presplit.sh
-chmod +x .orchestrator/scripts/init-team-session.sh
-```
-
-### Step 3: チームセッション初期化
-
-```bash
-# ディレクトリ構造を初期化
-bash .orchestrator/scripts/init-team-session.sh ".orchestrator/${SESSION_ID}" "${PANE_COUNT}"
-```
-
-### Step 4: tmuxセッション作成
-
-```bash
-# チーム設定読み込み
-TEAM_CONFIG=".orchestrator/team-config.json"
-if [ -f "$TEAM_CONFIG" ]; then
-  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG")
-fi
-
-# tmuxセッション作成
-OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}")
-TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
-
-# 自身のペインIDを取得
-PARENT_PANE=$(tmux display-message -p '#{pane_id}')
-```
-
-### Step 5: メンバー数の決定
+### メンバー数の決定
 
 - `--members N` が指定されている場合: その数を使用
 - 指定されていない場合: タスクの複雑さから判断（デフォルト: 3）
@@ -111,31 +67,51 @@ PARENT_PANE=$(tmux display-message -p '#{pane_id}')
   - 中程度: 3
   - 複雑・大規模: 4〜5
 
-### Step 6: ペイン事前分割＋CLI起動
+### Launcher 起動手順
 
-```bash
-bash .orchestrator/scripts/tmux-pane-presplit.sh \
-  "${TMUX_SESSION}" "${PANE_COUNT}" ".orchestrator/${SESSION_ID}" "claude" "$(pwd)"
-```
-
-出力から `PANE_REGISTRY` のパスを取得し、pane-registry.json を Read してペインIDを記録する。
-
-**キャラ情報の永続化**: `tmux-pane-presplit.sh` は `team-config.json` からメンバーのキャラ情報（名前・性格）を読み取り、`--system-prompt` フラグで CLI に渡す。システムプロンプトはコンテキスト圧縮（compact）の影響を受けないため、セッション中ずっとキャラ設定が維持される。
-
-### Step 7: Ready 検知
-
-CLI の起動完了を待機する:
-
-1. grace period として **10秒** 待機（CLI の初期化時間）
-2. 各メンバーに readiness probe を送信:
+1. セッション ID を生成:
    ```bash
-   # pane-registry.json から PANE_ID を取得
-   tmux send-keys -t "$PANE_ID" \
-     "echo 'ready' > .orchestrator/${SESSION_ID}/.status/member-${N}.ready && echo 'Ready confirmed'" Enter
+   NEXT_ID=$(printf "%04d" $(($(ls -d .orchestrator/????-* 2>/dev/null | sed 's/.*\///' | cut -d'-' -f1 | sort -n | tail -1 || echo 0) + 1)))
+   FEATURE_NAME="{タスクから生成した英小文字ハイフン区切り名}"
+   SESSION_ID="${NEXT_ID}-${FEATURE_NAME}"
    ```
-3. `.status/member-{N}.ready` ファイルの出現をポーリング
-4. タイムアウト: 60秒/メンバー
-5. 全メンバー Ready 確認後、タスク委任開始
+
+2. Launcher プロンプトディレクトリを作成:
+   ```bash
+   mkdir -p .orchestrator/${SESSION_ID}/.prompts
+   mkdir -p .orchestrator/${SESSION_ID}/.status
+   ```
+
+3. `.orchestrator/templates/team-launcher-prompt.md` を Read し、パラメータ（SESSION_ID, PANE_COUNT, CLI_TOOL, WORKING_DIR, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
+
+4. 自身のペイン ID を取得:
+   ```bash
+   PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+   ```
+
+5. Launcher を起動:
+   ```bash
+   bash .orchestrator/scripts/tmux-agent-launch.sh \
+     "$(tmux display-message -p '#{session_name}')" "launcher" "claude" \
+     ".orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md" \
+     ".orchestrator/${SESSION_ID}" "$PARENT_PANE"
+   ```
+
+6. 「Launcher を起動しました。完了通知を待機中...」と出力して **ターンを終了する**
+
+7. `[AGENT_COMPLETE] launcher done` を受信したら:
+   - `.orchestrator/${SESSION_ID}/.config/pane-registry.json` を Read してペインID一覧を取得
+   - `.orchestrator/${SESSION_ID}/.config/tmux-session.txt` を Read して TMUX_SESSION を取得
+   - `member-status.json` を初期化（全メンバーを `ready` に設定）
+   - タスク委任フェーズへ進む
+
+8. `[AGENT_COMPLETE] launcher error` の場合:
+   - `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
+   - ユーザーにエラーを報告
+
+### キャラ情報の永続化
+
+`tmux-pane-presplit.sh` は `team-config.json` からメンバーのキャラ情報（名前・性格）を読み取り、`--system-prompt` フラグで CLI に渡す。システムプロンプトはコンテキスト圧縮（compact）の影響を受けないため、セッション中ずっとキャラ設定が維持される。
 
 ## タスク割り当て
 
@@ -196,7 +172,7 @@ tmux send-keys -t "$PANE_ID_2" \
 
 ## 完了検知
 
-### メインメカニズム: プロンプト指示
+### メインメカニズム: push 型通知
 
 メンバーはプロンプト内の「完了手順（必須）」セクションに従い:
 1. `.status/member-{N}.done` に状態値を書き出す
@@ -244,7 +220,6 @@ tmux send-keys -t "$PANE_ID_2" \
 
 | 状態 | 意味 | 次の状態 |
 |------|------|---------|
-| `initializing` | CLI 起動中 | `ready` |
 | `ready` | CLI 起動完了、タスク受付可能 | `busy` |
 | `busy` | タスク実行中 | `idle` / `error` |
 | `idle` | タスク完了、次のタスク受付可能 | `busy` |
@@ -257,14 +232,6 @@ tmux send-keys -t "$PANE_ID_2" \
 3. 全メンバーが `busy` なら、完了を待機
 
 ## セッション管理
-
-### セッション作成
-
-```bash
-bash .orchestrator/scripts/init-team-session.sh ".orchestrator/${SESSION_ID}" "${PANE_COUNT}"
-OUTPUT=$(bash .orchestrator/scripts/tmux-session-create.sh "orch-${SESSION_ID}")
-TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
-```
 
 ### セッション監視
 
@@ -323,9 +290,9 @@ ls -d .orchestrator/????-* 2>/dev/null
 
 ### CLI 起動失敗
 
-Ready 検知でタイムアウトした場合:
-1. `tmux capture-pane -t "$PANE_ID" -p` でペイン出力を確認
-2. エラー内容をユーザーに報告（例: コマンド未インストール、認証エラー）
+Launcher が `[AGENT_COMPLETE] launcher error` を返した場合:
+1. `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
+2. ユーザーに報告（例: コマンド未インストール、認証エラー）
 
 ## 委任パターン例
 
@@ -371,6 +338,7 @@ Ready 検知でタイムアウトした場合:
 - **Orchestrator の役割は指揮・監視・報告のみ**: tmux コマンドによる指示送信、.status/ の監視、結果のユーザーへの報告に専念
 - **結果ファイルを Read しない**: 分岐判断は `.status/{member-id}.done` の状態値のみで行う
 - **メンバー間の成果物受け渡し**: プロンプトにパスだけを記載し、メンバーが自分で Read する
+- **ポーリング禁止**: サブエージェント起動後はテキスト出力のみでターンを終了し、`[AGENT_COMPLETE]` メッセージを入力として待つ
 
 ## CLI 互換性
 
@@ -389,7 +357,7 @@ Ready 検知でタイムアウトした場合:
 ## 前提条件
 
 - tmux がインストールされていること
-- `/tmux-setup` が実行済みで `.orchestrator/scripts/` に共有スクリプトが配置されていること
+- `/tmux-setup` が実行済みで `.orchestrator/scripts/` と `.orchestrator/templates/` にファイルが配置されていること
 
 ## チーム設定のカスタマイズ（任意）
 
@@ -439,6 +407,7 @@ Ready 検知でタイムアウトした場合:
 ## テンプレート
 
 - [team-member-prompt.md](references/templates/team-member-prompt.md) - メンバーへのタスク指示プロンプト
+- [team-launcher-prompt.md](references/templates/team-launcher-prompt.md) - Launcher エージェント用セットアッププロンプト
 
 ## 共有リソース（tmux-orchestration と共有）
 
