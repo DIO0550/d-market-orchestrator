@@ -43,28 +43,25 @@ tmux-orchestrator のエージェント間同期メカニズム。
 
 ### 書き出しタイミング
 
-エージェントは結果ファイルを出力した後、以下の3ステップをこの順番で実行する:
+エージェントは結果ファイルを出力した後、`complete-agent.sh` を実行する:
 
 ```bash
-# エージェント内での書き出し例（対話モード: エージェント自身が実行）
-# Step 1: 状態値を書き出す
-echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
-# Step 2: 親に完了を通知する
-bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE}
-# Step 3: 自分のペインを終了する（対話モードではプロセスが自動終了しないため必須）
-tmux kill-pane
+# 判定を出すエージェント（例: plan-reviewer）
+bash {SCRIPTS_DIR}/complete-agent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE} Approved
 ```
-
-判定を出さないエージェント（デフォルト状態値 `done`）の場合:
 
 ```bash
-echo "done" > {SESSION_DIR}/.status/{agent-name}.done
-bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
-tmux kill-pane
+# 判定を出さないエージェント（デフォルト状態値 done）
+bash {SCRIPTS_DIR}/complete-agent.sh {SESSION_DIR} {agent-name} {PARENT_PANE} done
 ```
+
+`complete-agent.sh` は以下を順番に実行する:
+1. `.done` ファイルに状態値を書き出す
+2. `notify-parent.sh` で親に通知
+3. `tmux kill-pane` でペインを終了（対話モードで必須）
 
 > `{PARENT_PANE}` はプロンプトのセッション情報から取得する（`tmux-agent-launch.sh` が第6引数として受け取り、エージェントのプロンプトに含める）。
-> Step 3 の `tmux kill-pane` は対話モード（Claude Code 等）で必須。非対話モード（Codex 等）ではプロセス終了後に `tmux-agent-launch.sh` の COMPLETION_SUFFIX がペインを自動閉じるため不要だが、実行しても無害。
+> 非対話モード（Codex 等）ではプロセス終了後に `tmux-agent-launch.sh` の COMPLETION_SUFFIX がペインを自動閉じるため `complete-agent.sh` は不要だが、実行しても無害。
 
 ### Orchestrator での読み取り
 

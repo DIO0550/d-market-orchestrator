@@ -29,21 +29,16 @@ bash {SCRIPTS_DIR}/init-session.sh ".orchestrator/{SESSION_ID}"
 ### Step 3: tmux セッション作成
 
 ```bash
-OUTPUT=$(bash {SCRIPTS_DIR}/tmux-session-create.sh "orch-{SESSION_ID}")
-TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
-echo "$TMUX_SESSION" > .orchestrator/{SESSION_ID}/.config/tmux-session.txt
+bash {SCRIPTS_DIR}/create-and-save-session.sh {SESSION_ID} .orchestrator/{SESSION_ID}
 ```
 
 ### Step 4: CLI 割り当て設定
 
 ```bash
-if [ -f ".orchestrator/default-cli-assignments.json" ]; then
-  cp .orchestrator/default-cli-assignments.json \
-     .orchestrator/{SESSION_ID}/.config/cli-assignments.json
-fi
+cp .orchestrator/default-cli-assignments.json .orchestrator/{SESSION_ID}/.config/cli-assignments.json 2>/dev/null || true
 ```
 
-ファイルが存在しない場合はスキップ（デフォルトの `claude` が使用される）。
+ファイルが存在しない場合は自動スキップ（デフォルトの `claude` が使用される）。
 
 ### Step 5: 親ペインID記録
 
@@ -62,25 +57,16 @@ echo "{PARENT_PANE}" > .orchestrator/{SESSION_ID}/.config/parent-pane.txt
 
 ## 完了手順（必須）
 
-すべてのセットアップが完了したら、以下の3ステップを **この順番で必ず** 実行してください:
+すべてのセットアップが完了したら、以下の **1コマンド** を実行してください:
 
 ```bash
-# 1. 状態値を .done ファイルに書き出す
-echo "done" > .orchestrator/{SESSION_ID}/.status/launcher.done
-
-# 2. 親に完了を通知する
-bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
-
-# 3. 自分のペインを終了する
-tmux kill-pane
+bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} done
 ```
 
 エラー時は状態値を `error` に変更:
 
 ```bash
-echo "error" > .orchestrator/{SESSION_ID}/.status/launcher.done
-bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
-tmux kill-pane
+bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} error
 ```
 
 ---

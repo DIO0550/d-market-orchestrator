@@ -54,21 +54,17 @@
 
 ## 完了手順（必須）
 
-すべての作業が完了したら、以下を **必ず** Bash ツールで実行してください:
+すべての作業が完了したら、以下の **1コマンド** を Bash ツールで実行してください:
 
 ```bash
-# 1. 状態値を .done ファイルに書き出す
-echo "{状態値}" > {SESSION_DIR}/.status/{member-id}.done
-
-# 2. 親に完了を通知する
-bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {member-id} {PARENT_PANE}
+bash {SCRIPTS_DIR}/complete-agent.sh {SESSION_DIR} {member-id} {PARENT_PANE} {状態値}
 ```
 
 - 状態値の例: `done`（通常完了）、`PASS`/`FAIL`（テスト系）、`approved`/`needs-revision`（レビュー系）
 - オーケストレーターが状態値を指定している場合はそれに従う
 - 指定がなければ `done` を使用する
 
-> **重要**: この2つのコマンドを実行しないとオーケストレーターが完了を検知できません。
+> **重要**: このコマンドを実行しないとオーケストレーターが完了を検知できません。
 > 作業が完了したら、他のことをせずに即座にこの完了手順を実行してください。
 
 ---

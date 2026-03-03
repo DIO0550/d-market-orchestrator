@@ -78,28 +78,17 @@ sleep 60 && cat "{SESSION_DIR}/.status/{agent}.done"
 
 ## 完了手順（必須）
 
-すべての作業が完了したら、以下の3ステップを **この順番で必ず** 実行してください:
+すべての作業が完了したら、以下の **1コマンド** を実行してください:
 
-1. 状態値を `.done` ファイルに書き出す:
-   ```bash
-   echo "{状態値}" > {SESSION_DIR}/.status/{agent-name}.done
-   ```
-   - 判定を出すエージェント: 判定結果（例: `Approved`, `PASS`, `FAIL`）
-   - 判定を出さないエージェント: `done`
+```bash
+bash {SCRIPTS_DIR}/complete-agent.sh {SESSION_DIR} {agent-name} {PARENT_PANE} {状態値}
+```
 
-2. 親に完了を通知する:
-   ```bash
-   bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
-   ```
+- 判定を出すエージェント: 状態値に判定結果を指定（例: `Approved`, `PASS`, `FAIL`）
+- 判定を出さないエージェント: 状態値に `done` を指定
 
-3. 自分のペインを終了する（**必須**）:
-   ```bash
-   tmux kill-pane
-   ```
-   > Claude Code は対話モードのためプロセスが自動終了しない。このコマンドでペインごと終了させる。
-   > 実行するとペインが即座に閉じるため、これが最後のコマンドであること。
-
-> **注意**: 3ステップすべてを実行しないとオーケストレーターが完了を検知できず、ペインが残り続けます。
+> このスクリプトが .done 書き出し → 親への通知 → ペイン終了をすべて行います。
+> 実行するとペインが即座に閉じるため、これが最後のコマンドであること。
 
 ---
 

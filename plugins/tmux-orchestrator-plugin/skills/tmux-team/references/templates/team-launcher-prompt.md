@@ -32,9 +32,7 @@ bash {TEAM_SCRIPTS_DIR}/init-team-session.sh ".orchestrator/{SESSION_ID}" "{PANE
 ### Step 3: tmux セッション作成
 
 ```bash
-OUTPUT=$(bash {SCRIPTS_DIR}/tmux-session-create.sh "orch-{SESSION_ID}")
-TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
-echo "$TMUX_SESSION" > .orchestrator/{SESSION_ID}/.config/tmux-session.txt
+bash {SCRIPTS_DIR}/create-and-save-session.sh {SESSION_ID} .orchestrator/{SESSION_ID}
 ```
 
 ### Step 4: ペイン事前分割 + CLI 起動
@@ -65,7 +63,7 @@ CLI の起動完了を待機する:
 
 4. `.status/member-{N}.ready` ファイルの出現を確認（タイムアウト: 60秒/メンバー）:
    ```bash
-   for i in $(seq 1 60); do
+   for i in {1..60}; do
      [ -f ".orchestrator/{SESSION_ID}/.status/member-{N}.ready" ] && break
      sleep 1
    done
@@ -87,25 +85,16 @@ CLI の起動完了を待機する:
 
 ## 完了手順（必須）
 
-すべてのセットアップが完了したら、以下の3ステップを **この順番で必ず** 実行してください:
+すべてのセットアップが完了したら、以下の **1コマンド** を実行してください:
 
 ```bash
-# 1. 状態値を .done ファイルに書き出す
-echo "done" > .orchestrator/{SESSION_ID}/.status/launcher.done
-
-# 2. 親に完了を通知する
-bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
-
-# 3. 自分のペインを終了する
-tmux kill-pane
+bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} done
 ```
 
 エラー時は状態値を `error` に変更:
 
 ```bash
-echo "error" > .orchestrator/{SESSION_ID}/.status/launcher.done
-bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
-tmux kill-pane
+bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} error
 ```
 
 ---
