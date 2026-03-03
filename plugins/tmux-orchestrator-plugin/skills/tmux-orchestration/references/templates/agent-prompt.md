@@ -94,7 +94,7 @@ sleep 60 && cat "{SESSION_DIR}/.status/{agent}.done"
 
 3. 自分のペインを終了する（**必須**）:
    ```bash
-   tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
+   tmux kill-pane
    ```
    > Claude Code は対話モードのためプロセスが自動終了しない。このコマンドでペインごと終了させる。
    > 実行するとペインが即座に閉じるため、これが最後のコマンドであること。

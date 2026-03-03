@@ -52,7 +52,7 @@ echo "Approved" > {SESSION_DIR}/.status/plan-reviewer.done
 # Step 2: 親に完了を通知する
 bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} plan-reviewer {PARENT_PANE}
 # Step 3: 自分のペインを終了する（対話モードではプロセスが自動終了しないため必須）
-tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
+tmux kill-pane
 ```
 
 判定を出さないエージェント（デフォルト状態値 `done`）の場合:
@@ -60,7 +60,7 @@ tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 ```bash
 echo "done" > {SESSION_DIR}/.status/{agent-name}.done
 bash {SCRIPTS_DIR}/notify-parent.sh {SESSION_DIR} {agent-name} {PARENT_PANE}
-tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
+tmux kill-pane
 ```
 
 > `{PARENT_PANE}` はプロンプトのセッション情報から取得する（`tmux-agent-launch.sh` が第6引数として受け取り、エージェントのプロンプトに含める）。

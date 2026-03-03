@@ -97,7 +97,7 @@ echo "done" > .orchestrator/{SESSION_ID}/.status/launcher.done
 bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
 
 # 3. 自分のペインを終了する
-tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
+tmux kill-pane
 ```
 
 エラー時は状態値を `error` に変更:
@@ -105,7 +105,7 @@ tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
 ```bash
 echo "error" > .orchestrator/{SESSION_ID}/.status/launcher.done
 bash {SCRIPTS_DIR}/notify-parent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE}
-tmux kill-pane -t "$(tmux display-message -p '#{pane_id}')"
+tmux kill-pane
 ```
 
 ---
