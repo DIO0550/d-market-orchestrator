@@ -251,17 +251,6 @@ tmux ls 2>/dev/null | grep "^orch-"
 ls -d .orchestrator/????-* 2>/dev/null
 ```
 
-## プロジェクトタイプ検出
-
-テスト・Lintコマンドを自動検出:
-
-| 検出ファイル | テストコマンド | Lintコマンド |
-|-------------|-------------|-------------|
-| package.json | `npm test` | `npm run lint` |
-| Cargo.toml | `cargo test` | `cargo clippy` |
-| pyproject.toml | `pytest` | `ruff check .` |
-| go.mod | `go test ./...` | `golangci-lint run` |
-
 ## オーケストレーターの制約（厳守）
 
 - **自分で調査・探索を行わない**: 情報収集はすべて Explorer に委譲
