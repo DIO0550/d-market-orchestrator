@@ -74,7 +74,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 - **ユーザーが URL（GitHub Issue、仕様書リンク等）を提示した場合**: その URL を含めて Explorer のプロンプトファイルに渡し、Explorer に取得・分析させること。Orchestrator 自身が WebFetch や Read で内容を確認してはならない
 - **Orchestrator の役割は指揮・監視・報告のみ**: エージェントの起動、進捗の監視、結果のユーザーへの報告に専念すること
 - **結果ファイルを Read しない**: 他エージェントの結果ファイル（plan.md, lifecycle.md, review.md 等）は**絶対に読まない**。分岐判断は `.status/{agent}.done` の状態値のみで行う
-- **自律実行**: Phase 1〜2 はユーザー確認なしで自動完了する
+- **自律実行**: Phase 1〜3 はユーザー確認なしで自動完了する
 - **tmux コマンドのみで制御**: Task ツールは使用せず、Bash ツールで tmux スクリプトを実行する
 - **ポーリング禁止（最重要）**: `while [ ! -f ... ]; do sleep; done` のようなポーリングループは**絶対に使用しない**。詳細は「完了待機の方法」セクションを参照
 
@@ -199,10 +199,10 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
    TR_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.done" 2>/dev/null)
    LT_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/linter.done" 2>/dev/null)
    ```
-4. 両方 `PASS` → Phase 4 へ
+4. 両方 `PASS` → 検証結果をユーザーに報告し、自動実行を停止
 5. いずれか `FAIL` → **Debugger** を起動（分析+修正）。マーカーを削除して再実行（最大10回リトライ）
 
-### Phase 4: Git
+### Phase 4: Git（ユーザー指示で実行）
 
 1. ユーザーの指示で **Committer** のプロンプトを生成し起動
 2. 必要に応じて **PR Creator** を起動
@@ -318,7 +318,8 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 ## 完了条件
 
 1. 全タスクが完了になっている（全 `.status/task-{id}-task-manager.done` が存在）
-2. テスト・Lint が通っている
+2. テスト・Lint が通っている（`.status/test-runner.done` と `.status/linter.done` が PASS）
+3. 検証結果をユーザーに報告し、Phase 4（Git操作）の選択肢を提示
 ```
 
 ---
