@@ -221,39 +221,6 @@ echo "rejected" > {SESSION_DIR}/.status/task-{taskId}-task-manager.done
 
 **これにより Orchestrator は lifecycle.md を読むことなくタスクの成否を判断できる。**
 
-## CLI別の注意事項
-
-### Claude Code の場合
-
-```bash
-claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
-```
-
-- tmux ペイン内で対話的に起動し、Task Manager が自律的にツールを使用して作業する
-- Task ツールでサブエージェント（Implementer, Code Reviewer 等）を起動
-- Read ツールでサブエージェントの結果ファイルを読み取り、判定を確認
-- 完了後は `.done` マーカーに状態値を書き出し、Orchestrator に `[AGENT_COMPLETE]` メッセージが送信される
-
-### OpenAI Codex の場合
-
-```bash
-codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
-```
-
-- Task ツール相当の機能でサブエージェントを起動
-
-### GitHub Copilot の場合
-
-- Copilot CLI はサブエージェント管理が困難
-- Task Manager には Claude Code または Codex の使用を推奨
-
-## 必要な操作
-
-- **サブエージェント起動（Task）**: Implementer, Test Runner, Linter, Code Reviewer, Refactorer の起動
-- **ファイル作成**: ライフサイクル結果の出力
-- **ファイル読み込み**: サブエージェントの結果ファイル読み取り（判定確認）
-- **コマンド実行（Bash）**: `.done` マーカーの書き出し
-
 ## 判定ガイドライン
 
 ### completed にする基準
@@ -286,32 +253,3 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 2. `{SESSION_DIR}/task-{taskId}/task-manager/lifecycle.md` にライフサイクル結果が書き出されている
 3. `{SESSION_DIR}/.status/task-{taskId}-task-manager.done` に状態値が書き出されている
 ```
-
----
-
-## カスタマイズポイント
-
-### ライフサイクルの調整
-
-プロジェクトに応じてエージェントの構成を変更:
-
-```markdown
-### 軽量ライフサイクル
-Implementer → Code Reviewer → 完了判定（Test Runner / Linter を省略）
-
-### 厳格ライフサイクル
-Implementer → Test Runner + Linter + Security Scanner → Code Reviewer → Refactorer → 完了判定
-```
-
-### リトライ回数の調整
-
-```markdown
-## 制約
-- リトライは最大{N}回まで
-```
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

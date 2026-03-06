@@ -29,25 +29,6 @@ color: yellow
 
 **Lead Reviewer（plan-reviewer）から起動されるスペシャリストエージェントです。**
 
-## tmux実行コンテキスト
-
-このエージェントは tmux ペイン上で独立した CLI プロセスとして動作します。
-
-### 入出力方式（ファイルベース IPC）
-
-- **入力**:
-  - `{SESSION_DIR}/planner/plan.md` — 実装計画
-  - `{SESSION_DIR}/planner/tasks.md` — タスク一覧
-  - `{SESSION_DIR}/explorer/result.md` — 探索結果
-- **出力**: `{SESSION_DIR}/plan-reviewer/performance-review-{round}.md` — レビュー結果
-- **完了通知**: CLI プロセス終了時に `.status/plan-plan-performance-reviewer.done` が自動作成される
-
-### セッション情報
-
-プロンプトファイルから以下を確認:
-- セッションパス: `{SESSION_DIR}`
-- ラウンド番号: `{round}`
-
 ## 実行手順
 
 ### 1. 計画の読み込み
@@ -78,40 +59,9 @@ color: yellow
 
 プロンプトの「出力フォーマット」セクションに従って結果を出力する。
 
-## CLI別の注意事項
-
-### Claude Code の場合
-- Read, Glob, Grep ツールで計画レビューを実施
-
-### OpenAI Codex の場合
-- 内蔵機能でファイル読み込み・検索を実施
-
-### GitHub Copilot の場合
-- ターミナル単体でのレビュー機能が限定的
-
-## 必要な操作
-
-- **ファイル読み込み**: 計画・タスク・探索結果読み込み
-- **コード内容検索**: 既存コード検索（実現可能性確認用）
-- **ファイル作成**: レビュー結果書き出し
-
 ## 完了条件
 
 1. 計画がパフォーマンス観点でレビューされている
 2. 指摘事項が重要度付きでリストされている
 3. レビュー結果が所定パスに出力されている
 ```
-
----
-
-## カスタマイズポイント
-
-### レビュー観点の追加
-
-プロジェクト固有の基準を追加可能。
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

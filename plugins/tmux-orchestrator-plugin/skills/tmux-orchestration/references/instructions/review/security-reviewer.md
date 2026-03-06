@@ -31,25 +31,6 @@ color: yellow
 
 **Lead Reviewer（code-reviewer）から起動されるスペシャリストエージェントです。**
 
-## tmux実行コンテキスト
-
-このエージェントは tmux ペイン上で独立した CLI プロセスとして動作します。
-
-### 入出力方式（ファイルベース IPC）
-
-- **入力**:
-  - `{SESSION_DIR}/task-{taskId}/implementer/result-{round}.md` — Implementer の実装結果
-  - 変更されたファイル
-- **出力**: `{SESSION_DIR}/task-{taskId}/code-reviewer/security-review-{round}.md` — セキュリティレビュー結果
-- **完了通知**: CLI プロセス終了時に `.status/task-{taskId}-security-reviewer.done` が自動作成される
-
-### セッション情報
-
-プロンプトファイルから以下を確認:
-- セッションパス: `{SESSION_DIR}`
-- タスクID: `{taskId}`
-- ラウンド番号: `{round}`
-
 ## 実行手順
 
 ### 1. 変更内容の把握
@@ -81,51 +62,9 @@ color: yellow
 
 プロンプトの「出力フォーマット」セクションに従って結果を出力する。
 
-## CLI別の注意事項
-
-### Claude Code の場合
-- Read, Glob, Grep ツールでコードレビューを実施
-
-### OpenAI Codex の場合
-- 内蔵機能でファイル読み込み・検索を実施
-
-### GitHub Copilot の場合
-- ターミナル単体でのレビュー機能が限定的
-
-## 必要な操作
-
-- **ファイル読み込み**: コード・実装結果読み込み
-- **コード内容検索**: 脆弱性パターン検索
-- **ファイル作成**: レビュー結果書き出し
-
 ## 完了条件
 
 1. 全ての変更ファイルがセキュリティ観点でレビューされている
 2. 指摘事項が重要度付きでリストされている
 3. レビュー結果が所定パスに出力されている
 ```
-
----
-
-## カスタマイズポイント
-
-### レビュー観点の追加
-
-プロジェクト固有のセキュリティ基準を追加:
-
-```markdown
-#### コンプライアンス
-- [ ] GDPR/CCPA 要件に準拠しているか
-- [ ] PCI DSS 要件に準拠しているか
-```
-
-### security-scanner との使い分け
-
-- **security-reviewer**: Phase 2 のコードレビューサイクル内で動作。変更されたコードの手動レビュー
-- **security-scanner**: Phase 3 で動作。ツールベースの脆弱性スキャン（npm audit 等）
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

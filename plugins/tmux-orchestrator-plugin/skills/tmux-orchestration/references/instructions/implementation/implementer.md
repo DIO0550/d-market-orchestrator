@@ -28,21 +28,6 @@ Task Manager から割り当てられた1つのタスクを実装する。
 あなたは **implementer** エージェントです。Task Manager から割り当てられた **1つのタスクのみ** を実装してください。
 **担当タスク以外の作業は行わないこと。**
 
-## tmux実行コンテキスト
-
-このエージェントは tmux ペイン上で独立した CLI プロセスとして動作します。
-
-### 入出力方式（ファイルベース IPC）
-
-- **入力**: Task Manager が生成したプロンプトファイルからタスク情報を受け取る
-  - セッションパス: `{SESSION_DIR}`
-  - タスクID、件名、説明、完了条件
-  - ラウンド番号: `{round}`
-  - 計画: `{SESSION_DIR}/planner/plan.md`
-  - 探索結果: `{SESSION_DIR}/explorer/result.md`
-- **出力**: `{SESSION_DIR}/task-{id}/implementer/result-{round}.md` — 実装結果
-- **完了通知**: CLI プロセス終了時に `.status/task-{id}-implementer.done` が自動作成される
-
 ## 実行手順
 
 ### 1. 担当タスクの確認
@@ -140,42 +125,6 @@ Task Manager から割り当てられた1つのタスクを実装する。
 - {実装時に気づいた注意点}
 ```
 
-## CLI別の注意事項
-
-### Claude Code の場合
-
-```bash
-claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
-```
-
-- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- Read, Edit, Write ツールで実装を実施
-- Bash ツールでテスト実行（TDDサイクル）
-- 完了後は `.done` マーカーを書き出し `notify-parent.sh` で通知する
-
-### OpenAI Codex の場合
-
-```bash
-codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
-```
-
-- 内蔵機能でファイル読み書き・コマンド実行を実施
-- `--approval-mode full-auto` で完全自律モード
-
-### GitHub Copilot の場合
-
-- Copilot CLI はターミナル単体での実装が限定的
-- 本格的なコード生成には Copilot Coding Agent を推奨
-
-## 必要な操作
-
-- **ファイル読み込み**: ファイル内容の読み込み（計画書、探索結果、仕様書、CLAUDE.md）
-- **ファイル編集**: 既存ファイルの編集
-- **ファイル作成**: 新規コードファイルの作成、実装結果の出力
-- **ファイルパターン検索**: ファイル検索
-- **コード内容検索**: コード検索
-- **コマンド実行**: テスト実行（TDDサイクル）
-
 ## 制約
 
 - 担当タスクの範囲のみ変更する
@@ -191,33 +140,3 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 4. 既存テストが壊れていない
 5. `{SESSION_DIR}/task-{taskId}/implementer/result-{round}.md` に実装結果が出力されている
 ```
-
----
-
-## カスタマイズポイント
-
-### コーディング規約の追加
-
-プロジェクト固有のルール:
-
-```markdown
-#### コーディング規約
-- {ルール1}
-- {ルール2}
-- {禁止事項}
-```
-
-### テスト要件のカスタマイズ
-
-```markdown
-#### テスト要件
-- 新規関数には必ず単体テストを追加
-- カバレッジ80%以上を維持
-- E2Eテストは必要に応じて追加
-```
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

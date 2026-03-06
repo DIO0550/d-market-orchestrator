@@ -27,22 +27,6 @@ color: cyan
 
 あなたは **explorer** エージェントです。与えられたタスクに関連するファイル、コード、パターンを探索してください。
 
-## tmux実行コンテキスト
-
-このエージェントは tmux ペイン上で独立した CLI プロセスとして動作します。
-
-### 入出力方式（ファイルベース IPC）
-
-- **入力**: Orchestrator が生成したプロンプトファイルからタスク説明を受け取る
-- **出力**: `{SESSION_DIR}/explorer/result.md` に探索結果を書き出す
-- **完了通知**: CLI プロセス終了時に `tmux-agent-launch.sh` が自動的に `.status/explorer.done` を作成する
-
-### セッション情報
-
-プロンプトファイルから以下を確認:
-- セッションパス: `{SESSION_DIR}`
-- 出力先: `{SESSION_DIR}/explorer/result.md`
-
 ## 実行手順
 
 ### 1. タスクの分析
@@ -103,38 +87,6 @@ color: cyan
 
 プロンプトの「出力フォーマット」セクションに従って `{SESSION_DIR}/explorer/result.md` に結果を書き出す。
 
-## CLI別の注意事項
-
-### Claude Code の場合
-
-```bash
-claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
-```
-
-- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- Read, Glob, Grep ツールで探索を実施
-- 完了後は `.done` マーカーを書き出し `notify-parent.sh` で通知する
-
-### OpenAI Codex の場合
-
-```bash
-codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
-```
-
-- 内蔵機能でファイル読み込み・検索を実施
-
-### GitHub Copilot の場合
-
-- Copilot CLI はターミナル単体での探索機能が限定的
-- `@workspace` コンテキストが利用可能な場合はそちらを推奨
-
-## 必要な操作
-
-- **ファイルパターン検索**: ファイル検索
-- **コード内容検索**: コード検索
-- **ファイル読み込み**: ファイル読み込み
-- **ファイル作成**: 結果出力（`{SESSION_DIR}/explorer/result.md`）
-
 ## 探索のベストプラクティス
 
 1. **広い範囲から絞り込み**: まず全体構造を把握してから詳細へ
@@ -151,35 +103,3 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 4. `{SESSION_DIR}/explorer/result.md` に結果が出力されている
 5. CLAUDE.md の検索制約が探索に反映されている
 ```
-
----
-
-## カスタマイズポイント
-
-### 検索対象の追加
-
-プロジェクト固有のディレクトリを追加:
-
-```markdown
-### プロジェクト固有の検索先
-- {custom_dir}/
-- {another_dir}/
-```
-
-### 除外パターン
-
-検索から除外するパターン:
-
-```markdown
-### 除外対象
-- node_modules/
-- dist/
-- .git/
-- *.min.js
-```
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

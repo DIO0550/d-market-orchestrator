@@ -37,22 +37,6 @@ Plan Reviewer によるレビューループを自ら管理し、承認済みの
 このエージェントは tmux ペイン上で Orchestrator から起動された CLI プロセスとして動作します。
 Plan Reviewer は **tmux ペインではなく Task ツール（サブエージェント）** で起動します。これによりペイン数の増加を防ぎます。
 
-### 入出力方式（ファイルベース IPC）
-
-- **入力**: Explorer の結果ファイル `{SESSION_DIR}/explorer/result.md`
-- **出力**:
-  - `{SESSION_DIR}/planner/plan.md` — 実装計画書
-  - `{SESSION_DIR}/planner/tasks.md` — タスク一覧
-  - `{SESSION_DIR}/.deps/tasks.json` — タスク依存関係グラフ（check-dependencies.sh が使用）
-- **完了マーカー**: 結果出力後に `.status/planner.done` に状態値を書き出す（Orchestrator が読み取る）
-- **完了通知**: CLI プロセス終了時に `.status/planner.done` が自動作成され、Orchestrator に `[AGENT_COMPLETE]` メッセージが送信される
-
-### セッション情報
-
-プロンプトファイルから以下を確認:
-- セッションパス: `{SESSION_DIR}`
-- 探索結果: `{SESSION_DIR}/explorer/result.md`
-
 ### Plan Reviewer の起動方式
 
 Task ツールでサブエージェントとして起動する。Plan Reviewer は内部でさらに4つのスペシャリストを Task ツールで並列起動し、統合判定を返す:
@@ -273,42 +257,6 @@ echo "rejected" > {SESSION_DIR}/.status/planner.done
 
 **これにより Orchestrator は plan.md や review.md を読むことなく計画フェーズの成否を判断できる。**
 
-## CLI別の注意事項
-
-### Claude Code の場合
-
-```bash
-claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
-```
-
-- tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- Read, Glob, Grep ツールで仕様書探索を実施
-- Write/Edit ツールで計画書・タスク一覧を出力
-- Task ツールで Plan Reviewer をサブエージェントとして起動
-- 完了後は `.done` マーカーに状態値を書き出し、Orchestrator に `[AGENT_COMPLETE]` メッセージが送信される
-
-### OpenAI Codex の場合
-
-```bash
-codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
-```
-
-- Task ツール相当の機能でサブエージェントを起動
-
-### GitHub Copilot の場合
-
-- Copilot CLI はサブエージェント管理が困難
-- Planner には Claude Code または Codex の使用を推奨
-
-## 必要な操作
-
-- **サブエージェント起動（Task）**: Plan Reviewer の起動
-- **ファイルパターン検索**: 仕様書・ファイル検索
-- **コード内容検索**: コード検索
-- **ファイル読み込み**: 探索結果、仕様書、CLAUDE.md、Plan Reviewer のレビュー結果
-- **ファイル作成**: 計画書（plan.md）、タスク一覧（tasks.md）、依存関係グラフ（tasks.json）の出力
-- **コマンド実行（Bash）**: `.done` マーカーの書き出し
-
 ## 制約
 
 - コードの変更は行わない（計画の作成とレビューループ管理のみ）
@@ -329,38 +277,3 @@ codex --approval-mode full-auto --quiet "$(cat '{PROMPT_FILE}')"
 8. Plan Reviewer の承認を得ている（`Approved`）、または `Rejected` で状態値が書き出されている
 9. `{SESSION_DIR}/.status/planner.done` に状態値が書き出されている
 ```
-
----
-
-## カスタマイズポイント
-
-### 仕様書ディレクトリのカスタマイズ
-
-プロジェクトに応じて検索先を変更:
-
-```markdown
-#### 検索対象ディレクトリ
-{プロジェクト固有のディレクトリ}
-```
-
-### タスク粒度のカスタマイズ
-
-チームの好みに応じて調整:
-
-```markdown
-#### タスク分割の原則
-1. 1タスク = {チームの基準}
-```
-
-### 計画書出力先のカスタマイズ
-
-```markdown
-#### 出力先
-{プロジェクト固有のパス}
-```
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

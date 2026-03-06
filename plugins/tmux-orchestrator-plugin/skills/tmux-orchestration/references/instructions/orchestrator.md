@@ -322,26 +322,3 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 3. 検証結果をユーザーに報告し、Phase 4（Git操作）の選択肢を提示
 ```
 
----
-
-## カスタマイズポイント
-
-### 使用するエージェントの選択
-
-プロジェクトに応じて起動するエージェントを調整:
-
-```markdown
-### Phase 3: 検証
-- Test Runner のみ（Linter なし）
-- Security Scanner を追加
-```
-
-### CLI 割り当て
-
-`.orchestrator/{SESSION_ID}/.config/cli-assignments.json` でエージェントごとの CLI を変更可能。
-
----
-
-## ツール別の実装
-
-[cli-profiles.md](../cli-profiles.md) および [cli-formats/](../cli-formats/) を参照。

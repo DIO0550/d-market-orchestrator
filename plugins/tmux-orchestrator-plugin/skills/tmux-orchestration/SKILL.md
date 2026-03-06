@@ -150,7 +150,6 @@ tmux版ではファイルベースIPCを使用。`.orchestrator/` ディレク�
 ### エージェント
 
 - [agent-catalog.md](references/agent-catalog.md) - エージェント一覧・選択ガイド
-- [agent-roles.md](references/agent-roles.md) - エージェントの役割定義
 - [orchestrator.md](references/instructions/orchestrator.md) - オーケストレーターの詳細手順
 
 ### テンプレート
