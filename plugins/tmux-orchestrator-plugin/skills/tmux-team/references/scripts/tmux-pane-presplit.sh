@@ -46,11 +46,17 @@ fi
 mkdir -p "${SESSION_DIR}/.config"
 mkdir -p "${SESSION_DIR}/.status"
 
-# チーム設定の読み込み
+# チーム設定・CLI割り当て設定のパス
 TEAM_CONFIG=".orchestrator/team-config.json"
-
-# CLI割り当て設定の読み込み
 CLI_ASSIGNMENTS="${SESSION_DIR}/.config/cli-assignments.json"
+
+# チーム設定をループ外で一度だけ読み込む
+HAS_TEAM_CONFIG=false
+TEAM_NAME=""
+if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+  HAS_TEAM_CONFIG=true
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+fi
 
 # pane-registry.json の初期化
 REGISTRY_FILE="${SESSION_DIR}/.config/pane-registry.json"
@@ -64,19 +70,31 @@ for i in $(seq 1 "$PANE_COUNT"); do
   TARGET_PANE=$(tmux split-window -t "${SESSION}" -v -d -P -F '#{pane_id}')
   tmux select-layout -t "${SESSION}" tiled
 
-  # チーム設定からメンバー表示名を取得
+  # チーム設定からメンバー情報を一括取得
   DISPLAY_NAME="$MEMBER_NAME"
-  if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
-    CUSTOM_NAME=$(jq -r ".members.\"${MEMBER_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
-    if [ -n "$CUSTOM_NAME" ]; then
-      DISPLAY_NAME="${CUSTOM_NAME} (${MEMBER_NAME})"
+  SYSTEM_PROMPT="あなたは ${MEMBER_NAME} です。"
+  if [ "$HAS_TEAM_CONFIG" = true ]; then
+    MEMBER_CUSTOM_NAME=$(jq -r ".members.\"${MEMBER_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
+    MEMBER_PERSONALITY=$(jq -r ".members.\"${MEMBER_NAME}\".personality // empty" "$TEAM_CONFIG" 2>/dev/null)
+
+    if [ -n "$MEMBER_CUSTOM_NAME" ]; then
+      DISPLAY_NAME="${MEMBER_CUSTOM_NAME} (${MEMBER_NAME})"
+      if [ -n "$TEAM_NAME" ]; then
+        SYSTEM_PROMPT="あなたは **${TEAM_NAME}** の **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
+      else
+        SYSTEM_PROMPT="あなたは **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
+      fi
+    fi
+
+    if [ -n "$MEMBER_PERSONALITY" ]; then
+      SYSTEM_PROMPT="${SYSTEM_PROMPT} あなたの性格・話し方: ${MEMBER_PERSONALITY}"
     fi
   fi
 
   # ペインのタイトルを設定
   tmux select-pane -t "$TARGET_PANE" -T "$DISPLAY_NAME"
 
-  # メンバーごとの CLI ツールを決定
+  # メンバーごとの CLI ツールを決定（claude 以外は非対応のため警告して claude にフォールバック）
   MEMBER_CLI="$CLI_TOOL"
   if [ -f "$CLI_ASSIGNMENTS" ] && command -v jq &>/dev/null; then
     ASSIGNED_CLI=$(jq -r ".assignments.\"${MEMBER_NAME}\" // empty" "$CLI_ASSIGNMENTS" 2>/dev/null)
@@ -84,43 +102,13 @@ for i in $(seq 1 "$PANE_COUNT"); do
       MEMBER_CLI="$ASSIGNED_CLI"
     fi
   fi
-
-  # team-config.json からキャラ情報を構築（--system-prompt 用）
-  SYSTEM_PROMPT=""
-  if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
-    TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
-    MEMBER_CUSTOM_NAME=$(jq -r ".members.\"${MEMBER_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
-    MEMBER_PERSONALITY=$(jq -r ".members.\"${MEMBER_NAME}\".personality // empty" "$TEAM_CONFIG" 2>/dev/null)
-
-    if [ -n "$MEMBER_CUSTOM_NAME" ] && [ -n "$TEAM_NAME" ]; then
-      SYSTEM_PROMPT="あなたは **${TEAM_NAME}** の **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
-    elif [ -n "$MEMBER_CUSTOM_NAME" ]; then
-      SYSTEM_PROMPT="あなたは **${MEMBER_CUSTOM_NAME}**（${MEMBER_NAME}）です。"
-    else
-      SYSTEM_PROMPT="あなたは ${MEMBER_NAME} です。"
-    fi
-
-    if [ -n "$MEMBER_PERSONALITY" ]; then
-      SYSTEM_PROMPT="${SYSTEM_PROMPT} あなたの性格・話し方: ${MEMBER_PERSONALITY}"
-    fi
-  else
-    SYSTEM_PROMPT="あなたは ${MEMBER_NAME} です。"
+  if [ "$MEMBER_CLI" != "claude" ]; then
+    echo "Warning: ${MEMBER_CLI} does not support interactive persistent mode. Using claude instead."
+    MEMBER_CLI="claude"
   fi
 
-  # CLIツールに応じたコマンドを構築
-  case "$MEMBER_CLI" in
-    claude)
-      CLI_CMD="claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'"
-      ;;
-    *)
-      echo "Warning: ${MEMBER_CLI} does not support interactive persistent mode. Using claude instead."
-      MEMBER_CLI="claude"
-      CLI_CMD="claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'"
-      ;;
-  esac
-
   # ペインで CLI を起動
-  tmux send-keys -t "$TARGET_PANE" "cd '${WORKING_DIR}' && ${CLI_CMD}" C-m
+  tmux send-keys -t "$TARGET_PANE" "cd '${WORKING_DIR}' && claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'" C-m
 
   # pane-registry.json にエントリを追加
   COMMA=""

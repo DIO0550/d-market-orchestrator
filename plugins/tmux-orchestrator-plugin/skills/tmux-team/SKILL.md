@@ -16,44 +16,9 @@ disable-model-invocation: true
 - ユーザーが「N人のチームで」「3ペインで」と指示したとき
 - ユーザーが「セッション確認して」「セッション破棄して」と指示したとき
 
----
-
-# Part 1: チーム オーケストレーション
-
-## ワークフロー概要
-
-```
-[Launcher セットアップ] ─── Launcher エージェントが環境構築
-    │
-    ├── オーケストレーターが Launcher プロンプトを生成
-    ├── tmux-agent-launch.sh で Launcher 起動
-    ├── Launcher が実行:
-    │   ├── セッションディレクトリ初期化
-    │   ├── tmux セッション作成
-    │   ├── ペイン事前分割 + CLI 起動
-    │   └── 全メンバーの Ready 検知
-    ├── [AGENT_COMPLETE] launcher done 受信
-    ├── pane-registry.json を Read してペインID取得
-    └── member-status.json を初期化
-    │
-[タスク委任（自由）] ────────────────────────
-    │
-    ├── オーケストレーターがタスクを分析・分解
-    ├── idle メンバーにタスクを割り振り:
-    │   1. .prompts/member-{N}-task-{M}.md にプロンプト生成
-    │   2. 古い .done/.exit を削除
-    │   3. tmux send-keys でメンバーに指示送信
-    │   4. メンバーがタスクを実行
-    │   5. メンバーが .done 書き出し＋ notify-parent.sh 実行
-    │   6. [AGENT_COMPLETE] member-{N} {status} メッセージ受信
-    │
-    ├── 並列: 複数メンバーに同時にタスク割り振り可能
-    ├── 完了メンバーに新たなタスクを割り当て
-    │
-    └── 全タスク完了 → ユーザーに報告
-```
-
 **重要**: このスキルには固定のフェーズ構造がない。タスクの分解方法、割り当て順序、レビューの要否はすべてオーケストレーター（ボス）の判断に委ねられる。
+
+---
 
 ## チームセットアップ（Launcher 委譲）
 
@@ -152,185 +117,25 @@ tmux send-keys -t "$PANE_ID" \
 
 > **注意**: send-keys で送信するのは短い参照文のみ。詳細な指示はプロンプトファイルに記載する。
 
-### 5. 並列割り当て
-
-複数のメンバーに同時にタスクを割り当てる場合:
-
-```bash
-# member-1 にタスク割り当て
-tmux send-keys -t "$PANE_ID_1" \
-  ".orchestrator/${SESSION_ID}/.prompts/member-1-task-1.md を読んで、指示に従って作業してください。" Enter
-
-# member-2 にタスク割り当て
-tmux send-keys -t "$PANE_ID_2" \
-  ".orchestrator/${SESSION_ID}/.prompts/member-2-task-1.md を読んで、指示に従って作業してください。" Enter
-
-# 各メンバーの完了通知を待機:
-#   [AGENT_COMPLETE] member-1 done
-#   [AGENT_COMPLETE] member-2 done
-```
+複数メンバーへの並列割り当ても同様に、各メンバーに対して send-keys を実行する。
 
 ## 完了検知
 
-### メインメカニズム: push 型通知
+メンバーはプロンプト内の「完了手順（必須）」セクションに従い、`.status/member-{N}.done` に状態値を書き出し `notify-parent.sh` を実行する。オーケストレーターの入力に以下のメッセージが届く:
 
-メンバーはプロンプト内の「完了手順（必須）」セクションに従い:
-1. `.status/member-{N}.done` に状態値を書き出す
-2. `notify-parent.sh` を実行
-
-オーケストレーターの入力に以下のメッセージが届く:
 ```
 [AGENT_COMPLETE] member-1 done
 ```
 
-### フォールバック: タイムアウト
+`[AGENT_COMPLETE]` が一定時間届かない場合は `.status/member-{N}.done` を直接確認し、なければリマインダーを送信する。それでも応答なければユーザーに報告する。
 
-`[AGENT_COMPLETE]` メッセージが一定時間届かない場合:
+## メンバー選択ルール
 
-1. `.status/member-{N}.done` を直接確認（通知だけ失敗した可能性）
-2. `.done` がなければ、リマインダーを送信:
-   ```bash
-   tmux send-keys -t "$PANE_ID" \
-     "作業が完了していたら、完了手順を実行してください: echo 'done' > .orchestrator/${SESSION_ID}/.status/member-{N}.done && bash $SCRIPTS_DIR/notify-parent.sh .orchestrator/${SESSION_ID} member-{N} ${PARENT_PANE}" Enter
-   ```
-3. それでも応答なし → ユーザーに報告し「待機継続」「中断」を選択
-
-## メンバー状態管理
-
-オーケストレーターが `.config/member-status.json` を管理してメンバー状態を追跡する。
-
-```json
-{
-  "members": {
-    "member-1": {
-      "status": "busy",
-      "current_task": "task-2",
-      "tasks_completed": 1
-    },
-    "member-2": {
-      "status": "idle",
-      "current_task": null,
-      "tasks_completed": 1
-    }
-  }
-}
-```
-
-### 状態遷移
-
-| 状態 | 意味 | 次の状態 |
-|------|------|---------|
-| `ready` | CLI 起動完了、タスク受付可能 | `busy` |
-| `busy` | タスク実行中 | `idle` / `error` |
-| `idle` | タスク完了、次のタスク受付可能 | `busy` |
-| `error` | エラーまたはハング | `ready`（再起動後） |
-
-### タスク割り当て時の選択
+オーケストレーターが `.config/member-status.json` でメンバー状態を追跡する（状態: `ready` / `busy` / `idle` / `error`）。タスク割り当て時:
 
 1. `idle` のメンバーを優先
 2. `idle` がなければ `ready` のメンバー（まだタスクを受けていない）
 3. 全メンバーが `busy` なら、完了を待機
-
-## セッション管理
-
-### セッション監視
-
-```bash
-# ステータスモニターを起動（任意）
-bash $SCRIPTS_DIR/tmux-status-monitor.sh ".orchestrator/${SESSION_ID}"
-```
-
-### セッション破棄
-
-```bash
-bash $SCRIPTS_DIR/tmux-session-destroy.sh "${TMUX_SESSION}"
-```
-
-### セッション一覧
-
-```bash
-# 全オーケストレーションセッションを表示
-tmux ls 2>/dev/null | grep "^orch-"
-
-# セッションディレクトリの一覧
-ls -d .orchestrator/????-* 2>/dev/null
-```
-
-## エラーハンドリング
-
-### メンバーがクラッシュした場合
-
-1. ペインの存在確認:
-   ```bash
-   tmux list-panes -t "${TMUX_SESSION}" -F '#{pane_id}' | grep -q "$PANE_ID"
-   ```
-2. ペインが消失している場合:
-   - 新しいペインを `tmux split-window` で作成
-   - CLI を再起動
-   - `pane-registry.json` を更新
-   - 失敗したタスクを再割り当て
-
-### メンバーがハングした場合
-
-1. タイムアウト検知
-2. リマインダー送信（完了手順を再指示）
-3. 応答なし → `tmux capture-pane -t "$PANE_ID" -p` で状況確認
-4. 必要に応じてペインを kill して再作成
-
-### メンバーのコンテキスト飽和
-
-長時間のセッションでは、メンバーのコンテキストが飽和して品質が低下する可能性がある。
-
-1. `member-status.json` の `tasks_completed` を監視
-2. 閾値（目安: 5タスク）を超えた場合、ローテーションを検討:
-   - 現在のタスク完了を待機
-   - ペインを kill して再作成
-   - 新しい CLI を起動
-   - `pane-registry.json` を更新
-
-### CLI 起動失敗
-
-Launcher が `[AGENT_COMPLETE] launcher error` を返した場合:
-1. `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
-2. ユーザーに報告（例: コマンド未インストール、認証エラー）
-
-## 委任パターン例
-
-### パターン1: 探索→実装（逐次）
-
-```
-1. member-1 に「コードベースを調査して」と指示
-   → member-1/task-1/result.md に探索結果
-2. member-1 と member-2 に「探索結果を元に実装して」と並列指示
-   → 入力: member-1/task-1/result.md
-```
-
-### パターン2: 並列実装＋レビュー
-
-```
-1. member-1 に「認証APIを実装して」
-   member-2 に「ユーザーモデルを実装して」
-   → 並列実行
-2. 両方完了後、member-3 に「member-1 と member-2 の実装をレビューして」
-   → 入力: member-1/task-1/result.md, member-2/task-1/result.md
-```
-
-### パターン3: パイプライン
-
-```
-1. member-1 に「要件を分析して」→ shared/analysis.md
-2. member-2 に「分析結果を元に設計して」→ shared/design.md（member-1 完了後）
-3. member-3 に「設計を元に実装して」→ member-3/task-1/result.md（member-2 完了後）
-```
-
-### パターン4: ファンアウトレビュー
-
-```
-1. member-1 に「セキュリティ観点でレビューして」
-   member-2 に「パフォーマンス観点でレビューして」
-   member-3 に「コード品質観点でレビューして」
-   → 同じコードを異なる観点で並列レビュー
-```
 
 ## オーケストレーターの制約（厳守）
 
@@ -340,19 +145,7 @@ Launcher が `[AGENT_COMPLETE] launcher error` を返した場合:
 - **メンバー間の成果物受け渡し**: プロンプトにパスだけを記載し、メンバーが自分で Read する
 - **ポーリング禁止**: サブエージェント起動後はテキスト出力のみでターンを終了し、`[AGENT_COMPLETE]` メッセージを入力として待つ
 
-## CLI 互換性
-
-| CLI | 対話永続モード | 備考 |
-|-----|--------------|------|
-| claude | 対応 | `--permission-mode acceptEdits` で起動 |
-| codex | 非対応 | 非対話のみ。チームモデルでは推奨しない |
-| copilot | 非対応 | 機能限定的。チームモデルでは推奨しない |
-
-チームモデルでは全メンバーに `claude` を使用することを推奨。
-
 ---
-
-# Part 2: セットアップ・参照
 
 ## 前提条件
 
@@ -367,57 +160,15 @@ Launcher が `[AGENT_COMPLETE] launcher error` を返した場合:
 
 オーケストレーターは起動時にスクリプトパスを解決し、Launcher やメンバーのプロンプト生成時に `{SCRIPTS_DIR}` / `{TEAM_SCRIPTS_DIR}` プレースホルダを実パスに置換する。
 
-## チーム設定のカスタマイズ（任意）
+## 参照ドキュメント
 
-`.orchestrator/team-config.json` にメンバー設定を追加:
-
-```json
-{
-  "team_name": "Alpha",
-  "members": {
-    "member-1": { "name": "Scout", "personality": "好奇心旺盛で何でも調べたがる" },
-    "member-2": { "name": "Builder", "personality": "職人気質で実直" },
-    "member-3": { "name": "Inspector", "personality": "細部にこだわる分析家" }
-  }
-}
-```
-
-既存の `orchestrator`, `explorer` 等のキーと競合しない。
-
-### 反映される箇所
-
-| 項目 | デフォルト | カスタマイズ時 |
-|------|----------|-------------|
-| tmux ペインタイトル | `member-1` | `Scout (member-1)` |
-| プロンプト冒頭 | `あなたは member-1 です` | `あなたは **Alpha** の **Scout**（member-1）です` |
-| 性格・話し方 | なし | `あなたの性格・話し方: 好奇心旺盛で何でも調べたがる` |
-
-### 影響しない箇所
-
-内部識別子・ファイルパス・IPC プロトコルは変更されない:
-- `.status/member-1.done` — 変わらない
-- `member-1/task-1/result.md` — 変わらない
-- `.prompts/member-1-task-1.md` — 変わらない
-
----
-
-# Part 3: 参照ドキュメント
-
-## アーキテクチャ
-
-- [tmux-team-architecture.md](references/tmux-team-architecture.md) - チームモデルのアーキテクチャ仕様
-
-## スクリプト
-
+- [tmux-team-architecture.md](references/tmux-team-architecture.md) - アーキテクチャ仕様・状態管理・エラーハンドリング・委任パターン・チーム設定
 - [tmux-pane-presplit.sh](references/scripts/tmux-pane-presplit.sh) - ペイン事前分割＋CLI起動
 - [init-team-session.sh](references/scripts/init-team-session.sh) - チームセッションディレクトリ初期化
-
-## テンプレート
-
 - [team-member-prompt.md](references/templates/team-member-prompt.md) - メンバーへのタスク指示プロンプト
 - [team-launcher-prompt.md](references/templates/team-launcher-prompt.md) - Launcher エージェント用セットアッププロンプト
 
-## 共有リソース（tmux-orchestration と共有）
+### 共有リソース（tmux-orchestration と共有）
 
 - tmux-session-create.sh — セッション作成
 - tmux-session-destroy.sh — セッション破棄
