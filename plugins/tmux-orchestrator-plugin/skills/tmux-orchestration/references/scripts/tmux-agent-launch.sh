@@ -71,12 +71,35 @@ SESSION_DIR_ABS=$(cd "$(dirname "$SESSION_DIR")" && pwd)/$(basename "$SESSION_DI
 STATUS_DIR_ABS="${SESSION_DIR_ABS}/.status"
 SCRIPTS_DIR="$(dirname "$SESSION_DIR_ABS")/scripts"
 
+# team-config.json からシステムプロンプトを構築
+SYSTEM_PROMPT=""
+TEAM_CONFIG=".orchestrator/team-config.json"
+if [ -f "$TEAM_CONFIG" ] && command -v jq &>/dev/null; then
+  TEAM_NAME=$(jq -r '.team_name // empty' "$TEAM_CONFIG" 2>/dev/null)
+  MEMBER_CUSTOM_NAME=$(jq -r ".members.\"${AGENT_NAME}\".name // empty" "$TEAM_CONFIG" 2>/dev/null)
+  MEMBER_PERSONALITY=$(jq -r ".members.\"${AGENT_NAME}\".personality // empty" "$TEAM_CONFIG" 2>/dev/null)
+
+  if [ -n "$MEMBER_CUSTOM_NAME" ] && [ -n "$TEAM_NAME" ]; then
+    SYSTEM_PROMPT="あなたは **${TEAM_NAME}** の **${MEMBER_CUSTOM_NAME}**（${AGENT_NAME}）エージェントです。"
+  elif [ -n "$MEMBER_CUSTOM_NAME" ]; then
+    SYSTEM_PROMPT="あなたは **${MEMBER_CUSTOM_NAME}**（${AGENT_NAME}）エージェントです。"
+  else
+    SYSTEM_PROMPT="あなたは ${AGENT_NAME} エージェントです。"
+  fi
+
+  if [ -n "$MEMBER_PERSONALITY" ]; then
+    SYSTEM_PROMPT="${SYSTEM_PROMPT} あなたの性格・話し方: ${MEMBER_PERSONALITY}"
+  fi
+else
+  SYSTEM_PROMPT="あなたは ${AGENT_NAME} エージェントです。"
+fi
+
 # 完了後の共通処理: .exit/.done 作成 → notify-parent.sh で排他的に通知 → ペイン終了
 COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${STATUS_DIR_ABS}/${AGENT_NAME}.exit'; [ -f '${STATUS_DIR_ABS}/${AGENT_NAME}.done' ] || echo 'done' > '${STATUS_DIR_ABS}/${AGENT_NAME}.done'; bash '${SCRIPTS_DIR}/notify-parent.sh' '${SESSION_DIR_ABS}' '${AGENT_NAME}' '${PARENT_PANE}'; tmux kill-pane -t '${TARGET_PANE}' 2>/dev/null; exit"
 
 case "$CLI_TOOL" in
   claude)
-    CMD="cd '${WORKING_DIR}' && claude --permission-mode acceptEdits \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
+    CMD="cd '${WORKING_DIR}' && claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}' \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
     CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"

@@ -1,19 +1,6 @@
 # タスク指示: {task-title}
 
-あなたは {member-id} です。
-
-> **チーム設定がある場合**: `.orchestrator/team-config.json` が存在するとき、冒頭を以下のように変更する:
->
-> ```
-> あなたは **{team_name}** の **{member_name}**（{member-id}）です。
-> ```
->
-> `personality` が設定されている場合、冒頭に続けて:
-> ```
-> あなたの性格・話し方: {personality}
-> ```
->
-> team-config.json がない場合は `あなたは {member-id} です。` を使用。
+> メンバーの identity（名前・チーム名・性格）は `--system-prompt` で渡されるため、このプロンプトには含めない。
 
 ## セッション情報
 

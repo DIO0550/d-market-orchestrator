@@ -28,13 +28,14 @@ tmux-orchestrator が対応する AI CLI ツールのプロファイル一覧。
 
 ```bash
 # プロンプトファイルから対話モードで実行（推奨）
-claude --permission-mode acceptEdits "$(cat '{PROMPT_FILE}')"
+# --system-prompt でエージェントの identity（名前・チーム名・性格）を渡す
+claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}' "$(cat '{PROMPT_FILE}')"
 
 # 直接プロンプト（対話モード）
-claude --permission-mode acceptEdits "{PROMPT}"
+claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}' "{PROMPT}"
 
 # 非対話モード（単発出力のみ、ファイル編集不可）
-claude -p "{PROMPT}"
+claude -p --system-prompt '{SYSTEM_PROMPT}' "{PROMPT}"
 ```
 
 ### 能力
@@ -47,9 +48,10 @@ claude -p "{PROMPT}"
 
 ### tmux での使用上の注意
 
+- `--system-prompt` でエージェントの identity（名前・チーム名・性格）を渡す。コンテキスト圧縮の影響を受けず、セッション中ずっと維持される
 - `--permission-mode acceptEdits` で自律実行モードにすること
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- プロンプトファイルにセッションパスと出力先を明記すること
+- プロンプトファイルにはタスク指示のみ記載する（identity はシステムプロンプトで渡すため含めない）
 - CLAUDE.md が作業ディレクトリに存在すればプロジェクトルールが自動適用される
 - エージェントは作業完了後、`.done` マーカーを書き出し `notify-parent.sh` で完了通知する
 
