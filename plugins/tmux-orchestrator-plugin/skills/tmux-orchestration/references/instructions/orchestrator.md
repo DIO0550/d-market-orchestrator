@@ -256,11 +256,9 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 ### Claude Code の場合
 
 ```bash
-# 対話モードで起動、--system-prompt でエージェントの identity を渡す
-claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}' "$(cat '{PROMPT_FILE}')"
+# 対話モードで起動、identity はプロンプト先頭に埋め込む
+claude --permission-mode acceptEdits "$(echo '{SYSTEM_PROMPT}'; echo; cat '{PROMPT_FILE}')"
 ```
-
-- `--system-prompt` でエージェントの identity（名前・チーム名・性格）を渡す。コンテキスト圧縮の影響を受けず、セッション中ずっと維持される
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
 - `--permission-mode acceptEdits` で権限確認なしの自律実行モードにすること
 - CLAUDE.md がプロジェクトルートにあれば自動適用される

@@ -28,14 +28,15 @@ tmux-orchestrator が対応する AI CLI ツールのプロファイル一覧。
 
 ```bash
 # プロンプトファイルから対話モードで実行（推奨）
-# --system-prompt でエージェントの identity（名前・チーム名・性格）を渡す
-claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}' "$(cat '{PROMPT_FILE}')"
+# identity はプロンプト内容の先頭に埋め込む（--system-prompt + 位置引数は非対話終了するため）
+claude --permission-mode acceptEdits "$(echo '{SYSTEM_PROMPT}'; echo; cat '{PROMPT_FILE}')"
 
 # 直接プロンプト（対話モード）
-claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}' "{PROMPT}"
+claude --permission-mode acceptEdits "{PROMPT}"
 
-# 非対話モード（単発出力のみ、ファイル編集不可）
-claude -p --system-prompt '{SYSTEM_PROMPT}' "{PROMPT}"
+# インタラクティブモード（tmux-team 用、位置引数なし）
+# --system-prompt は位置引数なしの場合のみ使用可能
+claude --permission-mode acceptEdits --system-prompt '{SYSTEM_PROMPT}'
 ```
 
 ### 能力
@@ -48,10 +49,10 @@ claude -p --system-prompt '{SYSTEM_PROMPT}' "{PROMPT}"
 
 ### tmux での使用上の注意
 
-- `--system-prompt` でエージェントの identity（名前・チーム名・性格）を渡す。コンテキスト圧縮の影響を受けず、セッション中ずっと維持される
 - `--permission-mode acceptEdits` で自律実行モードにすること
 - tmux ペイン内で対話的に起動し、エージェントが自律的にツールを使用して作業する
-- プロンプトファイルにはタスク指示のみ記載する（identity はシステムプロンプトで渡すため含めない）
+- ワンショット（位置引数あり）: identity はプロンプト先頭に埋め込む。`--system-prompt` と位置引数の併用は非対話終了するため不可
+- インタラクティブ（位置引数なし、tmux-team 用）: `--system-prompt` で identity を渡す。コンテキスト圧縮の影響を受けず維持される
 - CLAUDE.md が作業ディレクトリに存在すればプロジェクトルールが自動適用される
 - エージェントは作業完了後、`.done` マーカーを書き出し `notify-parent.sh` で完了通知する
 

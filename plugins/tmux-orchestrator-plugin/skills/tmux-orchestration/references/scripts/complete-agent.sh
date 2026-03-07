@@ -37,4 +37,11 @@ echo "$STATUS" > "${SESSION_DIR}/.status/${AGENT_NAME}.done"
 bash "${SCRIPTS_DIR}/notify-parent.sh" "$SESSION_DIR" "$AGENT_NAME" "$PARENT_PANE"
 
 # Step 3: 自分のペインを終了する
-tmux kill-pane
+# Claude Code の Bash ツールは $TMUX_PANE を継承しない場合がある。
+# $TMUX_PANE が未設定の状態で tmux kill-pane (-t なし) を実行すると、
+# フォーカス中のペイン（オーケストレーター）を kill してしまう。
+# $TMUX_PANE がある場合のみ明示的に指定して kill する。
+# 未設定の場合は kill しない（tmux-orchestration の COMPLETION_SUFFIX が処理する）。
+if [ -n "${TMUX_PANE:-}" ]; then
+  tmux kill-pane -t "$TMUX_PANE"
+fi
