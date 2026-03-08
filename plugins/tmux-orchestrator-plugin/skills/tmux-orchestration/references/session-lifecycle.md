@@ -49,7 +49,7 @@ Orchestrator がエージェントを tmux ペインに順次起動する。
 PARENT_PANE=$(tmux display-message -p '#{pane_id}')
 
 # エージェント起動（第6引数に PARENT_PANE を渡す）
-bash "$SCRIPTS_DIR/tmux-agent-launch.sh" \
+"$SCRIPTS_DIR/tmux-agent-launch.sh" \
   "{TMUX_SESSION}" "explorer" "claude" \
   ".orchestrator/0001-user-auth/.prompts/explorer-prompt.md" \
   ".orchestrator/0001-user-auth" "$PARENT_PANE"

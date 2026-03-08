@@ -26,19 +26,19 @@ ls {SCRIPTS_DIR}/notify-parent.sh {SCRIPTS_DIR}/tmux-session-create.sh {TEAM_SCR
 ### Step 2: チームセッションディレクトリ初期化
 
 ```bash
-bash {TEAM_SCRIPTS_DIR}/init-team-session.sh ".orchestrator/{SESSION_ID}" "{PANE_COUNT}"
+"{TEAM_SCRIPTS_DIR}/init-team-session.sh" ".orchestrator/{SESSION_ID}" "{PANE_COUNT}"
 ```
 
 ### Step 3: tmux セッション作成
 
 ```bash
-bash {SCRIPTS_DIR}/create-and-save-session.sh {SESSION_ID} .orchestrator/{SESSION_ID}
+"{SCRIPTS_DIR}/create-and-save-session.sh" "{SESSION_ID}" ".orchestrator/{SESSION_ID}"
 ```
 
 ### Step 4: ペイン事前分割 + CLI 起動
 
 ```bash
-bash {TEAM_SCRIPTS_DIR}/tmux-pane-presplit.sh \
+"{TEAM_SCRIPTS_DIR}/tmux-pane-presplit.sh" \
   "${TMUX_SESSION}" "{PANE_COUNT}" ".orchestrator/{SESSION_ID}" "{CLI_TOOL}" "{WORKING_DIR}"
 ```
 
@@ -88,13 +88,13 @@ CLI の起動完了を待機する:
 すべてのセットアップが完了したら、以下の **1コマンド** を実行してください:
 
 ```bash
-bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} done
+"{SCRIPTS_DIR}/complete-agent.sh" ".orchestrator/{SESSION_ID}" "launcher" "{PARENT_PANE}" "done"
 ```
 
 エラー時は状態値を `error` に変更:
 
 ```bash
-bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} launcher {PARENT_PANE} error
+"{SCRIPTS_DIR}/complete-agent.sh" ".orchestrator/{SESSION_ID}" "launcher" "{PARENT_PANE}" "error"
 ```
 
 ---
