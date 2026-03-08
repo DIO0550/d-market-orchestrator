@@ -134,11 +134,11 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 3. 新しいセッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
 4. セッション初期化スクリプトを実行:
    ```bash
-   bash $SCRIPTS_DIR/init-session.sh .orchestrator/{SESSION_ID}
+   "$SCRIPTS_DIR/init-session.sh" ".orchestrator/{SESSION_ID}"
    ```
 5. セッション名を取得:
    ```bash
-   OUTPUT=$(bash $SCRIPTS_DIR/tmux-session-create.sh "orch-{SESSION_ID}")
+   OUTPUT=$("$SCRIPTS_DIR/tmux-session-create.sh" "orch-{SESSION_ID}")
    TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
    ```
    > tmux 内で実行した場合は現在のセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
@@ -149,12 +149,13 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
    > `$PARENT_PANE` はエージェント完了時に `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
 7. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
+
 ### Phase 1: 探索・計画
 
 1. **Explorer** のプロンプトファイルを `.prompts/explorer-prompt.md` に生成
 2. tmux でエージェントを起動:
    ```bash
-   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
+   "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "{TMUX_SESSION}" "explorer" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
@@ -172,17 +173,17 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 1. `check-dependencies.sh` で実行可能タスクを取得:
    ```bash
-   bash $SCRIPTS_DIR/check-dependencies.sh \
+   "$SCRIPTS_DIR/check-dependencies.sh" \
      ".orchestrator/{SESSION_ID}/.deps/tasks.json" \
      ".orchestrator/{SESSION_ID}/.status"
    ```
 2. 各タスクのディレクトリを初期化:
    ```bash
-   bash $SCRIPTS_DIR/init-task.sh {SESSION_DIR} {taskId}
+   "$SCRIPTS_DIR/init-task.sh" "{SESSION_DIR}" "{taskId}"
    ```
 3. 各タスクの **Task Manager** プロンプトを生成し、tmux ペインで起動（独立タスクは並列）:
    ```bash
-   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
+   "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "{TMUX_SESSION}" "task-{taskId}-task-manager" "claude" \
      ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"

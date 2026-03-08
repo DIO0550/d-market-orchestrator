@@ -56,7 +56,7 @@ disable-model-invocation: true
 
 5. Launcher を起動:
    ```bash
-   bash $SCRIPTS_DIR/tmux-agent-launch.sh \
+   "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "$(tmux display-message -p '#{session_name}')" "launcher" "claude" \
      ".orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md" \
      ".orchestrator/${SESSION_ID}" "$PARENT_PANE"
