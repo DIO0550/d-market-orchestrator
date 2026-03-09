@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*tmux-orchestrator-plugin*generate-session-id.sh*)",
+      "Bash(*tmux-orchestrator-plugin*init-session.sh*)",
+      "Bash(*tmux-orchestrator-plugin*init-task.sh*)",
+      "Bash(*tmux-orchestrator-plugin*init-team-session.sh*)",
+      "Bash(*tmux-orchestrator-plugin*create-and-save-session.sh*)",
+      "Bash(*tmux-orchestrator-plugin*get-parent-pane.sh*)",
+      "Bash(*tmux-orchestrator-plugin*tmux-agent-launch.sh*)",
+      "Bash(*tmux-orchestrator-plugin*generate-agent-prompt.sh*)",
+      "Bash(*tmux-orchestrator-plugin*tmux-pane-presplit.sh*)",
+      "Bash(*tmux-orchestrator-plugin*read-agent-status.sh*)",
+      "Bash(*tmux-orchestrator-plugin*check-dependencies.sh*)",
+      "Bash(*tmux-orchestrator-plugin*complete-agent.sh*)",
+      "Bash(*tmux-orchestrator-plugin*notify-parent.sh*)",
+      "Bash(*tmux-orchestrator-plugin*tmux-session-destroy.sh*)",
+      "Bash(*tmux-orchestrator-plugin*tmux-result-collector.sh*)",
+      "Bash(*tmux-orchestrator-plugin*tmux-status-monitor.sh*)",
+      "Bash(tmux send-keys*)",
+      "Bash(rm -f .orchestrator/*)"
+    ]
+  }
+}
