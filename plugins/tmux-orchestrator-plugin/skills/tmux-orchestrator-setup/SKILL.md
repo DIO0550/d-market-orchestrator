@@ -33,11 +33,12 @@ tmux がインストールされていない場合はインストール方法を
 
 プラグインが有効であれば `hooks/hooks.json` が自動的にロードされ、以下のコマンドが自動許可される:
 
-| カテゴリ | 対象コマンド | 例 |
-|---------|------------|-----|
-| tmux コマンド | `tmux` で始まるコマンド | `tmux split-window`, `tmux send-keys`, `tmux kill-session` |
-| スクリプト実行 | `tmux-orchestrator-plugin` を含むコマンド | `bash .../tmux-orchestrator-plugin/.../init-session.sh` |
-| マーカー削除 | `rm -f .orchestrator/` で始まるコマンド | `rm -f .orchestrator/sess-001/.done` |
+| カテゴリ | 許可条件 | 例 |
+|---------|---------|-----|
+| スクリプト実行 | `tmux-orchestrator-plugin` パス配下のホワイトリスト済みスクリプト（17個）のみ | `bash "$SCRIPTS_DIR/init-session.sh" ...` |
+| tmux サブコマンド | ホワイトリスト済みサブコマンドのみ（`split-window`, `send-keys`, `kill-session` 等13種） | `tmux split-window -t sess -v -d` |
+| マーカー削除 | `rm -f .orchestrator/` で始まるコマンドのみ（`-rf` は不許可） | `rm -f .orchestrator/sess-001/.status/agent.done` |
+| ディレクトリ作成 | `mkdir -p` で `.orchestrator/` 配下のみ | `mkdir -p .orchestrator/sess-001/.config` |
 
 > **Note**: 以前のバージョンでは `.claude/settings.json` の `permissions.allow` に18個のパターンを手動設定する必要がありましたが、現在はプラグインの hook で自動的に処理されます。
 
