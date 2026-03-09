@@ -3,16 +3,16 @@
 # 指定されたCLIツールでエージェントをtmuxペインに起動する
 #
 # 使用方法:
-#   tmux-agent-launch.sh <session> <agent-name> <cli-tool> <prompt-file> <session-dir> <parent-pane> [working-dir]
+#   tmux-agent-launch.sh <session> <agent-name> <cli-tool> <task-spec-file> <session-dir> <parent-pane> [working-dir]
 #
 # 引数:
-#   session     - tmuxセッション名
-#   agent-name  - エージェント名（explorer, planner, etc.）
-#   cli-tool    - CLIツール名（claude, codex, copilot, またはカスタムコマンド）
-#   prompt-file - プロンプトファイルのパス
-#   session-dir - セッションディレクトリ（.orchestrator/{SESSION_ID}）
-#   parent-pane - 通知先の親ペインID（オーケストレーターのペイン）
-#   working-dir - 作業ディレクトリ（省略時はカレントディレクトリ）
+#   session        - tmuxセッション名
+#   agent-name     - エージェント名（explorer, planner, etc.）
+#   cli-tool       - CLIツール名（claude, codex, copilot, またはカスタムコマンド）
+#   task-spec-file - タスクスペックファイルのパス（generate-agent-prompt.sh でプロンプトに変換）
+#   session-dir    - セッションディレクトリ（.orchestrator/{SESSION_ID}）
+#   parent-pane    - 通知先の親ペインID（オーケストレーターのペイン）
+#   working-dir    - 作業ディレクトリ（省略時はカレントディレクトリ）
 #
 # 動作:
 #   セッションの現在アクティブなウィンドウでペインを分割し、エージェントを起動する
@@ -28,19 +28,19 @@ set -euo pipefail
 SESSION="${1:-}"
 AGENT_NAME="${2:-}"
 CLI_TOOL="${3:-}"
-PROMPT_FILE="${4:-}"
+TASK_SPEC_FILE="${4:-}"
 SESSION_DIR="${5:-}"
 PARENT_PANE="${6:-}"
 WORKING_DIR="${7:-$(pwd)}"
 
-if [ -z "$SESSION" ] || [ -z "$AGENT_NAME" ] || [ -z "$CLI_TOOL" ] || [ -z "$PROMPT_FILE" ] || [ -z "$SESSION_DIR" ] || [ -z "$PARENT_PANE" ]; then
-  echo "Usage: tmux-agent-launch.sh <session> <agent-name> <cli-tool> <prompt-file> <session-dir> <parent-pane> [working-dir]"
+if [ -z "$SESSION" ] || [ -z "$AGENT_NAME" ] || [ -z "$CLI_TOOL" ] || [ -z "$TASK_SPEC_FILE" ] || [ -z "$SESSION_DIR" ] || [ -z "$PARENT_PANE" ]; then
+  echo "Usage: tmux-agent-launch.sh <session> <agent-name> <cli-tool> <task-spec-file> <session-dir> <parent-pane> [working-dir]"
   exit 1
 fi
 
-# プロンプトファイルの存在確認
-if [ ! -f "$PROMPT_FILE" ]; then
-  echo "Error: Prompt file not found: $PROMPT_FILE"
+# タスクスペックファイルの存在確認
+if [ ! -f "$TASK_SPEC_FILE" ]; then
+  echo "Error: Task spec file not found: $TASK_SPEC_FILE"
   exit 1
 fi
 
@@ -64,6 +64,17 @@ fi
 
 # ペインのタイトルを設定
 tmux select-pane -t "$TARGET_PANE" -T "$DISPLAY_NAME"
+
+# task-spec からフルプロンプトを生成
+PROMPT_FILE="${SESSION_DIR}/.prompts/${AGENT_NAME}-prompt.md"
+GENERATE_SCRIPT="$(dirname "$0")/generate-agent-prompt.sh"
+if [ -f "$GENERATE_SCRIPT" ]; then
+  bash "$GENERATE_SCRIPT" "$AGENT_NAME" "$TASK_SPEC_FILE" "$PROMPT_FILE" "$(dirname "$0")"
+else
+  echo "Warning: generate-agent-prompt.sh not found, using task-spec as prompt" >&2
+  mkdir -p "$(dirname "$PROMPT_FILE")"
+  cp "$TASK_SPEC_FILE" "$PROMPT_FILE"
+fi
 
 # CLIツールに応じたコマンドを構築
 PROMPT_FILE_ABS=$(cd "$(dirname "$PROMPT_FILE")" && pwd)/$(basename "$PROMPT_FILE")
@@ -119,5 +130,6 @@ tmux send-keys -t "$TARGET_PANE" "$CMD" C-m
 
 echo "Agent '${AGENT_NAME}' launched in ${SESSION} using ${CLI_TOOL}"
 echo "Parent pane: ${PARENT_PANE}"
-echo "Prompt: ${PROMPT_FILE}"
+echo "Task spec: ${TASK_SPEC_FILE}"
+echo "Generated prompt: ${PROMPT_FILE}"
 echo "Completion marker: ${SESSION_DIR}/.status/${AGENT_NAME}.done"

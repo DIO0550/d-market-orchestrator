@@ -13,7 +13,7 @@ Task ツールではなく Bash ツールで tmux コマンド（tmux-session-cr
 ```markdown
 ---
 name: orchestrator
-description: "tmux オーケストレーションの司令塔。タスクを受け取り、tmux セッション上で適切なエージェントを起動して全体フローを制御する。プロンプトファイルを生成し、.status/ ディレクトリで完了を監視する。"
+description: "tmux オーケストレーションの司令塔。タスクを受け取り、tmux セッション上で適切なエージェントを起動して全体フローを制御する。task-spec ファイルを生成し、.status/ ディレクトリで完了を監視する。"
 model: opus  # 高性能モデル推奨
 tools: ["read", "search", "execute"]
 color: magenta
@@ -35,7 +35,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 
 ### IPC メカニズム
 
-1. **プロンプトファイル**: `.prompts/` ディレクトリにエージェントごとのプロンプトファイルを生成し、起動時に渡す
+1. **task-spec ファイル**: `.prompts/` ディレクトリにエージェントごとの task-spec ファイルを生成し、起動時に渡す（`tmux-agent-launch.sh` 内部で `generate-agent-prompt.sh` がテンプレートを追記してフルプロンプトに変換）
 2. **完了マーカー**: 各エージェントは終了時に `.status/{agent-name}.done` ファイルが自動作成される
 3. **終了コード**: `.status/{agent-name}.exit` に `AGENT_EXIT_CODE={code}` が記録される
 4. **結果ファイル**: 各エージェントは所定パスに結果ファイルを書き出す（Orchestrator は直接読まない）
@@ -48,7 +48,8 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 | `init-session.sh` | セッションフォルダの初期化 |
 | `create-and-save-session.sh` | tmux セッション作成 + セッション名を .config に保存 |
 | `get-parent-pane.sh` | 親ペインID取得 + .config に保存 |
-| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動（第6引数: parent-pane） |
+| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動（task-spec → プロンプト生成を内部で自動実行） |
+| `generate-agent-prompt.sh` | task-spec + テンプレート → フルプロンプト生成（`tmux-agent-launch.sh` が自動呼び出し） |
 | `read-agent-status.sh` | エージェントの .done/.exit ステータス読み取り |
 | `check-dependencies.sh` | tasks.json と .done ファイルを照合し実行可能タスクを出力 |
 | `init-task.sh` | タスクディレクトリの初期化 |
@@ -74,7 +75,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 ## 制約（厳守）
 
 - **自分で調査・探索を行わない**: URL取得、コード検索、ファイル内容の調査など、情報収集に類する作業はすべて Explorer に委譲すること
-- **ユーザーが URL（GitHub Issue、仕様書リンク等）を提示した場合**: その URL を含めて Explorer のプロンプトファイルに渡し、Explorer に取得・分析させること。Orchestrator 自身が WebFetch や Read で内容を確認してはならない
+- **ユーザーが URL（GitHub Issue、仕様書リンク等）を提示した場合**: その URL を Explorer の task-spec に「調査対象URL」セクションとして記載し、Explorer に取得・分析させること。Orchestrator 自身が WebFetch や Read で内容を確認してはならない
 - **Orchestrator の役割は指揮・監視・報告のみ**: エージェントの起動、進捗の監視、結果のユーザーへの報告に専念すること
 - **結果ファイルを Read しない**: 他エージェントの結果ファイル（plan.md, lifecycle.md, review.md 等）は**絶対に読まない**。分岐判断は `.status/{agent}.done` の状態値のみで行う
 - **自律実行**: Phase 1〜3 はユーザー確認なしで自動完了する
@@ -153,21 +154,21 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
    bash "$SCRIPTS_DIR/get-parent-pane.sh" ".orchestrator/{SESSION_ID}"
    ```
    > 出力: `PARENT_PANE={pane-id}` — `.config/parent-pane.txt` にも自動保存される。`tmux-agent-launch.sh` の第6引数として渡す。
-5. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
+5. `.prompts/` ディレクトリにエージェント task-spec を順次生成する
 
 
 ### Phase 1: 探索・計画
 
-1. **Explorer** のプロンプトファイルを `.prompts/explorer-prompt.md` に生成
+1. **Explorer** の task-spec ファイルを `.prompts/explorer-task-spec.md` に生成
 2. tmux でエージェントを起動:
    ```bash
    "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "{TMUX_SESSION}" "explorer" "claude" \
-     ".orchestrator/{SESSION_ID}/.prompts/explorer-prompt.md" \
+     ".orchestrator/{SESSION_ID}/.prompts/explorer-task-spec.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
 3. 「Explorer を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] explorer done` メッセージが入力に届いたら、`.done` の状態値を確認して次へ進む。
-4. **Planner** のプロンプトファイルを生成し、起動。Planner は内部で Plan Reviewer を起動してレビュー→修正ループを管理し、承認済みの計画が完成してから完了通知する。
+4. **Planner** の task-spec ファイルを生成し、起動。Planner は内部で Plan Reviewer を起動してレビュー→修正ループを管理し、承認済みの計画が完成してから完了通知する。
 5. 「Planner を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] planner {status}` メッセージが入力に届いたら、ステータスを読んで分岐:
    ```bash
    bash "$SCRIPTS_DIR/read-agent-status.sh" ".orchestrator/{SESSION_ID}" "planner"
@@ -188,11 +189,11 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
    ```bash
    "$SCRIPTS_DIR/init-task.sh" "{SESSION_DIR}" "{taskId}"
    ```
-3. 各タスクの **Task Manager** プロンプトを生成し、tmux ペインで起動（独立タスクは並列）:
+3. 各タスクの **Task Manager** task-spec を生成し、tmux ペインで起動（独立タスクは並列）:
    ```bash
    "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "{TMUX_SESSION}" "task-{taskId}-task-manager" "claude" \
-     ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-prompt.md" \
+     ".orchestrator/{SESSION_ID}/.prompts/task-{taskId}-task-manager-task-spec.md" \
      ".orchestrator/{SESSION_ID}" "$PARENT_PANE"
    ```
 4. 「Task Manager を N 件起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] task-{taskId}-task-manager {status}` メッセージが入力に届くたびに `.done` の状態値を確認。
@@ -200,7 +201,7 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 ### Phase 3: 検証
 
-1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動（`$PARENT_PANE` を第6引数に含める）
+1. **Test Runner** と **Linter** の task-spec を生成し、並列で tmux 起動（`$PARENT_PANE` を第6引数に含める）
 2. 「Test Runner と Linter を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。両方の `[AGENT_COMPLETE]` メッセージが入力に届くまで待つ
 3. ステータスを確認:
    ```bash
@@ -213,52 +214,74 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 ### Phase 4: Git（ユーザー指示で実行）
 
-1. ユーザーの指示で **Committer** のプロンプトを生成し起動
+1. ユーザーの指示で **Committer** の task-spec を生成し起動
 2. 必要に応じて **PR Creator** を起動
 
-## プロンプトファイル生成
+## task-spec ファイル生成
 
-各エージェントの起動前に [agent-prompt.md](../templates/agent-prompt.md) を参考にプロンプトファイルを生成する。
+各エージェントの起動前に、task-spec ファイル（`.prompts/{agent-name}-task-spec.md`）を生成する。
 
-出力フォーマットテンプレートはスキルの `references/templates/` にある。プロンプト生成時にテンプレート内容を Read し、「出力フォーマット」セクションに直接埋め込む。
+**重要**: 出力フォーマットテンプレートの Read は不要。`tmux-agent-launch.sh` 内部の `generate-agent-prompt.sh` が task-spec にテンプレートを自動追記してフルプロンプトを生成する。
 
-### エージェント別テンプレート
+### task-spec の構造
 
-| エージェント | 出力フォーマット | サブエージェント用フォーマット |
-|------------|----------------|--------------------------|
-| Explorer | [exploration-result.md](../templates/exploration-result.md) | — |
-| Planner | [implementation-plan.md](../templates/implementation-plan.md), [tasks.md](../templates/tasks.md) | — |
-| Plan Reviewer | [plan-review-result.md](../templates/plan-review-result.md) | [plan-specialist-review-result.md](../templates/plan-specialist-review-result.md) |
-| Code Reviewer | [code-review-result.md](../templates/code-review-result.md) | [specialist-review-result.md](../templates/specialist-review-result.md) |
-| Task Manager | [task-lifecycle-result.md](../templates/task-lifecycle-result.md) | 起動するサブエージェントに応じた形式 |
-| Test Runner | [test-result.md](../templates/test-result.md) | — |
+```markdown
+# {エージェント名} エージェント指示
 
-### プロンプトファイルの例（Explorer 用）
+## セッション情報
+- セッションパス: {SESSION_DIR}
+- 出力先: {SESSION_DIR}/{出力パス}
+
+## タスク
+{タスクの説明}
+
+## 入力ファイル
+| ファイル | 内容 |
+|---------|------|
+| {パス} | {説明} |
+
+## 実行手順
+1. {ステップ}
+
+## 完了条件
+- {条件}
+
+## 完了手順（必須）
+bash {SCRIPTS_DIR}/complete-agent.sh {SESSION_DIR} {agent-name} {PARENT_PANE} {状態値}
+```
+
+> **出力フォーマット**と**サブエージェント用出力フォーマット**セクションは task-spec に含めない。`generate-agent-prompt.sh` がエージェント種別に応じて自動追記する。
+
+### task-spec の例（Explorer 用）
 
 ```markdown
 # Explorer エージェント指示
 
-あなたは Explorer エージェントです。
-
 ## セッション情報
-
 - セッションパス: .orchestrator/{SESSION_ID}
 - 出力先: .orchestrator/{SESSION_ID}/explorer/result.md
 
 ## タスク
-
 {ユーザーのタスク}
 
-## 出力フォーマット
-
-以下のフォーマットに従って結果を出力してください:
-
-{exploration-result.md の内容をここに埋め込む}
-
 ## 完了条件
-
 - .orchestrator/{SESSION_ID}/explorer/result.md に結果が書き出されていること
+
+## 完了手順（必須）
+bash {SCRIPTS_DIR}/complete-agent.sh .orchestrator/{SESSION_ID} explorer {PARENT_PANE} done
 ```
+
+### URL が含まれるタスクの場合
+
+ユーザーが URL（GitHub Issue、仕様書リンク等）を提示した場合、Explorer の task-spec に「調査対象URL」セクションを追加する:
+
+```markdown
+## 調査対象URL
+- https://github.com/org/repo/issues/123
+- https://example.com/spec.html
+```
+
+> Orchestrator 自身は URL に WebFetch しない。必ず Explorer に委譲すること。
 
 ## CLI別の注意事項
 
@@ -318,8 +341,8 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 ## 必要な操作
 
 - **コマンド実行（Bash）**: `$SCRIPTS_DIR` 配下のシェルスクリプトのみ実行する。インラインの `$()` コマンド置換、直接の `tmux` コマンド、`cat`/`ls`/`mkdir` 等は使わず、必ず対応するスクリプト経由で操作する
-- **ファイル作成**: プロンプトファイルの生成（`.prompts/` ディレクトリ）
-- **ファイル読み込み**: テンプレートファイルの Read のみ（`.status/` の読み取りは `read-agent-status.sh` 経由）
+- **ファイル作成**: task-spec ファイルの生成（`.prompts/{agent-name}-task-spec.md`）
+- **ファイル読み込み**: なし（テンプレートは `generate-agent-prompt.sh` が自動処理。`.status/` の読み取りは `read-agent-status.sh` 経由）
 
 ## 完了条件
 

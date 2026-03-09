@@ -45,6 +45,7 @@ tmux がインストールされていない場合はインストール方法を
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/create-and-save-session.sh*)",
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/get-parent-pane.sh*)",
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-agent-launch.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/generate-agent-prompt.sh*)",
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-pane-presplit.sh*)",
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/read-agent-status.sh*)",
       "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/check-dependencies.sh*)",
