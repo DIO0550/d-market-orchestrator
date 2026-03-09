@@ -38,21 +38,21 @@ tmux がインストールされていない場合はインストール方法を
 {
   "permissions": {
     "allow": [
-      "Bash(bash *generate-session-id.sh*)",
-      "Bash(bash *init-session.sh*)",
-      "Bash(bash *init-task.sh*)",
-      "Bash(bash *init-team-session.sh*)",
-      "Bash(bash *create-and-save-session.sh*)",
-      "Bash(bash *get-parent-pane.sh*)",
-      "Bash(bash *tmux-agent-launch.sh*)",
-      "Bash(bash *tmux-pane-presplit.sh*)",
-      "Bash(bash *read-agent-status.sh*)",
-      "Bash(bash *check-dependencies.sh*)",
-      "Bash(bash *complete-agent.sh*)",
-      "Bash(bash *notify-parent.sh*)",
-      "Bash(bash *tmux-session-destroy.sh*)",
-      "Bash(bash *tmux-result-collector.sh*)",
-      "Bash(bash *tmux-status-monitor.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/generate-session-id.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/init-session.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/init-task.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/init-team-session.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/create-and-save-session.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/get-parent-pane.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-agent-launch.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-pane-presplit.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/read-agent-status.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/check-dependencies.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/complete-agent.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/notify-parent.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-session-destroy.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-result-collector.sh*)",
+      "Bash(bash *tmux-orchestrator-plugin/*/references/scripts/tmux-status-monitor.sh*)",
       "Bash(tmux send-keys*)",
       "Bash(rm -f .orchestrator/*)"
     ]
@@ -64,7 +64,7 @@ tmux がインストールされていない場合はインストール方法を
 
 | カテゴリ | パターン例 | 対象 |
 |---------|-----------|------|
-| スクリプト実行 | `bash *script-name.sh*` | 全操作をスクリプト経由に統一。`bash ` プレフィックスで安全性を確保し、`*` でキャッシュパスを吸収 |
+| スクリプト実行 | `bash *tmux-orchestrator-plugin/*/references/scripts/xxx.sh*` | プラグイン名+ディレクトリ構造で安全性を確保。先頭 `*` でキャッシュパスを吸収、`*/` でスキル名の差異を吸収 |
 | tmux send-keys | `tmux send-keys*` | チームモードでメンバーへの指示送信に使用 |
 | マーカー削除 | `rm -f .orchestrator/*` | リトライ時の .done/.exit マーカー削除 |
 
