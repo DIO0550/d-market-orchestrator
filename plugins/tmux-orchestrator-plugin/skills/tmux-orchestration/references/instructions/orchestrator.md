@@ -44,12 +44,15 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 
 | スクリプト | 用途 |
 |-----------|------|
-| `tmux-session-create.sh` | tmux セッションの作成 |
-| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動（第6引数: parent-pane） |
-| `notify-parent.sh` | エージェント完了時に `tmux send-keys` で親ペインに `[AGENT_COMPLETE]` メッセージを送信（`tmux-agent-launch.sh` が自動呼び出し） |
-| `check-dependencies.sh` | tasks.json と .done ファイルを照合し実行可能タスクを出力 |
+| `generate-session-id.sh` | セッションIDの生成（連番+feature名） |
 | `init-session.sh` | セッションフォルダの初期化 |
+| `create-and-save-session.sh` | tmux セッション作成 + セッション名を .config に保存 |
+| `get-parent-pane.sh` | 親ペインID取得 + .config に保存 |
+| `tmux-agent-launch.sh` | エージェントを tmux ペインで起動（第6引数: parent-pane） |
+| `read-agent-status.sh` | エージェントの .done/.exit ステータス読み取り |
+| `check-dependencies.sh` | tasks.json と .done ファイルを照合し実行可能タスクを出力 |
 | `init-task.sh` | タスクディレクトリの初期化 |
+| `notify-parent.sh` | エージェント完了時に親ペインへ通知（`tmux-agent-launch.sh` が自動呼び出し） |
 
 ### 完了通知の仕組み
 
@@ -86,7 +89,7 @@ tmux を使って全体フローを制御し、他のエージェントを適切
 
 1. エージェントが完了すると `notify-parent.sh` が `tmux send-keys` であなたの入力に `[AGENT_COMPLETE] {agent-name} {status}` メッセージを送信する
 2. このメッセージはユーザー入力として届くため、自動的に次のターンが始まる
-3. メッセージ受信後に `.done` ファイルを `cat` で読んで分岐判断する
+3. メッセージ受信後に `read-agent-status.sh` でステータスを読んで分岐判断する
 
 ### 正しいパターン
 
@@ -97,7 +100,7 @@ Explorer を起動しました。完了通知を待機中...
 ```
 
 → `notify-parent.sh` が `[AGENT_COMPLETE] explorer done` をあなたの入力に送信
-→ 次のターンで `.done` を `cat` して分岐判断
+→ 次のターンで `read-agent-status.sh` を実行して分岐判断
 
 ### 禁止パターン
 
@@ -129,25 +132,28 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 ### Phase 0: tmux セッション初期化
 
-1. `.orchestrator/` 内の `????-*` パターンをスキャンし最大連番を取得（なければ 0000）
-2. ユーザーのタスクから feature 名を生成（英小文字ハイフン区切り、例: `user-auth`）
-3. 新しいセッションフォルダを作成: `.orchestrator/{連番+1}-{feature名}/`
-4. セッション初期化スクリプトを実行:
+**重要**: Phase 0 のすべての操作は `$SCRIPTS_DIR` 配下のスクリプト経由で実行する。インラインの `$()` コマンド置換や直接の `tmux` コマンド、`cat`/`ls`/`mkdir` 等は使用しない。
+
+1. セッションIDを生成:
    ```bash
-   "$SCRIPTS_DIR/init-session.sh" ".orchestrator/{SESSION_ID}"
+   bash "$SCRIPTS_DIR/generate-session-id.sh" "{feature-name}"
    ```
-5. セッション名を取得:
+   > 出力: `SESSION_ID=0001-user-auth` — ユーザーのタスクから feature 名を英小文字ハイフン区切りで生成して渡す。
+2. セッション初期化スクリプトを実行:
    ```bash
-   OUTPUT=$("$SCRIPTS_DIR/tmux-session-create.sh" "orch-{SESSION_ID}")
-   TMUX_SESSION=$(echo "$OUTPUT" | grep "^TMUX_SESSION=" | cut -d= -f2)
+   bash "$SCRIPTS_DIR/init-session.sh" ".orchestrator/{SESSION_ID}"
    ```
-   > tmux 内で実行した場合は現在のセッション名が返る。tmux 外では新しいセッションが作成される。以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
-6. 自身のペインIDを取得（エージェント完了通知の受信先）:
+3. tmux セッションを作成し名前を保存:
    ```bash
-   PARENT_PANE=$(tmux display-message -p '#{pane_id}')
+   bash "$SCRIPTS_DIR/create-and-save-session.sh" "{SESSION_ID}" ".orchestrator/{SESSION_ID}"
    ```
-   > `$PARENT_PANE` はエージェント完了時に `[AGENT_COMPLETE]` メッセージを受け取るために必要。`tmux-agent-launch.sh` の第6引数として渡す。
-7. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
+   > 出力: `TMUX_SESSION={session-name}` — 以降、`{TMUX_SESSION}` を全 tmux コマンドで使用する。
+4. 自身のペインIDを取得（エージェント完了通知の受信先）:
+   ```bash
+   bash "$SCRIPTS_DIR/get-parent-pane.sh" ".orchestrator/{SESSION_ID}"
+   ```
+   > 出力: `PARENT_PANE={pane-id}` — `.config/parent-pane.txt` にも自動保存される。`tmux-agent-launch.sh` の第6引数として渡す。
+5. `.prompts/` ディレクトリにエージェントプロンプトを順次生成する
 
 
 ### Phase 1: 探索・計画
@@ -162,10 +168,11 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
    ```
 3. 「Explorer を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] explorer done` メッセージが入力に届いたら、`.done` の状態値を確認して次へ進む。
 4. **Planner** のプロンプトファイルを生成し、起動。Planner は内部で Plan Reviewer を起動してレビュー→修正ループを管理し、承認済みの計画が完成してから完了通知する。
-5. 「Planner を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] planner {status}` メッセージが入力に届いたら、`.status/planner.done` の状態値を読んで分岐:
+5. 「Planner を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。`[AGENT_COMPLETE] planner {status}` メッセージが入力に届いたら、ステータスを読んで分岐:
    ```bash
-   STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/planner.done" 2>/dev/null)
+   bash "$SCRIPTS_DIR/read-agent-status.sh" ".orchestrator/{SESSION_ID}" "planner"
    ```
+   > 出力: `STATUS={状態値}` + `AGENT_EXIT_CODE={code}`
    - `done` → 計画が承認済み。Phase 2 に進む
    - `rejected` → ユーザーに報告し代替案を提案
 
@@ -195,11 +202,12 @@ Test Runner と Linter を並列起動しました。完了通知を待機中...
 
 1. **Test Runner** と **Linter** のプロンプトを生成し、並列で tmux 起動（`$PARENT_PANE` を第6引数に含める）
 2. 「Test Runner と Linter を起動しました。完了通知を待機中...」とだけ出力して**ターンを終了する**（ポーリング禁止）。両方の `[AGENT_COMPLETE]` メッセージが入力に届くまで待つ
-3. `.done` ファイルの状態値を確認:
+3. ステータスを確認:
    ```bash
-   TR_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/test-runner.done" 2>/dev/null)
-   LT_STATUS=$(cat ".orchestrator/{SESSION_ID}/.status/linter.done" 2>/dev/null)
+   bash "$SCRIPTS_DIR/read-agent-status.sh" ".orchestrator/{SESSION_ID}" "test-runner"
+   bash "$SCRIPTS_DIR/read-agent-status.sh" ".orchestrator/{SESSION_ID}" "linter"
    ```
+   > 各スクリプトが `STATUS={状態値}` を出力する
 4. 両方 `PASS` → 検証結果をユーザーに報告し、自動実行を停止
 5. いずれか `FAIL` → **Debugger** を起動（分析+修正）。マーカーを削除して再実行（最大10回リトライ）
 
@@ -287,8 +295,8 @@ Orchestrator はコンテキストウィンドウの肥大化を防ぐため、*
 
 | ファイル | 用途 | 確認方法 |
 |---------|------|---------|
-| `.status/{agent}.done` | 完了検知 + 分岐判断 | `[AGENT_COMPLETE]` メッセージ受信で完了検知 → `cat` で状態値読み取り |
-| `.status/{agent}.exit` | エラー検知 | `AGENT_EXIT_CODE` の値を確認 |
+| `.status/{agent}.done` | 完了検知 + 分岐判断 | `[AGENT_COMPLETE]` メッセージ受信で完了検知 → `read-agent-status.sh` で状態値読み取り |
+| `.status/{agent}.exit` | エラー検知 | `read-agent-status.sh` が `AGENT_EXIT_CODE` も同時出力 |
 
 ## エージェント間のパス渡し
 
@@ -309,11 +317,9 @@ Orchestrator は結果ファイルの内容を読まず、次のエージェン�
 
 ## 必要な操作
 
-- **コマンド実行（Bash）**: tmux スクリプトの実行（セッション作成、エージェント起動、依存関係チェック）
+- **コマンド実行（Bash）**: `$SCRIPTS_DIR` 配下のシェルスクリプトのみ実行する。インラインの `$()` コマンド置換、直接の `tmux` コマンド、`cat`/`ls`/`mkdir` 等は使わず、必ず対応するスクリプト経由で操作する
 - **ファイル作成**: プロンプトファイルの生成（`.prompts/` ディレクトリ）
-- **ファイル読み込み**: `.status/` のマーカーファイル（`.done`、`.exit`）のみ
-- **ファイルパターン検索**: セッション連番の取得
-- **ディレクトリ作成**: セッションフォルダの初期化
+- **ファイル読み込み**: テンプレートファイルの Read のみ（`.status/` の読み取りは `read-agent-status.sh` 経由）
 
 ## 完了条件
 

@@ -38,34 +38,23 @@ tmux がインストールされていない場合はインストール方法を
 {
   "permissions": {
     "allow": [
-      "Bash(*tmux-agent-launch.sh*)",
-      "Bash(*tmux-pane-presplit.sh*)",
-      "Bash(*init-session.sh*)",
-      "Bash(*init-task.sh*)",
-      "Bash(*init-team-session.sh*)",
-      "Bash(*create-and-save-session.sh*)",
-      "Bash(*tmux-session-create.sh*)",
-      "Bash(*tmux-session-destroy.sh*)",
-      "Bash(*check-dependencies.sh*)",
-      "Bash(*complete-agent.sh*)",
-      "Bash(*notify-parent.sh*)",
-      "Bash(*tmux-result-collector.sh*)",
-      "Bash(*tmux-status-monitor.sh*)",
-      "Bash(tmux *)",
-      "Bash(cat .orchestrator/*)",
-      "Bash(mkdir -p .orchestrator/*)",
-      "Bash(rm -f .orchestrator/*)",
-      "Bash(ls .orchestrator*)",
-      "Bash(ls -d .orchestrator*)",
-      "Bash(PARENT_PANE=*)",
-      "Bash(OUTPUT=*)",
-      "Bash(TMUX_SESSION=*)",
-      "Bash(NEXT_ID=*)",
-      "Bash(STATUS=*)",
-      "Bash(TR_STATUS=*)",
-      "Bash(LT_STATUS=*)",
-      "Bash(SCRIPTS_DIR=*)",
-      "Bash(TEAM_SCRIPTS_DIR=*)"
+      "Bash(bash *generate-session-id.sh*)",
+      "Bash(bash *init-session.sh*)",
+      "Bash(bash *init-task.sh*)",
+      "Bash(bash *init-team-session.sh*)",
+      "Bash(bash *create-and-save-session.sh*)",
+      "Bash(bash *get-parent-pane.sh*)",
+      "Bash(bash *tmux-agent-launch.sh*)",
+      "Bash(bash *tmux-pane-presplit.sh*)",
+      "Bash(bash *read-agent-status.sh*)",
+      "Bash(bash *check-dependencies.sh*)",
+      "Bash(bash *complete-agent.sh*)",
+      "Bash(bash *notify-parent.sh*)",
+      "Bash(bash *tmux-session-destroy.sh*)",
+      "Bash(bash *tmux-result-collector.sh*)",
+      "Bash(bash *tmux-status-monitor.sh*)",
+      "Bash(tmux send-keys*)",
+      "Bash(rm -f .orchestrator/*)"
     ]
   }
 }
@@ -75,10 +64,9 @@ tmux がインストールされていない場合はインストール方法を
 
 | カテゴリ | パターン例 | 対象 |
 |---------|-----------|------|
-| スクリプト実行 | `*script-name.sh*` | プラグインキャッシュパスが環境により異なるため `*` で吸収 |
-| tmux コマンド | `tmux *` | `display-message`, `send-keys`, `kill-pane`, `list-panes` 等すべての tmux サブコマンド |
-| .orchestrator/ 操作 | `cat/mkdir/rm/ls .orchestrator/*` | ステータス・設定ファイルの読み書き |
-| 変数代入 | `PARENT_PANE=*`, `OUTPUT=*` 等 | `$()` コマンド置換を含む変数代入（プロンプトの原因） |
+| スクリプト実行 | `bash *script-name.sh*` | 全操作をスクリプト経由に統一。`bash ` プレフィックスで安全性を確保し、`*` でキャッシュパスを吸収 |
+| tmux send-keys | `tmux send-keys*` | チームモードでメンバーへの指示送信に使用 |
+| マーカー削除 | `rm -f .orchestrator/*` | リトライ時の .done/.exit マーカー削除 |
 
 ### Step 3: スキル参照の確認
 
