@@ -1,0 +1,16 @@
+{
+  "description": "tmux-orchestrator-plugin: オーケストレーター関連のBashコマンド（tmux, スクリプト実行, マーカー削除）を自動許可する",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/tmux-orchestrator-allow.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

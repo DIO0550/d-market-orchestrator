@@ -27,47 +27,20 @@ tmux -V
 
 tmux がインストールされていない場合はインストール方法を案内する。
 
-### Step 2: Bash パーミッション設定
+### Step 2: Bash パーミッション設定の確認
 
-オーケストレーターが tmux コマンドやシェルスクリプトをプロンプトなしで自動実行できるように、`.claude/settings.json` に `permissions.allow` を設定する。
+オーケストレーターが tmux コマンドやシェルスクリプトをプロンプトなしで自動実行できるように、プラグインの `hooks/` ディレクトリに PermissionRequest hook が組み込まれている。
 
-1. `.claude/settings.json` が存在するか確認
-2. 存在しない場合は以下の内容で新規作成、存在する場合は `permissions.allow` 配列に不足パターンをマージする
+プラグインが有効であれば `hooks/hooks.json` が自動的にロードされ、以下のコマンドが自動許可される:
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(*tmux-orchestrator-plugin*generate-session-id.sh*)",
-      "Bash(*tmux-orchestrator-plugin*init-session.sh*)",
-      "Bash(*tmux-orchestrator-plugin*init-task.sh*)",
-      "Bash(*tmux-orchestrator-plugin*init-team-session.sh*)",
-      "Bash(*tmux-orchestrator-plugin*create-and-save-session.sh*)",
-      "Bash(*tmux-orchestrator-plugin*get-parent-pane.sh*)",
-      "Bash(*tmux-orchestrator-plugin*tmux-agent-launch.sh*)",
-      "Bash(*tmux-orchestrator-plugin*generate-agent-prompt.sh*)",
-      "Bash(*tmux-orchestrator-plugin*tmux-pane-presplit.sh*)",
-      "Bash(*tmux-orchestrator-plugin*read-agent-status.sh*)",
-      "Bash(*tmux-orchestrator-plugin*check-dependencies.sh*)",
-      "Bash(*tmux-orchestrator-plugin*complete-agent.sh*)",
-      "Bash(*tmux-orchestrator-plugin*notify-parent.sh*)",
-      "Bash(*tmux-orchestrator-plugin*tmux-session-destroy.sh*)",
-      "Bash(*tmux-orchestrator-plugin*tmux-result-collector.sh*)",
-      "Bash(*tmux-orchestrator-plugin*tmux-status-monitor.sh*)",
-      "Bash(tmux send-keys*)",
-      "Bash(rm -f .orchestrator/*)"
-    ]
-  }
-}
-```
+| カテゴリ | 許可条件 | 例 |
+|---------|---------|-----|
+| スクリプト実行 | `tmux-orchestrator-plugin` パス配下のホワイトリスト済みスクリプト（17個）のみ | `bash "$SCRIPTS_DIR/init-session.sh" ...` |
+| tmux サブコマンド | ホワイトリスト済みサブコマンドのみ（`split-window`, `send-keys`, `kill-session` 等13種） | `tmux split-window -t sess -v -d` |
+| マーカー削除 | `rm -f .orchestrator/` で始まるコマンドのみ（`-rf` は不許可） | `rm -f .orchestrator/sess-001/.status/agent.done` |
+| ディレクトリ作成 | `mkdir -p` で `.orchestrator/` 配下のみ | `mkdir -p .orchestrator/sess-001/.config` |
 
-#### パターンの説明
-
-| カテゴリ | パターン例 | 対象 |
-|---------|-----------|------|
-| スクリプト実行 | `*tmux-orchestrator-plugin*xxx.sh*` | プラグイン名でスクリプトの出自を検証。先頭 `*` で `SCRIPTS_DIR=` 変数代入部分を吸収、中間 `*` で代入値とスクリプト呼び出しの間を吸収 |
-| tmux send-keys | `tmux send-keys*` | チームモードでメンバーへの指示送信に使用 |
-| マーカー削除 | `rm -f .orchestrator/*` | リトライ時の .done/.exit マーカー削除 |
+> **Note**: 以前のバージョンでは `.claude/settings.json` の `permissions.allow` に18個のパターンを手動設定する必要がありましたが、現在はプラグインの hook で自動的に処理されます。
 
 ### Step 3: スキル参照の確認
 
