@@ -76,28 +76,6 @@ echo "[${AGENT_NAME}] Lock acquired, sending notification..."
 MSG="[AGENT_COMPLETE] ${AGENT_NAME} ${STATUS}"$'\r'
 tmux send-keys -l -t "$PARENT_PANE" "$MSG"
 
-# submit されたか検証（リトライ付き）
-MAX_ENTER_RETRIES=5
-for i in $(seq 1 $MAX_ENTER_RETRIES); do
-  sleep 2
-
-  # 親ペインの末尾数行をキャプチャし、メッセージがまだ入力行に残っているか確認
-  PANE_TAIL=$(tmux capture-pane -t "$PARENT_PANE" -p -S -5 2>/dev/null || true)
-  if ! echo "$PANE_TAIL" | grep -qF "[AGENT_COMPLETE] ${AGENT_NAME}"; then
-    # メッセージが表示から消えた = submit されたと判断
-    echo "[${AGENT_NAME}] Notification submitted (attempt ${i})"
-    break
-  fi
-
-  if [ "$i" -lt "$MAX_ENTER_RETRIES" ]; then
-    echo "[${AGENT_NAME}] Enter not registered, retrying (${i}/${MAX_ENTER_RETRIES})..."
-    # リトライ: Enter のみ再送
-    tmux send-keys -t "$PARENT_PANE" Enter
-  else
-    echo "[${AGENT_NAME}] Enter retries exhausted (${MAX_ENTER_RETRIES}), proceeding anyway"
-  fi
-done
-
 echo "[${AGENT_NAME}] Notification sent to pane ${PARENT_PANE}: ${STATUS}"
 
 # --- 親の処理待ち ---
