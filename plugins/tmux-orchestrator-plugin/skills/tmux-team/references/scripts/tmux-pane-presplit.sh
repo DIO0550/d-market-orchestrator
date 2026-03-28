@@ -108,7 +108,7 @@ for i in $(seq 1 "$PANE_COUNT"); do
   fi
 
   # ペインで CLI を起動
-  tmux send-keys -t "$TARGET_PANE" "cd '${WORKING_DIR}' && claude --permission-mode acceptEdits --system-prompt '${SYSTEM_PROMPT}'" C-m
+  tmux send-keys -t "$TARGET_PANE" "cd '${WORKING_DIR}' && claude --permission-mode acceptEdits --append-system-prompt '${SYSTEM_PROMPT}'" C-m
 
   # pane-registry.json にエントリを追加
   COMMA=""
