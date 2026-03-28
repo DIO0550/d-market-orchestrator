@@ -110,9 +110,8 @@ COMPLETION_SUFFIX="EXIT_CODE=\$?; echo \"AGENT_EXIT_CODE=\${EXIT_CODE}\" > '${ST
 
 case "$CLI_TOOL" in
   claude)
-    # ワンショットモードでは --system-prompt + 位置引数の組み合わせで非対話終了するため、
-    # identity はプロンプト内容の先頭に埋め込む
-    CMD="cd '${WORKING_DIR}' && claude --permission-mode acceptEdits \"\$(echo '${SYSTEM_PROMPT}'; echo; cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
+    # --append-system-prompt で組み込みシステムプロンプトを保持しつつ性格情報を追加
+    CMD="cd '${WORKING_DIR}' && claude --permission-mode acceptEdits --append-system-prompt '${SYSTEM_PROMPT}' \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
     ;;
   codex)
     CMD="cd '${WORKING_DIR}' && codex --approval-mode full-auto --quiet \"\$(cat '${PROMPT_FILE_ABS}')\" 2>&1; ${COMPLETION_SUFFIX}"
