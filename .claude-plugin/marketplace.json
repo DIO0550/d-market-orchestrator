@@ -13,6 +13,11 @@
       "name": "tmux-orchestrator-plugin",
       "source": "./plugins/tmux-orchestrator-plugin",
       "description": "tmuxベースのマルチCLIオーケストレーター（Claude Code / Copilot / Codex 対応）"
+    },
+    {
+      "name": "copilot-chat-orchestrator-plugin",
+      "source": "./plugins/copilot-chat-orchestrator-plugin",
+      "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
     }
   ]
 }
