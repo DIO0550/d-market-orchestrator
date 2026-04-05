@@ -16,6 +16,11 @@ disable-model-invocation: true
 ## ワークフロー概要
 
 ```
+[Phase 0: セッション初期化] ─────────────────────────
+    │
+    └── init-session.sh でセッションディレクトリを生成
+    └── テンプレートを .orchestrator/templates/ にコピー
+    │
 [Phase 1: 探索・計画] ───────────────────────────────
     │
     ├── explorer (バックグラウンド)
@@ -66,6 +71,53 @@ disable-model-invocation: true
     │
     ├── committer (バックグラウンド)
     └── pr-creator (バックグラウンド)
+```
+
+## Phase 0: セッション初期化
+
+オーケストレーション開始時に、セッションディレクトリとテンプレートを準備する。
+
+### 1. セッションディレクトリの作成
+
+[init-session.sh](references/scripts/init-session.sh) を実行してセッションフォルダを作成する：
+
+```bash
+SESSION_DIR=$(bash "$SCRIPTS_DIR/init-session.sh" "{feature-name}")
+# 例: .orchestrator/0001-user-auth
+```
+
+タスク追加時は [init-task.sh](references/scripts/init-task.sh) でタスクフォルダを作成：
+
+```bash
+bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
+```
+
+### 2. テンプレートの配置
+
+エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して出力フォーマットを決定する。
+以下の7ファイルを **Read → Write** でコピーする：
+
+| # | Read 対象（このスキルの参照ファイル） | Write 先 |
+|---|--------------------------------------|----------|
+| 1 | [exploration-result.md](references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
+| 2 | [implementation-plan.md](references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
+| 3 | [code-review-result.md](references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
+| 4 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
+| 5 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
+| 6 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
+| 7 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
+
+スクリプトも配置する：
+
+| # | Read 対象 | Write 先 |
+|---|----------|----------|
+| 1 | [init-session.sh](references/scripts/init-session.sh) | `.orchestrator/scripts/init-session.sh` |
+| 2 | [init-task.sh](references/scripts/init-task.sh) | `.orchestrator/scripts/init-task.sh` |
+
+コピー後、実行権限を付与：
+
+```bash
+chmod +x .orchestrator/scripts/init-session.sh .orchestrator/scripts/init-task.sh
 ```
 
 ## 中間ファイル
