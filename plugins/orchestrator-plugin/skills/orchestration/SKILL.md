@@ -96,18 +96,27 @@ bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
 
 ### 2. テンプレートの配置
 
-エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して出力フォーマットを決定する。
-以下の7ファイルを **Read → Write** でコピーする：
+エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して指示・出力フォーマットを決定する。
+テンプレートは各エージェントの **指示 + 判定基準 + 出力形式** を含む一体型ファイル。
+以下の15ファイルを **Read → Write** でコピーする：
 
 | # | Read 対象（このスキルの参照ファイル） | Write 先 |
 |---|--------------------------------------|----------|
 | 1 | [exploration-result.md](references/templates/exploration-result.md) | `.orchestrator/templates/exploration-result.md` |
 | 2 | [implementation-plan.md](references/templates/implementation-plan.md) | `.orchestrator/templates/implementation-plan.md` |
-| 3 | [code-review-result.md](references/templates/code-review-result.md) | `.orchestrator/templates/code-review-result.md` |
-| 4 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
-| 5 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
-| 6 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
-| 7 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
+| 3 | [plan-review-result.md](references/templates/plan-review-result.md) | `.orchestrator/templates/plan-review-result.md` |
+| 4 | [tasks.md](references/templates/tasks.md) | `.orchestrator/templates/tasks.md` |
+| 5 | [implementation-result.md](references/templates/implementation-result.md) | `.orchestrator/templates/implementation-result.md` |
+| 6 | [quality-review-result.md](references/templates/quality-review-result.md) | `.orchestrator/templates/quality-review-result.md` |
+| 7 | [logic-review-result.md](references/templates/logic-review-result.md) | `.orchestrator/templates/logic-review-result.md` |
+| 8 | [performance-review-result.md](references/templates/performance-review-result.md) | `.orchestrator/templates/performance-review-result.md` |
+| 9 | [refactoring-result.md](references/templates/refactoring-result.md) | `.orchestrator/templates/refactoring-result.md` |
+| 10 | [task-lifecycle-result.md](references/templates/task-lifecycle-result.md) | `.orchestrator/templates/task-lifecycle-result.md` |
+| 11 | [test-result.md](references/templates/test-result.md) | `.orchestrator/templates/test-result.md` |
+| 12 | [lint-result.md](references/templates/lint-result.md) | `.orchestrator/templates/lint-result.md` |
+| 13 | [debug-result.md](references/templates/debug-result.md) | `.orchestrator/templates/debug-result.md` |
+| 14 | [security-scan-result.md](references/templates/security-scan-result.md) | `.orchestrator/templates/security-scan-result.md` |
+| 15 | [commit-result.md](references/templates/commit-result.md) | `.orchestrator/templates/commit-result.md` |
 
 スクリプトも配置する：
 
