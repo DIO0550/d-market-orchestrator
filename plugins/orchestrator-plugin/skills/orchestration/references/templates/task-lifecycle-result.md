@@ -6,8 +6,19 @@
 ## Implementer 実装結果
 {サマリー}
 
-## Code Reviewer レビュー結果（実施時）
+## レビュー結果（実施時）
+
+### Quality Reviewer
 {サマリー}
+
+### Logic Reviewer
+{サマリー}
+
+### Performance Reviewer
+{サマリー}
+
+### 最終判定
+{Approved / Request Changes}
 
 ## 完了判定
 

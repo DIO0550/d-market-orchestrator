@@ -10,6 +10,9 @@
 | **explorer** | ファイル探索・コード調査 | Glob, Grep, Read | 計画時に並列起動 |
 | **task-manager** | タスクライフサイクル管理（実装→レビュー→判定） | Task, TaskOutput, TaskGet, TaskUpdate | タスクごとに起動 |
 | **implementer** | コード実装（1タスク=1エージェント） | Read, Write, Edit, Bash | task-managerから起動 |
+| **quality-reviewer** | コード品質レビュー（可読性・保守性・一貫性・DRY） | Read, Glob, Grep | task-managerから並列起動 |
+| **logic-reviewer** | ロジックレビュー（バグリスク・エッジケース・完了条件） | Read, Glob, Grep | task-managerから並列起動 |
+| **performance-reviewer** | パフォーマンスレビュー（計算量・N+1・メモリ） | Read, Glob, Grep | task-managerから並列起動 |
 | **test-runner** | テスト実行・結果報告 | Bash | 実装後 |
 | **linter** | Lint実行・修正提案 | Bash | 実装後（テストと並列可） |
 | **committer** | コミット作成 | Bash (git) | テスト・Lint成功後 |
@@ -72,7 +75,7 @@
 
 ### 役割
 タスクのライフサイクルを管理するミニオーケストレーター。
-Implementer起動 → Code Reviewer起動 → 完了判定を一貫して行う。
+Implementer起動 → 3つのレビューエージェント並列起動 → Refactorer起動 → 完了判定を一貫して行う。
 
 ### 起動方式
 - Orchestrator が TaskList でブロック解除済みタスクを確認
@@ -84,18 +87,20 @@ Implementer起動 → Code Reviewer起動 → 完了判定を一貫して行う�
 - コードレビューの要否
 
 ### 出力
-- サブエージェント（Implementer、Code Reviewer）を起動・管理
+- サブエージェント（Implementer、Quality/Logic/Performance Reviewer、Refactorer）を起動・管理
 - TaskUpdate で completed または pending（差し戻し）に更新
 - 標準出力でライフサイクル結果を返す
 
 ### 内部フロー
 1. Implementer をサブエージェントとして起動 → 完了待ち
-2. Code Reviewer をサブエージェントとして起動（指示時）→ 完了待ち
-3. 結果を基に completed / rejected を判定
-4. rejected の場合は Implementer を再起動（最大2回リトライ）
+2. 3つのレビューエージェントを**並列起動** → 全完了待ち
+3. レビュー結果を集約（1つでも Request Changes → 差し戻し）
+4. 全員 Approved かつ推奨対応あり → Refactorer 起動
+5. 結果を基に completed / rejected を判定
+6. rejected の場合は Implementer を再起動（最大2回リトライ）
 
 ### 使用ツール
-- Task: サブエージェント起動（Implementer、Code Reviewer）
+- Task: サブエージェント起動（Implementer、3つのレビューエージェント、Refactorer）
 - TaskOutput: サブエージェント完了待ち
 - TaskGet: タスク詳細取得
 - TaskUpdate: タスク状態更新
