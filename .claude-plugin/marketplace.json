@@ -18,6 +18,11 @@
       "name": "copilot-chat-orchestrator-plugin",
       "source": "./plugins/copilot-chat-orchestrator-plugin",
       "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
+    },
+    {
+      "name": "spec-orchestrator-plugin",
+      "source": "./plugins/spec-orchestrator-plugin",
+      "description": "仕様駆動の自律オーケストレーター（要件だけユーザーと確定し、計画→レビュー→実装→検証まで一気に進める。計画・判断は md に残す）"
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "name": "spec-orchestrator-plugin",
+  "version": "0.1.0",
+  "description": "仕様駆動の自律オーケストレーター。ユーザーが関わるのは要件の確定だけで、計画→計画レビュー→実装→観点別レビュー→完了報告までをサブエージェントで一気に進める。計画・判断・レビュー結果はすべて md ファイルに残す",
+  "author": {
+    "name": "DIO0550"
+  },
+  "repository": "https://github.com/DIO0550/d-market-orchestrator",
+  "license": "MIT",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}

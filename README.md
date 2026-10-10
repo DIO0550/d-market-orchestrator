@@ -4,12 +4,13 @@ AI CLIエージェントを専門チームとして編成し、ソフトウェ�
 
 ## 概要
 
-1つのタスク指示から、探索・計画・実装・レビュー・テスト・Git操作までを複数の専門エージェントが自律的に遂行します。2つの実行モデルを提供しており、用途に応じて選択できます。
+1つのタスク指示から、探索・計画・実装・レビュー・テスト・Git操作までを複数の専門エージェントが自律的に遂行します。複数の実行モデルを提供しており、用途に応じて選択できます。
 
 | プラグイン | 実行モデル | 対応CLI |
 |-----------|-----------|---------|
 | [orchestrator-plugin](#orchestrator-plugin) | Claude Code サブエージェント（Task ツール） | Claude Code |
 | [tmux-orchestrator-plugin](#tmux-orchestrator-plugin) | tmux セッション + ファイルベース IPC | Claude Code / GitHub Copilot / OpenAI Codex / 汎用CLI |
+| [spec-orchestrator-plugin](#spec-orchestrator-plugin) | Claude Code サブエージェント + 仕様駆動（要件だけユーザーと確定） | Claude Code |
 
 ## インストール
 
@@ -159,6 +160,71 @@ tmux版ではエージェント間の通信にファイルシステムを使用�
         ├── code-reviewer/review-{round}.md
         └── ...
 ```
+
+---
+
+## spec-orchestrator-plugin
+
+**ユーザーが関わるのは要件（requirements.md）の確定だけ。承認後は計画 → 計画レビュー → 実装 → 観点別レビュー → 完了報告までを止まらずに進めるプラグイン。**
+
+[d-market-spec](https://github.com/DIO0550/d-market-spec) の spec-plugin（requirements の `□`/`■` ゲート、md の計画書式、明瞭性・網羅性チェック）と、design-composer の implementation-flow（planner / implementer / 観点別 reviewer への分担、計画の検証、却下案の記録、ミューテーションによるテストの検証）を 1 本にまとめたもの。プロジェクト固有の規約は持たず、実行時にプロジェクトの `CLAUDE.md` / `AGENTS.md` / 規約ファイルを読んで従う。
+
+### コマンド
+
+#### `/spec-orchestrate "タスクの説明"` / `/spec-orchestrate #123` / `/spec-orchestrate --resume [番号]`
+
+| # | フェーズ | ユーザーの関与 | 出力 |
+|---|---|---|---|
+| 0 | 初期化 | なし | run フォルダ・`STATE` |
+| 1 | 要件の確定 | **ヒアリング・`□` の解消・承認（ここだけ）** | `exploration.md` `hearing-notes.md` `requirements.md` |
+| 2 | 計画と計画レビュー | なし | `implementation-plan.md` `tasks.md` `test-cases.md` `review-log.md` |
+| 3 | 実装 | なし | コードとテスト、`tasks.md` の `■` |
+| 4 | 実装の検証（2 段） | なし | `review-log.md` |
+| 5 | 完了 | 結果の確認 | `report.md` |
+
+承認後にユーザーへ聞くのは、**要件が揺らぐ / 不可逆・外部に影響する / 行き詰まり / 権限が無い** のどれかに当たるときだけ。それ以外は AI が決めて `decisions.md` に「何を・どの選択肢から・なぜ」を残す。完了時の git 操作（何もしない / タスクごとにコミット / PR まで）と Issue への記録は、承認ゲートで一緒に聞く。
+
+### ユーザーが読めるファイル
+
+```
+.plugin-workspace/.orchestrate/{nnn}-{feature}/
+├── requirements.md         # ユーザーと確定した要件（唯一の人間のゲート）
+├── implementation-plan.md  # 計画（ADR・却下案・変更案・影響範囲・検証計画・DoD）
+├── tasks.md                # 実装グループ（## T{n}）とタスク（□ / ■）
+├── test-cases.md           # テストケースと UC へのトレース
+├── decisions.md            # 承認後に AI が自分で決めた判断・エスカレーション
+├── review-log.md           # 計画・実装レビューの指摘と採否
+└── report.md               # 完了報告
+```
+
+### エージェント一覧
+
+| エージェント | 役割 | モデル |
+|---|---|---|
+| **planner** | requirements を基準に計画・タスク・テストケースを書く | inherit |
+| **plan-reviewer** | 要件との対応・既存資産・影響範囲・テストケースの十分さを検証 | inherit |
+| **plan-clarity-checker** | 計画だけで実装内容が一意に伝わるかを復唱で確かめる | haiku |
+| **test-coverage-checker** | UC 単位でテストケースが足りているかを照合 | sonnet |
+| **implementer** | 実装グループごとに実装し、`□` → `■` を更新して検査を走らせる | inherit |
+| **solution-reviewer** | 方式（根本原因・より単純な代替・継ぎ当て）を 維持 / 調整 / 置き換え で結論 | inherit |
+| **spec-alignment-reviewer** | UC の充足・スコープ・制約・計画の適用・DoD | sonnet |
+| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | inherit |
+| **security-reviewer** | 外から来る値・権限・依存・CI | inherit |
+| **performance-reviewer** | 頻度の高い経路・データ量に比例する処理 | inherit |
+| **test-reviewer** | 実装を壊してテストが落ちるかを実測（2 段目に単独で） | opus |
+
+プロジェクトの `.claude/agents/` に同名のレビュアーがあればそちらを優先し、プロジェクト固有の `*-reviewer` は実装の検証に並列で加える。
+
+### フック
+
+| フック | タイミング | 内容 |
+|---|---|---|
+| `guard-phase-writes.sh` | PreToolUse | `STATE` が requirements / planning の間、run フォルダ外への書き込みをブロック |
+| `guard-requirements.sh` | PreToolUse | requirements に `□` が残る / 未承認のまま implementation-plan を書くのをブロック |
+| `check-plan-format.sh` | PostToolUse | plan / tasks / test-cases の必須セクション・プレースホルダ・コード骨格・UC のトレース漏れを検証 |
+| `continue-until-done.sh` | Stop | 承認後（planning / implementing / verifying）に止まろうとしたら 1 度だけ続行を促す |
+
+判定表: `bash plugins/spec-orchestrator-plugin/hooks/tests/hook-cases.sh`
 
 ---
 
