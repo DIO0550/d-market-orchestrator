@@ -9,9 +9,9 @@ set -euo pipefail
 # Stop
 # 続行させるときは {"decision":"block"} を出力する
 
-command -v jq >/dev/null 2>&1 || exit 0
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
+require_jq || exit 0
 
 hook_read_input
 [ -n "$HOOK_SESSION_ID" ] || exit 0

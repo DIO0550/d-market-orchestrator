@@ -65,12 +65,29 @@ expect_exit 0 "ヒアドキュメント本文の md 引用は書き込みとみ�
 > 引用
 EOF")"
 expect_exit 0 "mktemp の一時ディレクトリへの書き込みは通す" $G "$(bash_json 'tmp=$(mktemp -d); echo x > "$tmp/a"')"
+expect_exit 0 "引用符の中の > は書き込みとみなさない（grep）" $G "$(bash_json 'grep -rn "=> " src')"
+expect_exit 0 "引用符の中の > は書き込みとみなさない（awk）" $G "$(bash_json "awk '\$2 > 5' f.txt")"
+expect_exit 0 "コメントの中の > は書き込みとみなさない" $G "$(bash_json 'ls src # > note')"
+expect_exit 2 "空白無しのリダイレクトもブロック" $G "$(bash_json 'echo x >src/a.ts')"
+expect_exit 2 "cp は送り先で判定する（/tmp から src へ）" $G "$(bash_json 'cp /tmp/x src/a.ts')"
+expect_exit 0 "cp で mktemp の一時ディレクトリへ写すのは通す" $G "$(bash_json 'd=$(mktemp -d); cp src/a.ts "$d/"')"
+expect_exit 0 "mktemp へ cd した先の相対パスへの書き込みは通す" $G "$(bash_json 'cd "$(mktemp -d)" && echo x > a.txt')"
+expect_exit 2 "作業ツリーを書き換える git はブロック" $G "$(bash_json 'git checkout -- src')"
+expect_exit 2 ".. で run フォルダの外へ抜ける Write はブロック" $G "$(write_json Write "$PROJECT/$RUN/../../../src/a.ts")"
+set_state waiting:planning
+expect_exit 2 "計画中の回答待ちでも src への Write をブロック" $G "$(write_json Write "$PROJECT/src/a.ts")"
 set_state planning
 expect_exit 2 "planning 中も src への Edit をブロック" $G "$(write_json Edit "$PROJECT/src/a.ts")"
 set_state implementing
 expect_exit 0 "implementing 中は src への Write を通す" $G "$(write_json Write "$PROJECT/src/a.ts")"
 set_state planning
 expect_exit 0 "別セッションには掛からない" $G "$(jq -nc '{session_id:"other", tool_name:"Write", tool_input:{file_path:"src/a.ts"}}')"
+
+mkdir -p "$PROJECT/.plugin-workspace/.orchestrate/002-newer"
+echo implementing > "$PROJECT/.plugin-workspace/.orchestrate/002-newer/STATE"
+echo "$SID" > "$PROJECT/.plugin-workspace/.orchestrate/002-newer/SESSION"
+expect_exit 0 "同じセッションの新しい run があれば古い run の STATE には反応しない" $G "$(write_json Write "$PROJECT/src/a.ts")"
+rm -rf "$PROJECT/.plugin-workspace/.orchestrate/002-newer"
 
 # ── guard-requirements.sh ─────────────────────────────
 R=guard-requirements.sh
@@ -80,9 +97,11 @@ cp "$TPL/requirements.md" "$PROJECT/$RUN/requirements.md"
 expect_exit 2 "□ が残っていれば plan をブロック" $R "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
 sed -i 's/^□ .*/■ 確認済み（回答: A）/' "$PROJECT/$RUN/requirements.md"
 expect_exit 2 "□ が解消済みでも未承認ならブロック" $R "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+expect_exit 2 "未承認なら tasks もブロック" $R "$(write_json Write "$PROJECT/$RUN/tasks.md")"
 sed -i 's/^\*\*ステータス\*\*: □ 未承認/**ステータス**: ■ 承認済み/' "$PROJECT/$RUN/requirements.md"
 expect_exit 0 "承認済みなら plan を通す" $R "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
-expect_exit 0 "plan 以外のファイルには掛からない" $R "$(write_json Write "$PROJECT/$RUN/tasks.md")"
+expect_exit 0 "承認済みなら tasks も通す" $R "$(write_json Write "$PROJECT/$RUN/tasks.md")"
+expect_exit 0 "計画以外のファイルには掛からない" $R "$(write_json Write "$PROJECT/$RUN/decisions.md")"
 
 # ── check-plan-format.sh ─────────────────────────────
 C=check-plan-format.sh
@@ -121,6 +140,24 @@ expect_exit 0 "形の揃った plan は通す" $C "$(write_json Write "$PROJECT/
 printf '\n#### [NEW] `src/x.ts`\n- **理由**: y\n```ts\n// 以下省略\n```\n' >> "$PROJECT/$RUN/implementation-plan.md"
 expect_exit 2 "コードブロック内の省略を検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
 
+cat >> "$PROJECT/$RUN/implementation-plan.md" <<'PLAN'
+#### [MODIFY] `src/y.tsx`
+- **理由**: 日本語の doc・JSX・テンプレートリテラルを含む
+```tsx
+/** @param opts 省略時は既定値を使う */
+{/* ヘッダー */}
+const label = `${件数}件`
+```
+##### before
+```ts
+// TODO: 既存コードに元からある TODO
+```
+PLAN
+sed -i '/以下省略/d' "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 0 "日本語の doc・JSX コメント・テンプレートリテラル・before の TODO は誤検出しない" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+printf '\n#### [NEW] `src/z.ts`\n- **理由**: y\n```ts\n// {ファイルパス}\n```\n' >> "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 2 "コードブロック内に残ったテンプレートのプレースホルダを検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+
 printf '# Tasks: x\n\n- □ a\n' > "$PROJECT/$RUN/tasks.md"
 expect_exit 2 "実装グループの無い tasks を検出" $C "$(write_json Write "$PROJECT/$RUN/tasks.md")"
 printf '# Tasks: x\n\n## T1: a\n\n- □ a\n' > "$PROJECT/$RUN/tasks.md"
@@ -153,8 +190,8 @@ stop_json() { jq -nc --arg s "$SID" --argjson a "$1" '{session_id:$s, stop_hook_
 set_state implementing
 expect_output yes "implementing 中の停止は引き止める" $S "$(stop_json false)" '"decision": "block"'
 expect_output no "引き止めた続きの停止は通す" $S "$(stop_json true)" 'block'
-set_state waiting
-expect_output no "waiting なら引き止めない" $S "$(stop_json false)" 'block'
+set_state waiting:implementing
+expect_output no "回答待ち（waiting:*）なら引き止めない" $S "$(stop_json false)" 'block'
 set_state requirements
 expect_output no "requirements（ユーザーとの対話中）なら引き止めない" $S "$(stop_json false)" 'block'
 

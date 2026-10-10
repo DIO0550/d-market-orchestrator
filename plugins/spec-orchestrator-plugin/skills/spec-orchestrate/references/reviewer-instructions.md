@@ -8,12 +8,14 @@
 呼び出し側のプロンプトに次が入っている。入っていない項目があれば、それ自体を指摘として返す。
 
 - **run フォルダ** `{dir}` — `.plugin-workspace/.orchestrate/{nnn}-{feature}/`
-- **差分の基準**（実装の検証のときだけ）— `{dir}/BASE` のコミット。差分は次で出す（未追跡ファイルを含める）
+- **変更ファイルの一覧**（実装の検証のときだけ）— 差分の基準は `{dir}/BASE` のコミット。Bash を持つエージェントは次で差分そのものを見る（未追跡ファイルを含め、run フォルダを除く）。Bash を持たないエージェントは一覧のファイルを Read する
 
 ```bash
 base=$(cat {dir}/BASE)
-git diff "$base"; git ls-files --others --exclude-standard
+git diff "$base" -- . ':!.plugin-workspace'; git ls-files --others --exclude-standard -- . ':!.plugin-workspace'
 ```
+
+- **レビューの対象外**（あれば）— 開始時からあったユーザーの未コミットの変更。指摘の対象にしない
 
 ## 先に読むもの
 

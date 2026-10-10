@@ -111,7 +111,7 @@
 
 ## Definition of Done
 
-- [ ] tasks.md の全タスクが ■ になっている
+- [ ] tasks.md の全グループ（## T{n}）のタスクが ■ になっている
 - [ ] requirements.md の全 UC の成功条件を満たす
 - [ ] {機能固有の受入条件}
 - [ ] 検査（テスト・lint・型検査）が通る

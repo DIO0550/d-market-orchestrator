@@ -213,16 +213,18 @@ tmux版ではエージェント間の通信にファイルシステムを使用�
 | **performance-reviewer** | 頻度の高い経路・データ量に比例する処理 | inherit |
 | **test-reviewer** | 実装を壊してテストが落ちるかを実測（2 段目に単独で） | opus |
 
-プロジェクトの `.claude/agents/` に同名のレビュアーがあればそちらを優先し、プロジェクト固有の `*-reviewer` は実装の検証に並列で加える。
+プロジェクトの `.claude/agents/` にある `*-reviewer` は、プラグインのレビュアーに加えて並列で起動する（入出力の約束が違うので置き換えず、ゴール・計画・差分を本文で渡す）。
 
 ### フック
 
 | フック | タイミング | 内容 |
 |---|---|---|
-| `guard-phase-writes.sh` | PreToolUse | `STATE` が requirements / planning の間、run フォルダ外への書き込みをブロック |
-| `guard-requirements.sh` | PreToolUse | requirements に `□` が残る / 未承認のまま implementation-plan を書くのをブロック |
+| `guard-phase-writes.sh` | PreToolUse | `STATE` が requirements / planning（とその回答待ち）の間、run フォルダと一時ディレクトリの外への書き込みをブロック。Bash は字句解析でリダイレクト先・書き換え系コマンドの対象を見る最善努力のガード（`python -c` の中の書き込みまでは追わない） |
+| `guard-requirements.sh` | PreToolUse | requirements に `□` が残る / 未承認のまま計画（plan / tasks / test-cases）を書くのをブロック |
 | `check-plan-format.sh` | PostToolUse | plan / tasks / test-cases の必須セクション・プレースホルダ・コード骨格・UC のトレース漏れを検証 |
 | `continue-until-done.sh` | Stop | 承認後（planning / implementing / verifying）に止まろうとしたら 1 度だけ続行を促す |
+
+フックは `jq`（全体）と `python3`（Bash の判定）を使う。無い場合は警告を出して素通りする。run フォルダは `.git/info/exclude` で git の差分から外す。
 
 判定表: `bash plugins/spec-orchestrator-plugin/hooks/tests/hook-cases.sh`
 

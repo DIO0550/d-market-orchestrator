@@ -19,9 +19,9 @@ set -uo pipefail
 #
 # PostToolUse: Write, Edit, MultiEdit
 
-command -v jq >/dev/null 2>&1 || exit 0
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
+require_jq || exit 0
 
 hook_read_input
 
@@ -55,9 +55,14 @@ add_lines() {
   while IFS= read -r l; do problems+=("    $l"); done <<< "$body"
 }
 
-# テンプレートのプレースホルダ（{…} の中に日本語を含むもの）。引用符を含む波括弧は実コードとみなして除外
-add_lines "テンプレートのプレースホルダが残っています:" \
-  "$(printf '%s\n' "$content" | grep -noE "\\{[^{}\"']*[ぁ-んァ-ヶ一-龠][^{}\"']*\\}" | head -5)"
+# テンプレートのプレースホルダ（{…} の中に日本語を含むもの）。コードブロックの外は引用符を含まない波括弧を、
+# コードブロックの中は行全体がプレースホルダの行（`// {…}` を含む）だけを見る。コードの中の
+# `${件数}` や JSX の `{/* 見出し */}`、日本語の doc コメントを誤検出しないため
+add_lines "テンプレートのプレースホルダが残っています:" "$(printf '%s\n' "$content" | awk '
+  /^```/ { in_block = !in_block; next }
+  !in_block && /\{[^{}"\x27]*[ぁ-んァ-ヶ一-龠][^{}"\x27]*\}/ { print NR ": " $0; next }
+  in_block && /^[[:space:]]*(\/\/[[:space:]]*)?\{[^{}\/*][^{}]*[ぁ-んァ-ヶ一-龠][^{}]*\}[[:space:]]*$/ { print NR ": " $0 }
+' | head -5)"
 
 case "$file" in
   */implementation-plan.md)
@@ -78,11 +83,16 @@ case "$file" in
       /\*\*理由\*\*/ { if (entry != "") has = 1 }
       END { if (entry != "" && !has) print entry }')"
 
+    # 行全体が省略の印になっているコメント行だけを見る（「省略時は」のような doc の言い回しは対象外）。
+    # ##### before は既存コードの引用なので、そこにある TODO は計画の省略ではない
     add_lines "コードブロック内で実装が省略されています（骨格まで書く）:" "$(printf '%s\n' "$content" | awk '
+      /^#####/ { in_before = ($0 ~ /^#####[[:space:]]*before/) }
+      /^#{1,4} / { in_before = 0 }
       /^```/ { in_block = !in_block; next }
-      in_block {
-        if ($0 ~ /^[[:space:]]*(\/\/|#|\/\*|\*|--)?[[:space:]]*(\.\.\.|…)[[:space:]]*(\*\/)?[[:space:]]*$/ ||
-            $0 ~ /(\/\/|#|\/\*|\*|--).*(省略|中略|以下略|割愛|TODO|FIXME)/)
+      in_block && !in_before {
+        if ($0 ~ /^[[:space:]]*(\.\.\.|…)[[:space:]]*$/ ||
+            $0 ~ /^[[:space:]]*(\{?\/\*+|\/\/|#|\*|--)[[:space:]]*(\.\.\.|…|TODO|FIXME)/ ||
+            $0 ~ /^[[:space:]]*(\{?\/\*+|\/\/|#|\*|--)[[:space:]]*(省略|中略|以下省略|以下略|割愛)[[:space:]]*(\*\/\}?|。|:|：|[(（]|$)/)
           print "L" NR ": " $0
       }' | head -5)"
     ;;
