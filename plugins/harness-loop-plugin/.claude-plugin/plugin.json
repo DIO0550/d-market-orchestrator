@@ -1,0 +1,12 @@
+{
+  "name": "harness-loop-plugin",
+  "version": "0.1.0",
+  "description": "計画 → 目標確定 → 目標を満たすまで実装・検証・修正をループ → PR を回すハーネス。ユーザーが関わるのは目標（完了条件）の確定だけで、計画・ループの記録・判断はすべて md に残す",
+  "author": {
+    "name": "DIO0550"
+  },
+  "repository": "https://github.com/DIO0550/d-market-orchestrator",
+  "license": "MIT",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}

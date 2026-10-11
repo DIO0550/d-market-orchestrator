@@ -20,9 +20,9 @@
       "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
     },
     {
-      "name": "spec-orchestrator-plugin",
-      "source": "./plugins/spec-orchestrator-plugin",
-      "description": "仕様駆動の自律オーケストレーター（要件だけユーザーと確定し、計画→レビュー→実装→検証まで一気に進める。計画・判断は md に残す）"
+      "name": "harness-loop-plugin",
+      "source": "./plugins/harness-loop-plugin",
+      "description": "計画→目標確定→目標を満たすまで実装・検証・修正をループ→PR を回すハーネス（ユーザーが関わるのは目標の確定だけ。計画・ループの記録は md に残す）"
     }
   ]
 }
