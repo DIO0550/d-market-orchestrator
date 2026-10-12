@@ -3,21 +3,34 @@
   "owner": {
     "name": "DIO0550"
   },
+  "metadata": {
+    "description": "AI CLI エージェントを専門チームとして編成し、開発タスクを分散・並列・ループ実行するオーケストレーションプラグイン集",
+    "version": "1.1.0"
+  },
   "plugins": [
     {
       "name": "orchestrator-plugin",
       "source": "./plugins/orchestrator-plugin",
-      "description": "オーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
+      "description": "オーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）",
+      "version": "1.0.0"
     },
     {
       "name": "tmux-orchestrator-plugin",
       "source": "./plugins/tmux-orchestrator-plugin",
-      "description": "tmuxベースのマルチCLIオーケストレーター（Claude Code / Copilot / Codex 対応）"
+      "description": "tmuxベースのマルチCLIオーケストレーター（Claude Code / Copilot / Codex 対応）",
+      "version": "1.0.0"
     },
     {
       "name": "copilot-chat-orchestrator-plugin",
       "source": "./plugins/copilot-chat-orchestrator-plugin",
-      "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）"
+      "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）",
+      "version": "1.0.0"
+    },
+    {
+      "name": "harness-loop-plugin",
+      "source": "./plugins/harness-loop-plugin",
+      "description": "計画→目標確定→目標を満たすまで実装・検証・修正をループ→PR を回すハーネス（ユーザーが関わるのは目標の確定だけ。計画・ループの記録は md に残す）",
+      "version": "0.1.0"
     }
   ]
 }

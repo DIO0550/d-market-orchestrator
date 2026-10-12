@@ -4,12 +4,13 @@ AI CLIエージェントを専門チームとして編成し、ソフトウェ�
 
 ## 概要
 
-1つのタスク指示から、探索・計画・実装・レビュー・テスト・Git操作までを複数の専門エージェントが自律的に遂行します。2つの実行モデルを提供しており、用途に応じて選択できます。
+1つのタスク指示から、探索・計画・実装・レビュー・テスト・Git操作までを複数の専門エージェントが自律的に遂行します。複数の実行モデルを提供しており、用途に応じて選択できます。
 
 | プラグイン | 実行モデル | 対応CLI |
 |-----------|-----------|---------|
 | [orchestrator-plugin](#orchestrator-plugin) | Claude Code サブエージェント（Task ツール） | Claude Code |
 | [tmux-orchestrator-plugin](#tmux-orchestrator-plugin) | tmux セッション + ファイルベース IPC | Claude Code / GitHub Copilot / OpenAI Codex / 汎用CLI |
+| [harness-loop-plugin](#harness-loop-plugin) | Claude Code サブエージェント + 目標を満たすまでのループ（目標だけユーザーと確定） | Claude Code |
 
 ## インストール
 
@@ -159,6 +160,85 @@ tmux版ではエージェント間の通信にファイルシステムを使用�
         ├── code-reviewer/review-{round}.md
         └── ...
 ```
+
+---
+
+## harness-loop-plugin
+
+**計画 → 目標確定 → 目標を満たすまでループ → PR を回すハーネス。ユーザーが関わるのは目標（完了条件）の確定だけ。**
+
+design-composer の implementation-flow（planner / implementer / 観点別 reviewer への分担、計画の検証、却下案の記録、ミューテーションによるテストの検証）と、d-market-spec の spec-plugin（`□`/`■` のゲート、implementation-plan.md / tasks.md の書式）を、ループ型のハーネスとしてまとめたもの。計画の出力は d-market-spec と同じ形（概要・背景・ADR・システム図・`[NEW]`/`[MODIFY]` とコード骨格・検証計画）。プロジェクト固有の規約は持たず、実行時にプロジェクトの `CLAUDE.md` / `AGENTS.md` / 規約ファイルを読んで従う。
+
+### コマンド
+
+#### `/harness-loop "タスクの説明"` / `/harness-loop #123` / `/harness-loop --resume [番号]`
+
+```
+[1. 計画] ──→ [2. 目標確定] ──→ [3. ループ] ─────────────────────→ [4. PR]
+ AI が調査し     ユーザーが         implementer → コミット → 検証        完了条件が
+ impl-plan と   goal.md を         （検査・goal-checker・レビュー）       すべて ■
+ goal.md の案   確定（ここだけ）     → 未達・採用した指摘を次の回へ
+                                     ↑___________________|
+```
+
+| # | フェーズ | ユーザーの関与 | 出力 |
+|---|---|---|---|
+| 1 | 計画 | なし | `exploration.md`・`implementation-plan.md`・`tasks.md`・`goal.md`（案） |
+| 2 | 目標確定 | **`□` の解消・完了条件の確定・PR のベースとループの上限（ここだけ）** | `goal.md`（確定） |
+| 3 | ループ | なし | 1 回ごとのコミット・`loop-log.md`・完了条件の `■` |
+| 4 | PR | 結果の確認 | PR |
+
+- **ループの終了条件は `goal.md` の完了条件。** 完了条件は 1 つずつ確かめ方（コマンドか、判定の基準を書いたレビュー）を持ち、独立した `goal-checker` が毎回その確かめ方どおりに判定する。すべて満たした回だけ `test-reviewer`（実装を壊してテストが落ちるかを実測）を走らせ、採用した重大/高の指摘が無ければ PR へ進む
+- 確定後にユーザーへ聞くのは、**目標が揺らぐ / 不可逆・外部に影響する / 行き詰まり（上限・2 回続けて前進なし） / 権限が無い** のどれかに当たるときだけ。それ以外は AI が決めて `decisions.md` に残す
+
+### ユーザーが読めるファイル
+
+```
+.plugin-workspace/.harness/{nnn}-{name}/
+├── exploration.md # 下調べ（explorer）
+├── implementation-plan.md # 計画（d-market-spec の書式: 概要・背景・ADR・システム図・変更案とコード骨格・影響範囲・検証計画）
+├── tasks.md       # 実装タスクの □ / ■（2 回目以降は「## Loop {n}: 修正」が足される）
+├── goal.md        # 目標（ゴール・確かめ方付きの完了条件 □/■・スコープ外・実行設定）
+├── loop-log.md    # 計画レビューと、1 回ごとの検査・完了条件の判定・指摘と採否・判定
+└── decisions.md   # 確定後に AI が自分で決めた判断・エスカレーション
+```
+
+run フォルダは `.git/info/exclude` で git の差分とコミットから外す。
+
+### エージェント一覧
+
+トークンを抑えるため、エージェントごとに model / effort / maxTurns を frontmatter で決めている（読むだけのものは `omitClaudeMd: true` で CLAUDE.md の自動読み込みも省く）。変えたいときは各 `agents/*.md` の frontmatter を直す。
+
+| エージェント | 役割 | model | effort |
+|---|---|---|---|
+| **explorer** | 関連ファイル・類似実装・規約ファイルの場所・検査コマンドを探して exploration.md に書く | haiku | low |
+| **planner** | exploration.md から implementation-plan.md・tasks.md と goal.md の案（確かめ方付きの完了条件）を書く | opus | high |
+| **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | opus | medium |
+| **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | opus | medium |
+| **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | haiku | medium |
+| **solution-reviewer** | 方式を 維持 / 調整 / 置き換え で結論（1 回目と方式を変えた回だけ） | opus | medium |
+| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | opus | low |
+| **security-reviewer** | 外から来る値・権限・依存・CI（条件に当たる回だけ） | opus | low |
+| **performance-reviewer** | 頻度の高い経路・データ量に比例する処理（条件に当たる回だけ） | haiku | low |
+| **test-reviewer** | 実装を壊してテストが落ちるかを実測（全条件を満たした回に単独で） | opus | medium |
+
+ほかに、指示役（スキル）は `effort: medium` で動き、ソースを読まずパスと結論だけを持つ。2 回目以降のレビューはまだレビューしていない差分だけを見せ、検査が落ちた回はレビュアーを起動しない。各エージェントの返り値には行数の上限がある。
+
+プロジェクトの `.claude/agents/` にある `*-reviewer` は、プラグインのレビュアーに加えて並列で起動する（入出力の約束が違うので置き換えず、目標・計画・差分を本文で渡す）。
+
+### フック
+
+| フック | タイミング | 内容 |
+|---|---|---|
+| `guard-phase-writes.sh` | PreToolUse | 目標の確定前（`planning` / `goal` とその回答待ち）は、run フォルダと一時ディレクトリの外への書き込みをブロック。Bash は字句解析でリダイレクト先・書き換え系コマンドの対象を見る最善努力のガード（`python -c` の中の書き込みまでは追わない） |
+| `check-plan-format.sh` | PostToolUse | implementation-plan.md / tasks.md を d-market-spec の書式で検査（必須セクション・システム図・変更案のコード骨格と理由・実装の省略・プレースホルダ） |
+| `check-goal.sh` | PostToolUse | goal.md の完了条件に確かめ方が無い・確定なのに `□` の確認事項やプレースホルダが残る、を止める |
+| `guard-pr.sh` | PreToolUse | ループを抜けていない（STATE が `pr` でない）・完了条件に `□` が残る間は、`gh pr create` と MCP の PR 作成をブロック |
+| `continue-until-done.sh` | Stop | 確定後（`looping` / `pr`）に止まろうとしたら 1 度だけ続行を促す |
+
+フックは `jq`（全体）と `python3`（Bash の判定）を使う。無い場合は警告を出して素通りする。
+
+判定表: `bash plugins/harness-loop-plugin/hooks/tests/hook-cases.sh`
 
 ---
 
