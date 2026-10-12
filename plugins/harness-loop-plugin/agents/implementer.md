@@ -2,7 +2,7 @@
 name: implementer
 description: harness-loop のループ 1 回ごとに呼ぶ実装エージェント。1 回目は plan.md の手順を、2 回目以降は渡された「やること」（未達の完了条件・採用された指摘・落ちた検査）を実装し、検査を走らせて、変更したファイル・検査結果・計画から外れた変更を返す。git add / commit / push は行わない。
 tools: Read, Edit, Write, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: medium
 ---
 

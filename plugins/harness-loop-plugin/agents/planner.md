@@ -2,7 +2,7 @@
 name: planner
 description: harness-loop のフェーズ 1（計画）と、方式の置き換えで呼ぶ計画エージェント。依頼を受けてコードベースを調べ、run フォルダに plan.md（調査結果・方針・却下案・変更ファイル・影響範囲・手順・テスト）と goal.md の案（ゴール・確かめ方付きの完了条件・スコープ外）を書いて、確かめた事実とユーザーにしか決められない分岐を返す。run フォルダ外のファイルは変更しない。
 tools: Read, Grep, Glob, Bash, Write, Edit
-model: sonnet
+model: opus
 effort: high
 ---
 

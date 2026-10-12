@@ -48,9 +48,9 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 | エージェント | model | effort | 役割の重さ |
 |---|---|---|---|
 | `explorer` | haiku | low | 探して場所を書くだけ |
-| `planner` | sonnet | high | 計画の質がループの回数を決めるので、ここには使う |
+| `planner` | opus | high | 計画の質がループの回数を決めるので、ここには使う |
 | `plan-reviewer` | sonnet | medium | |
-| `implementer` | sonnet | medium | |
+| `implementer` | opus | medium | 手戻り（ループの回数）を減らす |
 | `goal-checker` | haiku | medium | 確かめ方どおりに実行して判定するだけ |
 | `solution-reviewer` | sonnet | medium | 1 回目と方式を変えた回だけ |
 | `code-quality-reviewer` | sonnet | low | |

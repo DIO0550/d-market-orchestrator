@@ -211,9 +211,9 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 | エージェント | 役割 | model | effort |
 |---|---|---|---|
 | **explorer** | 関連ファイル・類似実装・規約ファイルの場所・検査コマンドを探して exploration.md に書く | haiku | low |
-| **planner** | exploration.md から plan.md と goal.md の案（確かめ方付きの完了条件）を書く | sonnet | high |
+| **planner** | exploration.md から plan.md と goal.md の案（確かめ方付きの完了条件）を書く | opus | high |
 | **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | sonnet | medium |
-| **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | sonnet | medium |
+| **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | opus | medium |
 | **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | haiku | medium |
 | **solution-reviewer** | 方式を 維持 / 調整 / 置き換え で結論（1 回目と方式を変えた回だけ） | sonnet | medium |
 | **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | sonnet | low |
