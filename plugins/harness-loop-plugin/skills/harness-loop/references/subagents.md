@@ -1,0 +1,38 @@
+# サブエージェントの呼び方とトークンの抑え方
+
+`SKILL.md` から、最初のサブエージェントを起動する前に 1 回だけ読む。
+
+## サブエージェントの呼び方
+
+このプラグインのエージェントは `subagent_type: "harness-loop-plugin:<名前>"` で起動する。
+
+- **共通の指示**: レビュアーと goal-checker には毎回、`${CLAUDE_PLUGIN_ROOT}/skills/harness-loop/references/reviewer-instructions.md` の**絶対パス**をプロンプトに含める
+- **プロジェクトのレビュアー**: プロジェクトの `.claude/agents/` に `*-reviewer.md` があれば、プラグインのレビュアーに**加えて**並列で起動する（入出力の約束が違うので置き換えない）。run フォルダを知らないので、ゴールと完了条件の本文・`implementation-plan.md` のパスと「設計判断（ADR）」の本文・変更ファイルの一覧と差分を出すコマンドを本文で渡す。プロジェクトのレビュアーが `code-quality-reviewer` の観点をすべて持つなら `code-quality-reviewer` は省いてよい
+- **作業ツリーを書き換えるエージェント（`implementer` / `test-reviewer` とプロジェクトの同種のもの）は前面で単独で起動する。** 同じメッセージに他のツール呼び出しを並べない
+- 読むだけのエージェントは 1 つのメッセージで並列に起動する。返ったら、指摘を読む前に `git status --porcelain` が起動前と同じかを確かめる（変わっていたら implementer に戻させてから採否に進む）
+- 直しは `SendMessage` で続けず、新しい Agent 呼び出しで渡す（入力を毎回明示する）
+
+## トークンを抑える
+
+**指示役（このセッション）のコンテキストが一番高くつく。** 調べもの・読みものはすべて安いサブエージェントに渡し、指示役はパスと結論だけを持つ。
+
+モデルは 2 種類だけ使う。**判断が要るもの（計画・実装・レビュー）は opus、決まった手順をなぞるだけのもの（探索・完了条件の実行・性能の数え上げ）は haiku。** 重さは effort で調整する。
+
+| エージェント | model | effort | 役割の重さ |
+|---|---|---|---|
+| `explorer` | haiku | low | 探して場所を書くだけ |
+| `planner` | opus | high | 計画の質がループの回数を決めるので、ここには使う |
+| `plan-reviewer` | opus | medium | |
+| `implementer` | opus | medium | 手戻り（ループの回数）を減らす |
+| `goal-checker` | haiku | medium | 確かめ方どおりに実行して判定するだけ |
+| `solution-reviewer` | opus | medium | 1 回目と方式を変えた回だけ |
+| `code-quality-reviewer` | opus | low | |
+| `security-reviewer` | opus | low | 条件に当たる回だけ |
+| `performance-reviewer` | haiku | low | 条件に当たる回だけ |
+| `test-reviewer` | opus | medium | 全条件を満たした回だけ |
+
+- model / effort / maxTurns は各エージェントの frontmatter が持つ。変えたいときはそこを直す（1 回だけ変えたいなら Agent の `effort` を渡す）。読むだけで規約をほとんど要らないエージェントは `omitClaudeMd: true` で CLAUDE.md の自動読み込みを省いている
+- **指示役はソースも run フォルダの md も丸ごとは読まない。** サブエージェントの返り値（各定義が行数の上限を持つ）と、`goal.md` / `loop-log.md` の必要な節だけを読む
+- **プロンプトには本文ではなくパスを渡す**（`{dir}` を渡せば各エージェントが必要な節だけ読む）。プロジェクトのレビュアーにだけは、目標と計画の要点を本文で渡す
+- **2 回目以降のレビューは、まだレビューしていない差分だけを見せる**（[phases/3-loop.md](phases/3-loop.md) の 3-2）。前の回で見た差分を毎回全員に読み直させない
+- **検査が落ちた回はレビュアーを起動しない。** goal-checker だけを走らせ、検査を通すことを次の回のやることにする（落ちたままのコードをレビューしても、直したあとにもう一度見ることになる）
