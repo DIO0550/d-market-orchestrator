@@ -3,6 +3,7 @@ name: harness-loop
 description: "計画 → 目標確定 → 目標を満たすまで実装・検証・修正をループ → PR を回すハーネス。AI が調査して計画と目標（完了条件）の案を作り、ユーザーが目標を確定したら、あとは完了条件がすべて満たされるまで implementer と検証エージェントでループし、満たしたら PR を作る。計画・ループの記録・判断は .plugin-workspace/.harness/ 配下の md に残す。ユーザーに聞くのは目標の確定と、目標が揺らぐ・不可逆な操作・行き詰まり・権限が無いときだけ。"
 disable-model-invocation: true
 argument-hint: "[タスクの説明 | #Issue番号 | --resume [番号]]"
+effort: medium
 allowed-tools: Bash(ls *), Bash(mkdir -p *), Bash(printf *), Bash(echo *), Bash(cat *), Bash(command -v *), Bash(git rev-parse *), Bash(git status *), Bash(git diff *), Bash(git ls-files *), Bash(git log *), Bash(git check-ignore *), Bash(git add *), Bash(git commit *), Bash(git switch *), Bash(git branch *)
 ---
 
@@ -25,7 +26,7 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 | # | フェーズ | `STATE` | ユーザーの関与 | 出力（run フォルダ内） |
 |---|---|---|---|---|
 | 0 | 初期化 | — | 前提が欠けていれば止める | `STATE` `SESSION` |
-| 1 | 計画 | `planning` | なし | `plan.md` / `goal.md`（案） |
+| 1 | 計画 | `planning` | なし | `exploration.md` / `plan.md` / `goal.md`（案） |
 | 2 | 目標確定 | `goal` | **ここだけ必須**（`□` の解消・確定） | `goal.md`（確定） / `BASE` |
 | 3 | ループ | `looping` | なし | コミット、`loop-log.md`、`goal.md` の `■` |
 | 4 | PR | `pr` → `done` | 結果の確認 | PR |
@@ -39,6 +40,29 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 5. **run フォルダの md は Write / Edit で書く**（Bash のリダイレクトで書くとフックが掛からない）。サブエージェントにも守らせる
 6. **検証は必ず別のエージェントに投げる。** 指摘は握りつぶさず、採用・不採用を理由付きで `loop-log.md` に書いてから次へ進む
 7. フック（`guard-phase-writes.sh` / `check-goal.sh` / `guard-pr.sh`）の指摘が出たら、次へ進む前に直す
+
+## トークンを抑える
+
+**指示役（このセッション）のコンテキストが一番高くつく。** 調べもの・読みものはすべて安いサブエージェントに渡し、指示役はパスと結論だけを持つ。
+
+| エージェント | model | effort | 役割の重さ |
+|---|---|---|---|
+| `explorer` | haiku | low | 探して場所を書くだけ |
+| `planner` | sonnet | high | 計画の質がループの回数を決めるので、ここには使う |
+| `plan-reviewer` | sonnet | medium | |
+| `implementer` | sonnet | medium | |
+| `goal-checker` | haiku | medium | 確かめ方どおりに実行して判定するだけ |
+| `solution-reviewer` | sonnet | medium | 1 回目と方式を変えた回だけ |
+| `code-quality-reviewer` | sonnet | low | |
+| `security-reviewer` | sonnet | low | 条件に当たる回だけ |
+| `performance-reviewer` | haiku | low | 条件に当たる回だけ |
+| `test-reviewer` | sonnet | medium | 全条件を満たした回だけ |
+
+- model / effort / maxTurns は各エージェントの frontmatter が持つ。変えたいときはそこを直す（1 回だけ変えたいなら Agent の `effort` を渡す）。読むだけで規約をほとんど要らないエージェントは `omitClaudeMd: true` で CLAUDE.md の自動読み込みを省いている
+- **指示役はソースも run フォルダの md も丸ごとは読まない。** サブエージェントの返り値（各定義が行数の上限を持つ）と、`goal.md` / `loop-log.md` の必要な節だけを読む
+- **プロンプトには本文ではなくパスを渡す**（`{dir}` を渡せば各エージェントが必要な節だけ読む）。プロジェクトのレビュアーにだけは、目標と計画の要点を本文で渡す
+- **2 回目以降のレビューは、まだレビューしていない差分だけを見せる**（3-2）。前の回で見た差分を毎回全員に読み直させない
+- **検査が落ちた回はレビュアーを起動しない。** goal-checker だけを走らせ、検査を通すことを次の回のやることにする（落ちたままのコードをレビューしても、直したあとにもう一度見ることになる）
 
 ## サブエージェントの呼び方
 
@@ -83,8 +107,8 @@ echo "${CLAUDE_SESSION_ID}" > .plugin-workspace/.harness/{nnn}-{name}/SESSION
 
 ## フェーズ 1: 計画（自律）
 
-1. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`
-2. planner はコードを調べて `{dir}/plan.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`）を書き、確かめた事実と、ユーザーにしか決められない分岐を返す
+1. `harness-loop-plugin:explorer` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`。explorer は関連ファイル・類似実装・規約ファイルの場所・検査コマンド・プロジェクトのレビュアーを `{dir}/exploration.md` に書き、10 行以内の要約を返す
+2. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`。planner は exploration.md から読み始め、コードを調べて `{dir}/plan.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`）を書き、確かめた事実と、ユーザーにしか決められない分岐を返す
 3. `harness-loop-plugin:plan-reviewer` に `{dir}` と共通の指示のパスを渡して検証させる（プロジェクトに計画のレビュアーがあれば並列で加える）
 4. 採用した指摘があれば planner に直させる（1 回まで。2 回目も残る指摘は `goal.md` の目標確定で一緒に見せる）。採否は `loop-log.md` の冒頭に「計画レビュー」として書く
 5. `echo goal > {dir}/STATE`
@@ -144,8 +168,11 @@ run フォルダ: {dir}
 
 ### 3-2. 検証（並列）
 
-1. `plan.md` の検査コマンド（テスト・lint・型検査・フォーマット）を 1 つずつ走らせ、**終了コードで**判定する（`&&` で連ねない）
-2. 1 つのメッセージで次を並列に起動する。渡すのは `{dir}`・回の番号・変更ファイルの一覧（`git diff --name-only $(cat {dir}/BASE)`）・共通の指示のパス
+1. `exploration.md` の検査コマンド（テスト・lint・型検査・フォーマット）を 1 つずつ走らせ、**終了コードで**判定する（`&&` で連ねない）。成功した検査の出力は読まない（終了コードだけ見る）。落ちたものは末尾だけ読む
+2. 1 つのメッセージで次を並列に起動する。渡すのは `{dir}`・回の番号・見る差分の範囲・変更ファイルの一覧・共通の指示のパス
+   - **見る差分の範囲**: 1 回目は `$(cat {dir}/BASE)..HEAD`、2 回目以降は**まだレビューしていないコミットだけ**（最後にレビュアーを起動した回のコミット`..HEAD`。検査が落ちてレビューを飛ばした回の変更もここに入る）。レビューした回のコミットは `loop-log.md` の「レビュー済み」に書いておく。一覧は `git diff --name-only <範囲>` で出す
+   - goal-checker は差分の範囲に関わらず、完了条件をすべて確かめ直す
+   - 検査が落ちた回は goal-checker だけを起動する（「トークンを抑える」）
 
 | エージェント | 見るもの | 呼ぶ条件 |
 |---|---|---|
@@ -156,7 +183,7 @@ run フォルダ: {dir}
 | `performance-reviewer` | 頻度の高い経路・データ量に比例する処理 | 実行されるコードに差分がある回 |
 | プロジェクトのレビュアー | プロジェクト固有の観点 | 各定義の呼ぶ条件に当たる回 |
 
-3. **goal-checker が完了条件をすべて「満たす」と判定した回だけ**、続けて `test-reviewer` を**前面で単独で**起動する（実装を壊してテストが落ちるかを実測する。実行されるコードに差分が無ければ省く）
+3. **goal-checker が完了条件をすべて「満たす」と判定した回だけ**、続けて `test-reviewer` を**前面で単独で**起動する（実装を壊してテストが落ちるかを実測する。見る差分は `$(cat {dir}/BASE)..HEAD` 全体。実行されるコードに差分が無ければ省く）
 
 ### 3-3. 判定と記録
 
@@ -211,7 +238,7 @@ run フォルダ: {dir}
 
 1. `{dir}` を特定し、`echo "${CLAUDE_SESSION_ID}" > {dir}/SESSION` で現在のセッションに付け替える
 2. `STATE` と run フォルダの md を読んで続ける
-   - `planning`: `plan.md` が無ければフェーズ 1 の最初から、あれば計画レビューから
+   - `planning`: `exploration.md` が無ければ explorer から、`plan.md` が無ければ planner から、あれば計画レビューから
    - `goal`: フェーズ 2 から
    - `looping`: `loop-log.md` の最後の回の判定から（判定が無ければその回の検証から）
    - `pr`: フェーズ 4 の、まだ済んでいない手順から
@@ -224,6 +251,7 @@ run フォルダ: {dir}
 ├── STATE          # planning / goal / looping / pr / waiting:<STATE> / done
 ├── SESSION        # 実行中のセッション ID（フックが読む）
 ├── BASE           # ループを始めたコミット（差分の基準）
+├── exploration.md # 下調べ（関連ファイル・類似実装・規約ファイル・検査コマンド・プロジェクトのレビュアー）
 ├── plan.md        # 計画（調査結果・方針・却下案・変更ファイル・影響範囲・手順・テスト・リスク）
 ├── goal.md        # 目標（ゴール・完了条件 □/■・スコープ外・実行設定）。ユーザーが確定する
 ├── loop-log.md    # 計画レビューと、ループ 1 回ごとの検査・完了条件・指摘と採否・判定

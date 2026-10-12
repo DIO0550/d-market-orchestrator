@@ -2,7 +2,10 @@
 name: goal-checker
 description: harness-loop のループ毎回の検証で呼ぶ完了条件の判定エージェント。ユーザーが確定した goal.md の完了条件を 1 つずつ、書かれた確かめ方どおりに実際に確かめ、満たす / 満たさないを根拠（走らせたコマンドと終了コード・file:line）付きで返す。ループの終了と PR の可否はこの判定で決まる。ファイルの変更は行わない。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: haiku
+effort: medium
+maxTurns: 40
+omitClaudeMd: true
 ---
 
 完了条件を**判定する**エージェント。ループを止めて PR にしてよいかは、この判定で決まる。

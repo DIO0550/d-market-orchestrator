@@ -183,7 +183,7 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 
 | # | フェーズ | ユーザーの関与 | 出力 |
 |---|---|---|---|
-| 1 | 計画 | なし | `plan.md`・`goal.md`（案） |
+| 1 | 計画 | なし | `exploration.md`・`plan.md`・`goal.md`（案） |
 | 2 | 目標確定 | **`□` の解消・完了条件の確定・PR のベースとループの上限（ここだけ）** | `goal.md`（確定） |
 | 3 | ループ | なし | 1 回ごとのコミット・`loop-log.md`・完了条件の `■` |
 | 4 | PR | 結果の確認 | PR |
@@ -195,7 +195,8 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 
 ```
 .plugin-workspace/.harness/{nnn}-{name}/
-├── plan.md        # 計画（調査結果・方針・却下案・変更ファイル・影響範囲・手順・テスト・リスク）
+├── exploration.md # 下調べ（explorer）
+├── plan.md        # 計画（方針・却下案・変更ファイル・影響範囲・手順・テスト・リスク）
 ├── goal.md        # 目標（ゴール・確かめ方付きの完了条件 □/■・スコープ外・実行設定）
 ├── loop-log.md    # 計画レビューと、1 回ごとの検査・完了条件の判定・指摘と採否・判定
 └── decisions.md   # 確定後に AI が自分で決めた判断・エスカレーション
@@ -205,17 +206,22 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 
 ### エージェント一覧
 
-| エージェント | 役割 | モデル |
-|---|---|---|
-| **planner** | 調査して plan.md と goal.md の案（確かめ方付きの完了条件）を書く | inherit |
-| **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | inherit |
-| **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | inherit |
-| **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | sonnet |
-| **solution-reviewer** | 方式（根本原因・より単純な代替・継ぎ当て）を 維持 / 調整 / 置き換え で結論 | inherit |
-| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | inherit |
-| **security-reviewer** | 外から来る値・権限・依存・CI | inherit |
-| **performance-reviewer** | 頻度の高い経路・データ量に比例する処理 | inherit |
-| **test-reviewer** | 実装を壊してテストが落ちるかを実測（全条件を満たした回に単独で） | opus |
+トークンを抑えるため、エージェントごとに model / effort / maxTurns を frontmatter で決めている（読むだけのものは `omitClaudeMd: true` で CLAUDE.md の自動読み込みも省く）。変えたいときは各 `agents/*.md` の frontmatter を直す。
+
+| エージェント | 役割 | model | effort |
+|---|---|---|---|
+| **explorer** | 関連ファイル・類似実装・規約ファイルの場所・検査コマンドを探して exploration.md に書く | haiku | low |
+| **planner** | exploration.md から plan.md と goal.md の案（確かめ方付きの完了条件）を書く | sonnet | high |
+| **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | sonnet | medium |
+| **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | sonnet | medium |
+| **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | haiku | medium |
+| **solution-reviewer** | 方式を 維持 / 調整 / 置き換え で結論（1 回目と方式を変えた回だけ） | sonnet | medium |
+| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | sonnet | low |
+| **security-reviewer** | 外から来る値・権限・依存・CI（条件に当たる回だけ） | sonnet | low |
+| **performance-reviewer** | 頻度の高い経路・データ量に比例する処理（条件に当たる回だけ） | haiku | low |
+| **test-reviewer** | 実装を壊してテストが落ちるかを実測（全条件を満たした回に単独で） | sonnet | medium |
+
+ほかに、指示役（スキル）は `effort: medium` で動き、ソースを読まずパスと結論だけを持つ。2 回目以降のレビューはまだレビューしていない差分だけを見せ、検査が落ちた回はレビュアーを起動しない。各エージェントの返り値には行数の上限がある。
 
 プロジェクトの `.claude/agents/` にある `*-reviewer` は、プラグインのレビュアーに加えて並列で起動する（入出力の約束が違うので置き換えず、目標・計画・差分を本文で渡す）。
 

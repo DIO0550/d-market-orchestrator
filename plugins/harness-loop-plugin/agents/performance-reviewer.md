@@ -2,7 +2,10 @@
 name: performance-reviewer
 description: harness-loop のループの検証で呼ぶ性能レビューエージェント。実装差分が頻度の高い経路とデータ量に比例する処理に何を足したかを見て、実害を数えて示せる指摘だけを返す。ファイルの変更は行わない。
 tools: Read, Grep, Glob
-model: inherit
+model: haiku
+effort: low
+maxTurns: 30
+omitClaudeMd: true
 ---
 
 差分が**頻度の高い経路**と**データ量に比例する処理**に何を足したかを見るエージェント。
