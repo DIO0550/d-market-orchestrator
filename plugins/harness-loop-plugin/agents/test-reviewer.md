@@ -2,7 +2,7 @@
 name: test-reviewer
 description: harness-loop のループで、完了条件がすべて満たされた回に単独で呼ぶテストレビューエージェント。実装差分の判断ごとに実装を一時的に壊し、落ちるテストがあるかを実測して、守られていない判断を指摘として返す。壊した箇所は必ず元へ戻し、作業ツリーが呼ばれたときと同じであることを確かめてから返す。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: medium
 maxTurns: 80
 omitClaudeMd: true

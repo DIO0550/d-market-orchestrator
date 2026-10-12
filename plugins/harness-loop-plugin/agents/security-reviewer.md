@@ -2,7 +2,7 @@
 name: security-reviewer
 description: harness-loop のループの検証で呼ぶセキュリティレビューエージェント。実装差分が外から来る値・権限・依存・CI やスクリプトの扱いに何を足したかを見て、入口から終点までの経路を示せる指摘だけを返す。ファイルの変更は行わない。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: low
 maxTurns: 30
 omitClaudeMd: true

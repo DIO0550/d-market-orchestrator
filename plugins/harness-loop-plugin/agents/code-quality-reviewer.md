@@ -2,7 +2,7 @@
 name: code-quality-reviewer
 description: harness-loop のループの検証で毎回呼ぶコード品質レビューエージェント。実装差分で増えた重複・新しく付けた名前の衝突・コメントや doc と実物の食い違い・過剰なフォールバックや過剰なブロックを見て指摘だけを返す。design-composer の duplication / naming / comment / over-guard レビュアーをプロジェクトに依らない形でまとめたもの。ファイルの変更は行わない。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: low
 maxTurns: 40
 ---

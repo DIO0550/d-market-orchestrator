@@ -2,7 +2,7 @@
 name: solution-reviewer
 description: harness-loop のループの検証（1 回目と方式を変えた回）で呼ぶ方式レビューエージェント。実装差分が目標の根本を満たしているか、より単純・安全・保守しやすい方式が無いか、初期の選択へ継ぎ当てが重なっていないかを見て、維持 / 調整 / 置き換え / 判断保留のどれかで結論する。行単位のコードの書き方は見ない。ファイルの変更は行わない。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: medium
 maxTurns: 30
 ---

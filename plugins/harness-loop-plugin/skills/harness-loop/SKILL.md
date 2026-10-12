@@ -45,18 +45,20 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 
 **指示役（このセッション）のコンテキストが一番高くつく。** 調べもの・読みものはすべて安いサブエージェントに渡し、指示役はパスと結論だけを持つ。
 
+モデルは 2 種類だけ使う。**判断が要るもの（計画・実装・レビュー）は opus、決まった手順をなぞるだけのもの（探索・完了条件の実行・性能の数え上げ）は haiku。** 重さは effort で調整する。
+
 | エージェント | model | effort | 役割の重さ |
 |---|---|---|---|
 | `explorer` | haiku | low | 探して場所を書くだけ |
 | `planner` | opus | high | 計画の質がループの回数を決めるので、ここには使う |
-| `plan-reviewer` | sonnet | medium | |
+| `plan-reviewer` | opus | medium | |
 | `implementer` | opus | medium | 手戻り（ループの回数）を減らす |
 | `goal-checker` | haiku | medium | 確かめ方どおりに実行して判定するだけ |
-| `solution-reviewer` | sonnet | medium | 1 回目と方式を変えた回だけ |
-| `code-quality-reviewer` | sonnet | low | |
-| `security-reviewer` | sonnet | low | 条件に当たる回だけ |
+| `solution-reviewer` | opus | medium | 1 回目と方式を変えた回だけ |
+| `code-quality-reviewer` | opus | low | |
+| `security-reviewer` | opus | low | 条件に当たる回だけ |
 | `performance-reviewer` | haiku | low | 条件に当たる回だけ |
-| `test-reviewer` | sonnet | medium | 全条件を満たした回だけ |
+| `test-reviewer` | opus | medium | 全条件を満たした回だけ |
 
 - model / effort / maxTurns は各エージェントの frontmatter が持つ。変えたいときはそこを直す（1 回だけ変えたいなら Agent の `effort` を渡す）。読むだけで規約をほとんど要らないエージェントは `omitClaudeMd: true` で CLAUDE.md の自動読み込みを省いている
 - **指示役はソースも run フォルダの md も丸ごとは読まない。** サブエージェントの返り値（各定義が行数の上限を持つ）と、`goal.md` / `loop-log.md` の必要な節だけを読む

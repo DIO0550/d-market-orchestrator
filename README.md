@@ -212,14 +212,14 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 |---|---|---|---|
 | **explorer** | 関連ファイル・類似実装・規約ファイルの場所・検査コマンドを探して exploration.md に書く | haiku | low |
 | **planner** | exploration.md から plan.md と goal.md の案（確かめ方付きの完了条件）を書く | opus | high |
-| **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | sonnet | medium |
+| **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | opus | medium |
 | **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | opus | medium |
 | **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | haiku | medium |
-| **solution-reviewer** | 方式を 維持 / 調整 / 置き換え で結論（1 回目と方式を変えた回だけ） | sonnet | medium |
-| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | sonnet | low |
-| **security-reviewer** | 外から来る値・権限・依存・CI（条件に当たる回だけ） | sonnet | low |
+| **solution-reviewer** | 方式を 維持 / 調整 / 置き換え で結論（1 回目と方式を変えた回だけ） | opus | medium |
+| **code-quality-reviewer** | 重複・命名・コメントと実物・過剰な防御 | opus | low |
+| **security-reviewer** | 外から来る値・権限・依存・CI（条件に当たる回だけ） | opus | low |
 | **performance-reviewer** | 頻度の高い経路・データ量に比例する処理（条件に当たる回だけ） | haiku | low |
-| **test-reviewer** | 実装を壊してテストが落ちるかを実測（全条件を満たした回に単独で） | sonnet | medium |
+| **test-reviewer** | 実装を壊してテストが落ちるかを実測（全条件を満たした回に単独で） | opus | medium |
 
 ほかに、指示役（スキル）は `effort: medium` で動き、ソースを読まずパスと結論だけを持つ。2 回目以降のレビューはまだレビューしていない差分だけを見せ、検査が落ちた回はレビュアーを起動しない。各エージェントの返り値には行数の上限がある。
 

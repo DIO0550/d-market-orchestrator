@@ -2,7 +2,7 @@
 name: plan-reviewer
 description: harness-loop のフェーズ 1 から呼ぶ計画レビューエージェント。run フォルダの plan.md と goal.md の案を、依頼とプロジェクトの規約に照らして検証し、指摘だけを返す。完了条件が確かめられる形か・依頼との対応・既存資産の再利用・影響範囲の数え漏れ・不正な状態・テストの十分さを見る。ファイルの変更は行わない。
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 effort: medium
 maxTurns: 40
 ---
