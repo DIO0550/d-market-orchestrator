@@ -18,7 +18,7 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 ```
 [1. 計画] ──→ [2. 目標確定] ──→ [3. ループ] ─────────────────────→ [4. PR]
  AI が調査し     ユーザーが         implementer → コミット → 検証        完了条件が
- plan.md と     goal.md を         （検査・goal-checker・レビュー）       すべて ■
+ impl-plan と   goal.md を         （検査・goal-checker・レビュー）       すべて ■
  goal.md の案   確定（ここだけ）     → 未達・採用した指摘を次の回へ
                                      ↑___________________|
 ```
@@ -26,7 +26,7 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 | # | フェーズ | `STATE` | ユーザーの関与 | 出力（run フォルダ内） |
 |---|---|---|---|---|
 | 0 | 初期化 | — | 前提が欠けていれば止める | `STATE` `SESSION` |
-| 1 | 計画 | `planning` | なし | `exploration.md` / `plan.md` / `goal.md`（案） |
+| 1 | 計画 | `planning` | なし | `exploration.md` / `implementation-plan.md` / `tasks.md` / `goal.md`（案） |
 | 2 | 目標確定 | `goal` | **ここだけ必須**（`□` の解消・確定） | `goal.md`（確定） / `BASE` |
 | 3 | ループ | `looping` | なし | コミット、`loop-log.md`、`goal.md` の `■` |
 | 4 | PR | `pr` → `done` | 結果の確認 | PR |
@@ -71,7 +71,7 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 このプラグインのエージェントは `subagent_type: "harness-loop-plugin:<名前>"` で起動する。
 
 - **共通の指示**: レビュアーと goal-checker には毎回、`${CLAUDE_PLUGIN_ROOT}/skills/harness-loop/references/reviewer-instructions.md` の**絶対パス**をプロンプトに含める
-- **プロジェクトのレビュアー**: プロジェクトの `.claude/agents/` に `*-reviewer.md` があれば、プラグインのレビュアーに**加えて**並列で起動する（入出力の約束が違うので置き換えない）。run フォルダを知らないので、ゴールと完了条件の本文・`plan.md` のパスと「方針」「却下した案」の本文・変更ファイルの一覧と差分を出すコマンドを本文で渡す。プロジェクトのレビュアーが `code-quality-reviewer` の観点をすべて持つなら `code-quality-reviewer` は省いてよい
+- **プロジェクトのレビュアー**: プロジェクトの `.claude/agents/` に `*-reviewer.md` があれば、プラグインのレビュアーに**加えて**並列で起動する（入出力の約束が違うので置き換えない）。run フォルダを知らないので、ゴールと完了条件の本文・`implementation-plan.md` のパスと「設計判断（ADR）」の本文・変更ファイルの一覧と差分を出すコマンドを本文で渡す。プロジェクトのレビュアーが `code-quality-reviewer` の観点をすべて持つなら `code-quality-reviewer` は省いてよい
 - **作業ツリーを書き換えるエージェント（`implementer` / `test-reviewer` とプロジェクトの同種のもの）は前面で単独で起動する。** 同じメッセージに他のツール呼び出しを並べない
 - 読むだけのエージェントは 1 つのメッセージで並列に起動する。返ったら、指摘を読む前に `git status --porcelain` が起動前と同じかを確かめる（変わっていたら implementer に戻させてから採否に進む）
 - 直しは `SendMessage` で続けず、新しい Agent 呼び出しで渡す（入力を毎回明示する）
@@ -110,14 +110,14 @@ echo "${CLAUDE_SESSION_ID}" > .plugin-workspace/.harness/{nnn}-{name}/SESSION
 ## フェーズ 1: 計画（自律）
 
 1. `harness-loop-plugin:explorer` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`。explorer は関連ファイル・類似実装・規約ファイルの場所・検査コマンド・プロジェクトのレビュアーを `{dir}/exploration.md` に書き、10 行以内の要約を返す
-2. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`。planner は exploration.md から読み始め、コードを調べて `{dir}/plan.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`）を書き、確かめた事実と、ユーザーにしか決められない分岐を返す
+2. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`。planner は exploration.md から読み始め、コードを調べて d-market-spec の書式で `{dir}/implementation-plan.md`・`{dir}/tasks.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`）を書き（`check-plan-format.sh` が形を検査する）、確かめた事実と、ユーザーにしか決められない分岐を返す
 3. `harness-loop-plugin:plan-reviewer` に `{dir}` と共通の指示のパスを渡して検証させる（プロジェクトに計画のレビュアーがあれば並列で加える）
 4. 採用した指摘があれば planner に直させる（1 回まで。2 回目も残る指摘は `goal.md` の目標確定で一緒に見せる）。採否は `loop-log.md` の冒頭に「計画レビュー」として書く
 5. `echo goal > {dir}/STATE`
 
 ## フェーズ 2: 目標確定（ユーザーと一緒に）
 
-`goal.md` の要約（ゴール・完了条件の一覧・スコープ外）と、`plan.md` の方針を 3〜5 行で提示する。
+`goal.md` の要約（ゴール・完了条件の一覧・スコープ外）と、`implementation-plan.md` の概要と設計判断（ADR）を 3〜5 行で提示する（詳細はファイルを開いてもらう）。
 
 1. 「未解決の確認事項」の `□` を AskUserQuestion で解消して `■` にする（回答を併記する）
 2. AskUserQuestion で次を**1 回で**聞く
@@ -159,9 +159,11 @@ echo "${CLAUDE_SESSION_ID}" > .plugin-workspace/.harness/{nnn}-{name}/SESSION
 ```text
 run フォルダ: {dir}
 回: Loop {n}
-やること: <1 回目は「plan.md の手順」。2 回目以降は、未達の完了条件（goal-checker の根拠付き）・採用した指摘・落ちた検査>
+やること: <1 回目は「tasks.md の Implementation」。2 回目以降は、未達の完了条件（goal-checker の根拠付き）・採用した指摘・落ちた検査>
 参照資料: {REF}（tdd-guidelines.md / claim-verification.md）
 ```
+
+implementer はやることを実装し、`tasks.md` の `□` を `■` にしていく（2 回目以降は「## Loop {n}: 修正」を足してから）。
 
 返ってきたら:
 
@@ -193,7 +195,7 @@ run フォルダ: {dir}
 
 - goal-checker が「満たす」と判定した条件だけ `goal.md` で `■` にする。「満たさない」になった `■` は `□` に戻す（後の変更で壊れることがある）
 - 指摘の採否を決める。エージェントをまたいで根本原因が同じものは束ねる。前の回で不採用にした指摘が新しい根拠なしに再提出されたら、同じ理由で不採用にする
-- `solution-reviewer` が「置き換え」と結論して採用するなら、planner に「今の作業ツリーから置き換え先へ移す計画」で `plan.md` を直させ（作業ツリーを git で巻き戻さない。置き換え前の方式は却下案に理由付きで残す）、次の回のやることにする。置き換えが目標を変えるならエスカレーション条件 A。置き換えは 1 回まで
+- `solution-reviewer` が「置き換え」と結論して採用するなら、planner に「今の作業ツリーから置き換え先へ移す計画」で `implementation-plan.md` と `tasks.md` を直させ（作業ツリーを git で巻き戻さない。置き換え前の方式は ADR の不採用に理由付きで残す）、次の回のやることにする。置き換えが目標を変えるならエスカレーション条件 A。置き換えは 1 回まで
 
 次のどれかで分岐する:
 
@@ -240,7 +242,7 @@ run フォルダ: {dir}
 
 1. `{dir}` を特定し、`echo "${CLAUDE_SESSION_ID}" > {dir}/SESSION` で現在のセッションに付け替える
 2. `STATE` と run フォルダの md を読んで続ける
-   - `planning`: `exploration.md` が無ければ explorer から、`plan.md` が無ければ planner から、あれば計画レビューから
+   - `planning`: `exploration.md` が無ければ explorer から、`implementation-plan.md` が無ければ planner から、あれば計画レビューから
    - `goal`: フェーズ 2 から
    - `looping`: `loop-log.md` の最後の回の判定から（判定が無ければその回の検証から）
    - `pr`: フェーズ 4 の、まだ済んでいない手順から
@@ -254,7 +256,8 @@ run フォルダ: {dir}
 ├── SESSION        # 実行中のセッション ID（フックが読む）
 ├── BASE           # ループを始めたコミット（差分の基準）
 ├── exploration.md # 下調べ（関連ファイル・類似実装・規約ファイル・検査コマンド・プロジェクトのレビュアー）
-├── plan.md        # 計画（調査結果・方針・却下案・変更ファイル・影響範囲・手順・テスト・リスク）
+├── implementation-plan.md # 計画（d-market-spec の書式: 概要・背景・ADR・システム図・変更案・影響範囲・検証計画・リスク）
+├── tasks.md       # 実装タスクの □ / ■（2 回目以降は「## Loop {n}: 修正」が足される）
 ├── goal.md        # 目標（ゴール・完了条件 □/■・スコープ外・実行設定）。ユーザーが確定する
 ├── loop-log.md    # 計画レビューと、ループ 1 回ごとの検査・完了条件・指摘と採否・判定
 └── decisions.md   # 確定後に AI が自分で決めた判断とエスカレーション

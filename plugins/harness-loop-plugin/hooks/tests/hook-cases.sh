@@ -56,7 +56,7 @@ bash_json() { jq -nc --arg s "$SID" --arg c "$1" '{session_id:$s, tool_name:"Bas
 G=guard-phase-writes.sh
 set_state planning
 expect_exit 2 "計画中は src への Write をブロック" $G "$(write_json Write "$PROJECT/src/a.ts")"
-expect_exit 0 "計画中でも run フォルダへの Write は通す" $G "$(write_json Write "$PROJECT/$RUN/plan.md")"
+expect_exit 0 "計画中でも run フォルダへの Write は通す" $G "$(write_json Write "$PROJECT/$RUN/notes.md")"
 expect_exit 2 "計画中は src へのリダイレクトをブロック" $G "$(bash_json 'echo x > src/a.ts')"
 expect_exit 0 "STATE の書き換えは通す" $G "$(bash_json "echo goal > $RUN/STATE")"
 expect_exit 2 "run フォルダ宛てを混ぜた迂回をブロック" $G "$(bash_json "echo a > $RUN/x.md; rm src/a.ts")"
@@ -133,6 +133,79 @@ sed -i 's/^{ゴール}/5 回失敗したらロックされる/' "$GOAL"
 expect_exit 0 "run フォルダの外の goal.md には掛からない" $C "$(write_json Write "$PROJECT/docs/goal.md")"
 mkdir -p "$PROJECT/$RUN/x" && printf '# Goal\n\n**ステータス**: □ 未確定\n' > "$PROJECT/$RUN/x/goal.md"
 expect_exit 2 "完了条件が 1 つも無い goal を検出" $C "$(write_json Write "$PROJECT/$RUN/x/goal.md")"
+
+# ── check-plan-format.sh ─────────────────────────────
+C=check-plan-format.sh
+cp "$TPL/implementation-plan.md" "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 2 "テンプレートのままの plan はプレースホルダで落ちる" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+cat > "$PROJECT/$RUN/implementation-plan.md" <<'EOF'
+# ログイン失敗の回数制限
+## 概要
+x
+## 背景
+x
+## 設計判断（ADR）
+x
+## システム図
+```
+入力 -> 判定 -> ロック
+```
+```
+Login -> Limit -> Store
+```
+## 変更案
+#### [NEW] `src/limit.ts`
+- **理由**: 既存に無い
+```ts
+export function limit(n: number): boolean { return n < 5 }
+```
+#### [MODIFY] `src/login.ts`
+- **理由**: 呼び出しを足す
+## 影響範囲の確認
+x
+## 検証計画
+x
+## 未決の判断
+- なし
+## Definition of Done
+- [ ] x
+EOF
+expect_exit 2 "コードブロックの無い MODIFY を検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+sed -i 's/^- \*\*理由\*\*: 呼び出しを足す/- **理由**: 呼び出しを足す\n```ts\nif (!limit(count)) return\n```/' "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 0 "形の揃った plan は通す" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+cp "$PROJECT/$RUN/implementation-plan.md" "$PROJECT/$RUN/plan.bak"
+awk '/^## システム図/{print; print "図は後で"; skip=1; next} skip && /^## /{skip=0} !skip' "$PROJECT/$RUN/plan.bak" > "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 2 "システム図のセクションに図が無ければ検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+mv "$PROJECT/$RUN/plan.bak" "$PROJECT/$RUN/implementation-plan.md"
+printf '\n#### [NEW] `src/x.ts`\n- **理由**: y\n```ts\n// 以下省略\n```\n' >> "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 2 "コードブロック内の省略を検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+
+cat >> "$PROJECT/$RUN/implementation-plan.md" <<'PLAN'
+#### [MODIFY] `src/y.tsx`
+- **理由**: 日本語の doc・JSX・テンプレートリテラルを含む
+```tsx
+/** @param opts 省略時は既定値を使う */
+{/* ヘッダー */}
+const label = `${件数}件`
+```
+##### before
+```ts
+// TODO: 既存コードに元からある TODO
+```
+PLAN
+sed -i '/以下省略/d' "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 0 "日本語の doc・JSX コメント・テンプレートリテラル・before の TODO は誤検出しない" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+printf '\n#### [NEW] `src/z.ts`\n- **理由**: y\n```ts\n// {ファイルパス}\n```\n' >> "$PROJECT/$RUN/implementation-plan.md"
+expect_exit 2 "コードブロック内に残ったテンプレートのプレースホルダを検出" $C "$(write_json Write "$PROJECT/$RUN/implementation-plan.md")"
+
+printf '# Task: x\n\n- □ a\n' > "$PROJECT/$RUN/tasks.md"
+expect_exit 2 "## Implementation の無い tasks を検出" $C "$(write_json Write "$PROJECT/$RUN/tasks.md")"
+printf '# Task: x\n\n## Implementation\n\n- □ a\n' > "$PROJECT/$RUN/tasks.md"
+expect_exit 0 "形の揃った tasks は通す" $C "$(write_json Write "$PROJECT/$RUN/tasks.md")"
+
+cp "$TPL/tasks.md" "$PROJECT/$RUN/tasks.md"
+expect_exit 2 "テンプレートのままの tasks はプレースホルダで落ちる" $C "$(write_json Write "$PROJECT/$RUN/tasks.md")"
+expect_exit 0 "run フォルダの外の plan には掛からない" $C "$(write_json Write "$PROJECT/docs/implementation-plan.md")"
 
 # ── guard-pr.sh ─────────────────────────────
 P=guard-pr.sh

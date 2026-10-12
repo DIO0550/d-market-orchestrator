@@ -167,7 +167,7 @@ tmux版ではエージェント間の通信にファイルシステムを使用�
 
 **計画 → 目標確定 → 目標を満たすまでループ → PR を回すハーネス。ユーザーが関わるのは目標（完了条件）の確定だけ。**
 
-design-composer の implementation-flow（planner / implementer / 観点別 reviewer への分担、計画の検証、却下案の記録、ミューテーションによるテストの検証）と、d-market-spec の spec-plugin（`□`/`■` のゲート、md で残す計画）を、ループ型のハーネスとしてまとめたもの。プロジェクト固有の規約は持たず、実行時にプロジェクトの `CLAUDE.md` / `AGENTS.md` / 規約ファイルを読んで従う。
+design-composer の implementation-flow（planner / implementer / 観点別 reviewer への分担、計画の検証、却下案の記録、ミューテーションによるテストの検証）と、d-market-spec の spec-plugin（`□`/`■` のゲート、implementation-plan.md / tasks.md の書式）を、ループ型のハーネスとしてまとめたもの。計画の出力は d-market-spec と同じ形（概要・背景・ADR・システム図・`[NEW]`/`[MODIFY]` とコード骨格・検証計画）。プロジェクト固有の規約は持たず、実行時にプロジェクトの `CLAUDE.md` / `AGENTS.md` / 規約ファイルを読んで従う。
 
 ### コマンド
 
@@ -176,14 +176,14 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 ```
 [1. 計画] ──→ [2. 目標確定] ──→ [3. ループ] ─────────────────────→ [4. PR]
  AI が調査し     ユーザーが         implementer → コミット → 検証        完了条件が
- plan.md と     goal.md を         （検査・goal-checker・レビュー）       すべて ■
+ impl-plan と   goal.md を         （検査・goal-checker・レビュー）       すべて ■
  goal.md の案   確定（ここだけ）     → 未達・採用した指摘を次の回へ
                                      ↑___________________|
 ```
 
 | # | フェーズ | ユーザーの関与 | 出力 |
 |---|---|---|---|
-| 1 | 計画 | なし | `exploration.md`・`plan.md`・`goal.md`（案） |
+| 1 | 計画 | なし | `exploration.md`・`implementation-plan.md`・`tasks.md`・`goal.md`（案） |
 | 2 | 目標確定 | **`□` の解消・完了条件の確定・PR のベースとループの上限（ここだけ）** | `goal.md`（確定） |
 | 3 | ループ | なし | 1 回ごとのコミット・`loop-log.md`・完了条件の `■` |
 | 4 | PR | 結果の確認 | PR |
@@ -196,7 +196,8 @@ design-composer の implementation-flow（planner / implementer / 観点別 revi
 ```
 .plugin-workspace/.harness/{nnn}-{name}/
 ├── exploration.md # 下調べ（explorer）
-├── plan.md        # 計画（方針・却下案・変更ファイル・影響範囲・手順・テスト・リスク）
+├── implementation-plan.md # 計画（d-market-spec の書式: 概要・背景・ADR・システム図・変更案とコード骨格・影響範囲・検証計画）
+├── tasks.md       # 実装タスクの □ / ■（2 回目以降は「## Loop {n}: 修正」が足される）
 ├── goal.md        # 目標（ゴール・確かめ方付きの完了条件 □/■・スコープ外・実行設定）
 ├── loop-log.md    # 計画レビューと、1 回ごとの検査・完了条件の判定・指摘と採否・判定
 └── decisions.md   # 確定後に AI が自分で決めた判断・エスカレーション
@@ -211,7 +212,7 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 | エージェント | 役割 | model | effort |
 |---|---|---|---|
 | **explorer** | 関連ファイル・類似実装・規約ファイルの場所・検査コマンドを探して exploration.md に書く | haiku | low |
-| **planner** | exploration.md から plan.md と goal.md の案（確かめ方付きの完了条件）を書く | opus | high |
+| **planner** | exploration.md から implementation-plan.md・tasks.md と goal.md の案（確かめ方付きの完了条件）を書く | opus | high |
 | **plan-reviewer** | 完了条件が確かめられる形か・依頼との対応・既存資産・影響範囲・テストを検証 | opus | medium |
 | **implementer** | 1 回分の「やること」（計画の手順 / 未達の条件 / 採用した指摘）を実装して検査を走らせる | opus | medium |
 | **goal-checker** | 完了条件を確かめ方どおりに実行し、満たす / 満たさないを根拠付きで判定 | haiku | medium |
@@ -230,6 +231,7 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 | フック | タイミング | 内容 |
 |---|---|---|
 | `guard-phase-writes.sh` | PreToolUse | 目標の確定前（`planning` / `goal` とその回答待ち）は、run フォルダと一時ディレクトリの外への書き込みをブロック。Bash は字句解析でリダイレクト先・書き換え系コマンドの対象を見る最善努力のガード（`python -c` の中の書き込みまでは追わない） |
+| `check-plan-format.sh` | PostToolUse | implementation-plan.md / tasks.md を d-market-spec の書式で検査（必須セクション・システム図・変更案のコード骨格と理由・実装の省略・プレースホルダ） |
 | `check-goal.sh` | PostToolUse | goal.md の完了条件に確かめ方が無い・確定なのに `□` の確認事項やプレースホルダが残る、を止める |
 | `guard-pr.sh` | PreToolUse | ループを抜けていない（STATE が `pr` でない）・完了条件に `□` が残る間は、`gh pr create` と MCP の PR 作成をブロック |
 | `continue-until-done.sh` | Stop | 確定後（`looping` / `pr`）に止まろうとしたら 1 度だけ続行を促す |
