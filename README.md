@@ -233,6 +233,7 @@ run フォルダは `.git/info/exclude` で git の差分とコミットから�
 | `guard-phase-writes.sh` | PreToolUse | 目標の確定前（`planning` / `goal` とその回答待ち）は、run フォルダと一時ディレクトリの外への書き込みをブロック。Bash は字句解析でリダイレクト先・書き換え系コマンドの対象を見る最善努力のガード（`python -c` の中の書き込みまでは追わない） |
 | `check-plan-format.sh` | PostToolUse | implementation-plan.md / tasks.md を d-market-spec の書式で検査（必須セクション・システム図・変更案のコード骨格と理由・実装の省略・プレースホルダ） |
 | `check-goal.sh` | PostToolUse | goal.md の完了条件に確かめ方が無い・確定なのに `□` の確認事項やプレースホルダが残る、を止める |
+| `guard-subagent-git.sh` | PreToolUse | run が進行中（`done` 以外）のセッションで、サブエージェントの中（フック入力に `agent_id` がある呼び出し）からの git の状態を変える操作（add / commit / push / stash / reset / checkout / restore / switch / clean / rebase / merge / cherry-pick / revert / rm / mv）をブロック。git 操作は指示役が持つ |
 | `guard-pr.sh` | PreToolUse | ループを抜けていない（STATE が `pr` でない）・完了条件に `□` が残る間は、`gh pr create` と MCP の PR 作成をブロック |
 | `continue-until-done.sh` | Stop | 確定後（`looping` / `pr`）に止まろうとしたら 1 度だけ続行を促す |
 
