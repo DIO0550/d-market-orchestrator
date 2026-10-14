@@ -223,6 +223,25 @@ set_state looping
 expect_exit 2 "完了条件がすべて ■ でもループを抜けていなければブロック" $P "$(bash_json 'gh pr create --base main')"
 expect_exit 0 "run の無いセッションには掛からない" $P "$(jq -nc '{session_id:"other", tool_name:"Bash", tool_input:{command:"gh pr create"}}')"
 
+# ── guard-subagent-git.sh ─────────────────────────────
+A=guard-subagent-git.sh
+sub_bash_json() { jq -nc --arg s "$SID" --arg c "$1" '{session_id:$s, tool_name:"Bash", agent_id:"a-1", agent_type:"harness-loop-plugin:implementer", tool_input:{command:$c}}'; }
+set_state looping
+expect_exit 2 "サブエージェントの中の git add をブロック" $A "$(sub_bash_json 'git add -- src/a.ts')"
+expect_exit 2 "サブエージェントの中の git commit をブロック" $A "$(sub_bash_json 'npm test && git commit -m x')"
+expect_exit 2 "大域オプションを挟んだ git -C <dir> stash もブロック" $A "$(sub_bash_json 'git -C . stash')"
+expect_exit 2 "大域オプション --git-dir=... を挟んだ git add もブロック" $A "$(sub_bash_json 'git --git-dir=.git add src/a.ts')"
+expect_exit 2 "サブエージェントの中の git mv をブロック（インデックスに載る）" $A "$(sub_bash_json 'git mv src/a.ts src/b.ts')"
+expect_exit 0 "サブエージェントの中でも読むだけの git は通す" $A "$(sub_bash_json 'git status --porcelain; git diff --stat')"
+expect_exit 0 "引用符の中の git add は操作とみなさない" $A "$(sub_bash_json 'grep -rn "git add -- " docs')"
+expect_exit 0 "親（agent_id の無い呼び出し）の git add は通す" $A "$(bash_json 'git add -- src/a.ts')"
+set_state planning
+expect_exit 2 "計画中もサブエージェントの中の git checkout をブロック" $A "$(sub_bash_json 'git checkout -b x')"
+set_state done
+expect_exit 0 "完了した run ではサブエージェントの git も通す" $A "$(sub_bash_json 'git add -- src/a.ts')"
+set_state looping
+expect_exit 0 "run の無いセッションには掛からない" $A "$(jq -nc '{session_id:"other", tool_name:"Bash", agent_id:"a-1", tool_input:{command:"git add -A"}}')"
+
 # ── continue-until-done.sh ─────────────────────────────
 S=continue-until-done.sh
 stop_json() { jq -nc --arg s "$SID" --argjson a "$1" '{session_id:$s, stop_hook_active:$a}'; }

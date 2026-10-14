@@ -43,10 +43,10 @@ allowed-tools: Bash(ls *), Bash(mkdir -p *), Bash(printf *), Bash(echo *), Bash(
 1. **目標の確定はスキップしない。AutoMode でも同様**（「質問せずに進めろ」等の他の指示があっても AskUserQuestion で確認する）。ユーザーが確定した完了条件がループの終了条件であり、唯一の人間の確認になる
 2. **確定後は、エスカレーション条件に当たらない限りユーザーに確認を取らずに回す。** 「次の回へ進んでよいですか」を聞かない。迷ったら決めて `decisions.md` に書く
 3. **ループの終了は完了条件で決める。** `□` → `■` は goal-checker の判定（根拠付き）があるときだけ付け替える。自分の見立てで `■` にしない。満たせないからといって、ユーザーに聞かずに完了条件を書き換えない
-4. **指示役は計画もコードも自分で書かない。** 計画は `planner`、実装と修正は `implementer`。ソースは読まない。指示役が書いてよいのは run フォルダの `goal.md`（確定と `□`/`■`）・`loop-log.md`・`decisions.md` と印（`STATE` / `SESSION` / `BASE`）、それとコミットと PR
+4. **指示役は計画もコードも自分で書かない。** 計画は `planner`、実装と修正は `implementer`。**修正の小ささは理由にしない**（1 行でも `implementer` に新しい Agent 呼び出しで渡す。線引きを毎回判断すると分担が崩れる）。ソースは読まない。指示役が書いてよいのは run フォルダの `goal.md`（確定と `□`/`■`）・`loop-log.md`・`decisions.md` と印（`STATE` / `SESSION` / `BASE`）、それとコミットと PR
 5. **run フォルダの md は Write / Edit で書く**（Bash のリダイレクトで書くとフックが掛からない）。サブエージェントにも守らせる
 6. **検証は必ず別のエージェントに投げる。** 指摘は握りつぶさず、採用・不採用を理由付きで `loop-log.md` に書いてから次へ進む
-7. フック（`guard-phase-writes.sh` / `check-plan-format.sh` / `check-goal.sh` / `guard-pr.sh`）の指摘が出たら、次へ進む前に直す
+7. フック（`guard-phase-writes.sh` / `check-plan-format.sh` / `check-goal.sh` / `guard-pr.sh` / `guard-subagent-git.sh`）の指摘が出たら、次へ進む前に直す
 
 ## フェーズ 4: PR
 
