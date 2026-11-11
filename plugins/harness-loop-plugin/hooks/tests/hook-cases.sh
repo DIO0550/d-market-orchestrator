@@ -242,6 +242,28 @@ expect_exit 0 "完了した run ではサブエージェントの git も通す"
 set_state looping
 expect_exit 0 "run の無いセッションには掛からない" $A "$(jq -nc '{session_id:"other", tool_name:"Bash", agent_id:"a-1", tool_input:{command:"git add -A"}}')"
 
+# ── guard-parent-edit.sh ─────────────────────────────
+E=guard-parent-edit.sh
+sub_write_json() { jq -nc --arg s "$SID" --arg t "$1" --arg f "$2" '{session_id:$s, tool_name:$t, agent_id:"a-1", agent_type:"harness-loop-plugin:implementer", tool_input:{file_path:$f}}'; }
+set_state looping
+expect_exit 2 "ループ中は指示役の src への Edit をブロック" $E "$(write_json Edit "$PROJECT/src/a.ts")"
+expect_exit 2 "相対パスの Write もブロック" $E "$(write_json Write "src/a.ts")"
+expect_exit 2 "NotebookEdit もブロック" $E "$(jq -nc --arg s "$SID" --arg f "$PROJECT/nb.ipynb" '{session_id:$s, tool_name:"NotebookEdit", tool_input:{notebook_path:$f}}')"
+expect_exit 2 ".. で run フォルダの外へ抜ける Write はブロック" $E "$(write_json Write "$PROJECT/$RUN/../../../src/a.ts")"
+expect_exit 0 "指示役の run フォルダ（loop-log.md）への Edit は通す" $E "$(write_json Edit "$PROJECT/$RUN/loop-log.md")"
+expect_exit 0 "指示役のリポジトリの外（PR 本文の一時ファイル）への Write は通す" $E "$(write_json Write "$(dirname "$PROJECT")/pr-body-$$.md")"
+expect_exit 0 "サブエージェント（agent_id のある呼び出し）の src への Edit は通す" $E "$(sub_write_json Edit "$PROJECT/src/a.ts")"
+set_state pr
+expect_exit 2 "PR のフェーズでも指示役の src への Edit をブロック" $E "$(write_json Edit "$PROJECT/src/a.ts")"
+set_state waiting:looping
+expect_exit 2 "ループ中の回答待ちでも指示役の src への Edit をブロック" $E "$(write_json Edit "$PROJECT/src/a.ts")"
+set_state planning
+expect_exit 0 "目標の確定前は見ない（guard-phase-writes.sh の管轄）" $E "$(write_json Edit "$PROJECT/src/a.ts")"
+set_state done
+expect_exit 0 "完了した run では指示役の Edit も通す" $E "$(write_json Edit "$PROJECT/src/a.ts")"
+set_state looping
+expect_exit 0 "run の無いセッションには掛からない" $E "$(jq -nc '{session_id:"other", tool_name:"Edit", tool_input:{file_path:"src/a.ts"}}')"
+
 # ── continue-until-done.sh ─────────────────────────────
 S=continue-until-done.sh
 stop_json() { jq -nc --arg s "$SID" --argjson a "$1" '{session_id:$s, stop_hook_active:$a}'; }
