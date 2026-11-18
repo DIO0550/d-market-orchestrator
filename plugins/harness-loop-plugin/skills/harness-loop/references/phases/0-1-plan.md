@@ -32,7 +32,7 @@ echo "${CLAUDE_SESSION_ID}" > .plugin-workspace/.harness/{nnn}-{name}/SESSION
 ## フェーズ 1: 計画（自律）
 
 1. `harness-loop-plugin:explorer` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`。explorer は関連ファイル・類似実装・規約ファイルの場所・検査コマンド・プロジェクトのレビュアーを `{dir}/exploration.md` に書き、10 行以内の要約を返す
-2. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`。planner は exploration.md から読み始め、コードを調べて d-market-spec の書式で `{dir}/implementation-plan.md`・`{dir}/tasks.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`）を書き（`check-plan-format.sh` が形を検査する）、確かめた事実と、ユーザーにしか決められない分岐を返す
-3. `harness-loop-plugin:plan-reviewer` に `{dir}` と共通の指示のパスを渡して検証させる（プロジェクトに計画のレビュアーがあれば並列で加える）
+2. `harness-loop-plugin:planner` を起動する。渡すもの: 依頼文（要約しない）・`{ISSUE}`・`{dir}`・`{TPL}`・`{REF}`。planner は exploration.md から読み始め、コードを調べて d-market-spec の書式で `{dir}/implementation-plan.md`・`{dir}/tasks.md` と `{dir}/goal.md`（案。ステータス `□ 未確定`、種類は `{REF}/work-types.md` で提案）を書き（`check-plan-format.sh` が形を検査する）、確かめた事実と、ユーザーにしか決められない分岐を返す
+3. `harness-loop-plugin:plan-reviewer` に `{dir}` と共通の指示のパス・`{REF}/work-types.md` のパスを渡して検証させる（プロジェクトに計画のレビュアーがあれば並列で加える）
 4. 採用した指摘があれば planner に直させる（1 回まで。2 回目も残る指摘は `goal.md` の目標確定で一緒に見せる）。採否は `loop-log.md` の冒頭に「計画レビュー」として書く
 5. `echo goal > {dir}/STATE`
