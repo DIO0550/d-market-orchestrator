@@ -14,8 +14,12 @@
 run フォルダ: {dir}
 回: Loop {n}
 やること: <1 回目は「tasks.md の Implementation」。2 回目以降は、未達の完了条件（goal-checker の根拠付き）・採用した指摘・落ちた検査>
-参照資料: {REF}（tdd-guidelines.md / claim-verification.md）
+参照資料: {REF}（tdd-guidelines.md / claim-verification.md / work-types.md）
+種類: <goal.md の種類>
+工程: <種類が bugfix / refactor のときだけ。work-types.md「2 つの工程に分ける」の値>
 ```
+
+**種類が `bugfix` / `refactor` なら**、1 回目は [work-types.md](../work-types.md)「2 つの工程に分ける」の手順で implementer を 2 回起動し、どの回もコミットの前にその種類の節の確かめ方を走らせる。
 
 implementer はやることを実装し、`tasks.md` の `□` を `■` にしていく（2 回目以降は「## Loop {n}: 修正」を足してから）。
 
