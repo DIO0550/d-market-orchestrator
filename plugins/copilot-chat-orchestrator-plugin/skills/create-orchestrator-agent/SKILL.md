@@ -1,6 +1,6 @@
 ---
 name: create-orchestrator-agent
-description: "オーケストレーターフロー用のエージェント定義ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。13種類のエージェントテンプレートから必要なものだけを選択して作成可能。ツール非依存の汎用的な指示形式。「エージェント作成」「オーケストレーターにエージェント追加」などのリクエスト時に使用。"
+description: "オーケストレーターフロー用のエージェント定義ファイルを作成。Claude Code、GitHub Copilot、OpenAI Codex の各フォーマットに対応。14種類のエージェントテンプレートから必要なものだけを選択して作成可能。ツール非依存の汎用的な指示形式。「エージェント作成」「オーケストレーターにエージェント追加」などのリクエスト時に使用。"
 disable-model-invocation: true
 ---
 
@@ -13,10 +13,10 @@ disable-model-invocation: true
 ```
 1. ターゲットツール確認 → Claude Code / Copilot / Codex
 2. エージェント選択 → カタログから必要なものを選ぶ
-2.5 & 5. 分析 → 生成（種別ごとの analyzer/generator ペアを並列起動）
+3. 分析 → 生成（種別ごとの analyzer/generator ペアを並列起動）
   Phase A: {種別}-analyzer × N を並列起動 → 各プロファイル取得
   Phase B: {種別}-generator × N を並列起動 → プロジェクト固有エージェント生成
-6. テンプレートの配置 → .orchestrator/templates/ にコピー
+4. テンプレートの配置 → .orchestrator/templates/ にコピー
 ```
 
 ## Step 1: ターゲットツール確認
@@ -75,12 +75,12 @@ disable-model-invocation: true
 | クラス | 記号 | エージェント | 用途 |
 |--------|-----|-------------|------|
 | 🧠 高性能 | opus相当 | Orchestrator, Planner, Plan Reviewer, Code Reviewer, Debugger | 判断・設計・レビュー |
-| ⚡ 中程度 | sonnet相当 | Explorer, Implementer, Refactorer, Security Scanner | 分析・コード生成 |
+| ⚡ 中程度 | sonnet相当 | Explorer, Task Manager, Implementer, Refactorer, Security Scanner | 分析・管理・コード生成 |
 | 💨 軽量 | haiku相当 | Test Runner, Linter, Committer, PR Creator | 定型作業・コマンド実行 |
 
 詳細は [agent-catalog.md](references/agent-catalog.md) の「モデル選択ガイド」を参照。
 
-## Step 2.5 & Step 5: プロジェクト分析 → エージェント定義の生成（analyzer/generator ペア並列起動）
+## Step 3: プロジェクト分析 → エージェント定義の生成（analyzer/generator ペア並列起動）
 
 Step 2 で選択した各エージェント種別に対し、**専用の analyzer → generator ペア**をバックグラウンドで並列起動する。
 
@@ -255,7 +255,7 @@ Phase B: generator × 7 を同時にバックグラウンド起動
 │       └── result.md
 ```
 
-## Step 6: テンプレートの配置（必須）
+## Step 4: テンプレートの配置（必須）
 
 エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して出力フォーマットを決定する。
 **このステップを省略するとエージェントが正しく動作しない。必ず全ファイルをコピーすること。**

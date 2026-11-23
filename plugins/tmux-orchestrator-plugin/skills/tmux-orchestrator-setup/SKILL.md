@@ -12,7 +12,7 @@ tmux オーケストレーション環境の準備状態を確認する。
 
 ## トリガー
 
-- `/tmux-setup` コマンドが実行されたとき
+- `/tmux-orchestrator-plugin:tmux-orchestrator-setup` コマンドが実行されたとき
 - ユーザーが「tmuxセットアップ」「tmuxオーケストレーターをセットアップ」と指示したとき
 
 ---
@@ -40,7 +40,7 @@ tmux がインストールされていない場合はインストール方法を
 | マーカー削除 | `rm -f .orchestrator/` で始まるコマンドのみ（`-rf` は不許可） | `rm -f .orchestrator/sess-001/.status/agent.done` |
 | ディレクトリ作成 | `mkdir -p` で `.orchestrator/` 配下のみ | `mkdir -p .orchestrator/sess-001/.config` |
 
-> **Note**: 以前のバージョンでは `.claude/settings.json` の `permissions.allow` に18個のパターンを手動設定する必要がありましたが、現在はプラグインの hook で自動的に処理されます。
+> **Note**: 以前のバージョンでは `.claude/settings.json` の `permissions.allow` に18個のパターンを手動設定する必要があったが、現在はプラグインの hook で自動的に処理される。
 
 ### Step 3: スキル参照の確認
 
@@ -54,12 +54,12 @@ tmux がインストールされていない場合はインストール方法を
 
 ```
 環境は準備完了です。スクリプトとテンプレートはスキルから直接参照されるため、追加のセットアップは不要です。
-Bash パーミッションが .claude/settings.json に設定されました。
+プラグインの PermissionRequest hook により tmux / スクリプト実行が自動許可されます。
 
 次のステップ:
-  /tmux-config        — CLI割り当てやチーム設定をカスタマイズ
-  /tmux-orchestrate   — オーケストレーションを開始
-  /tmux-team          — チームオーケストレーションを開始
+  /tmux-orchestrator-plugin:tmux-orchestrator-config — CLI割り当てやチーム設定をカスタマイズ
+  /tmux-orchestrator-plugin:tmux-orchestration       — オーケストレーションを開始
+  /tmux-orchestrator-plugin:tmux-team                — チームオーケストレーションを開始
 ```
 
-> **Note**: 以前のバージョンではスクリプトを `.orchestrator/scripts/` にコピーする必要がありましたが、現在はスキル参照から直接実行されるため不要です。
+> **Note**: 以前のバージョンではスクリプトを `.orchestrator/scripts/` にコピーする必要があったが、現在はスキル参照から直接実行されるため不要。

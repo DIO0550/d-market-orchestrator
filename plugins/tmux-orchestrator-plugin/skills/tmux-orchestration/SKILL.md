@@ -1,21 +1,20 @@
 ---
 name: tmux-orchestration
-description: "tmuxセッションを使ってタスクを専門エージェントに分散し、複数のAI CLIプロセスとして並列実行するオーケストレーションワークフロー。/tmux-orchestrate コマンド実行時、「tmuxでオーケストレーション」「tmuxで並列実行」、「セッション確認」「セッション破棄」、「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」などのリクエスト時に使用。"
+description: "tmuxセッションを使ってタスクを専門エージェントに分散し、複数のAI CLIプロセスとして並列実行するオーケストレーションワークフロー。/tmux-orchestrator-plugin:tmux-orchestration コマンド実行時、「tmuxでオーケストレーション」「tmuxで並列実行」、「セッション確認」「セッション破棄」などのリクエスト時に使用。"
 disable-model-invocation: true
 ---
 
 # tmux Orchestration Skill
 
 tmuxセッションで複数のAI CLIエージェントを並列起動し、タスクを分散実行するオーケストレーションワークフロー。
-セッションのライフサイクル管理、エージェント指示ファイルの作成もこのスキルで行う。
+セッションのライフサイクル管理（確認・破棄）もこのスキルで行う。
 
 ## トリガー
 
-- `/tmux-orchestrate` コマンドが実行されたとき
+- `/tmux-orchestrator-plugin:tmux-orchestration` コマンドが実行されたとき
 - ユーザーが「tmuxでオーケストレーション」「tmuxで並列実行」と指示したとき
 - ユーザーが「テスト実行して」「Lint実行して」「コミットして」「PR作って」と指示したとき
 - ユーザーが「セッション確認して」「セッション状態を見せて」「セッション破棄して」と指示したとき
-- ユーザーが「tmuxエージェント作成」「tmuxオーケストレーターにエージェント追加」と指示したとき
 
 ---
 
@@ -33,7 +32,7 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
 
 スクリプトはこのスキルの `references/scripts/` に配置されている（`.orchestrator/scripts/` へのコピーは不要）。
 
-オーケストレーターは起動時に [tmux-agent-launch.sh](references/scripts/tmux-agent-launch.sh) のパスからディレクトリを取得し、`SCRIPTS_DIR` として保持する。
+オーケストレーターは起動時に `${CLAUDE_SKILL_DIR}/references/scripts` を `SCRIPTS_DIR` として解決・保持する（例: `SCRIPTS_DIR="${CLAUDE_SKILL_DIR}/references/scripts"`）。
 
 ## 詳細手順
 
@@ -43,4 +42,5 @@ tmuxセッションで複数のAI CLIエージェントを並列起動し、タ�
 
 ## 参照ドキュメント
 
-- [agent-catalog.md](references/agent-catalog.md) - エージェント一覧・選択ガイド
+- [agent-catalog.md](references/agent-catalog.md) - エージェント一覧・選択ガイド（エージェント選定時に読む）
+- [session-lifecycle.md](references/session-lifecycle.md) - セッションの作成・確認・監視・収集・破棄手順（「セッション確認」「セッション破棄」のリクエスト時、およびセッション操作時に読む）

@@ -10,7 +10,7 @@ tmux オーケストレーターの CLI 割り当てやチーム設定を対話�
 
 ## トリガー
 
-- `/tmux-config` コマンドが実行されたとき
+- `/tmux-orchestrator-plugin:tmux-orchestrator-config` コマンドが実行されたとき
 - ユーザーが「tmux設定」「CLI割り当て変更」「チーム設定」と指示したとき
 - ユーザーが「エージェントのCLIを変えたい」と指示したとき
 
@@ -168,5 +168,5 @@ tmux オーケストレーターの CLI 割り当てやチーム設定を対話�
   - チーム設定:  .orchestrator/team-config.json（存在する場合）
 
 オーケストレーションを開始するには:
-  /tmux-orchestrate "タスクの説明"
+  /tmux-orchestrator-plugin:tmux-orchestration "タスクの説明"
 ```

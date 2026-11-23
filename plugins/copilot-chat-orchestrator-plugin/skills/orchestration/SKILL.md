@@ -136,7 +136,6 @@ Copilot ではサブエージェントのネストが不可のため、フラッ
 ### 並列起動（依存関係なし）
 
 ```
-Phase 1: explorer → planner を直列でバックグラウンド起動
 Phase 2: blockedBy なしのタスクに対する implementer を同時にバックグラウンド起動
 Phase 3: test-runner + linter を同時にバックグラウンド起動
 ```
