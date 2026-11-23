@@ -18,8 +18,8 @@ disable-model-invocation: true
 ```
 [Phase 0: セッション初期化] ─────────────────────────
     │
+    └── テンプレートとスクリプトを .orchestrator/ に配置
     └── init-session.sh でセッションディレクトリを生成
-    └── テンプレートを .orchestrator/templates/ にコピー
     │
 [Phase 1: 探索・計画] ───────────────────────────────
     │
@@ -77,24 +77,9 @@ disable-model-invocation: true
 
 ## Phase 0: セッション初期化
 
-オーケストレーション開始時に、セッションディレクトリとテンプレートを準備する。
+オーケストレーション開始時に、テンプレート・スクリプトを配置し、セッションディレクトリを準備する。
 
-### 1. セッションディレクトリの作成
-
-[init-session.sh](references/scripts/init-session.sh) を実行してセッションフォルダを作成する：
-
-```bash
-SESSION_DIR=$(bash "$SCRIPTS_DIR/init-session.sh" "{feature-name}")
-# 例: .orchestrator/0001-user-auth
-```
-
-タスク追加時は [init-task.sh](references/scripts/init-task.sh) でタスクフォルダを作成：
-
-```bash
-bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
-```
-
-### 2. テンプレートの配置
+### 1. テンプレート・スクリプトの配置
 
 エージェントはランタイムで `.orchestrator/templates/` 内のテンプレートを Read して指示・出力フォーマットを決定する。
 テンプレートは各エージェントの **指示 + 判定基準 + 出力形式** を含む一体型ファイル。
@@ -118,7 +103,7 @@ bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
 | 14 | [security-scan-result.md](references/templates/security-scan-result.md) | `.orchestrator/templates/security-scan-result.md` |
 | 15 | [commit-result.md](references/templates/commit-result.md) | `.orchestrator/templates/commit-result.md` |
 
-スクリプトも配置する：
+スクリプトも配置する（配置元: `${CLAUDE_SKILL_DIR}/references/scripts`）：
 
 | # | Read 対象 | Write 先 |
 |---|----------|----------|
@@ -131,24 +116,42 @@ bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
 chmod +x .orchestrator/scripts/init-session.sh .orchestrator/scripts/init-task.sh
 ```
 
+### 2. セッションディレクトリの作成
+
+スクリプトディレクトリを解決し、[init-session.sh](references/scripts/init-session.sh) を実行してセッションフォルダを作成する：
+
+```bash
+SCRIPTS_DIR="${CLAUDE_SKILL_DIR}/references/scripts"
+SESSION_DIR=$(bash "$SCRIPTS_DIR/init-session.sh" "{feature-name}")
+# 例: .orchestrator/0001-user-auth
+```
+
+タスク追加時は [init-task.sh](references/scripts/init-task.sh) でタスクフォルダを作成：
+
+```bash
+bash "$SCRIPTS_DIR/init-task.sh" "$SESSION_DIR" "{task-id}"
+```
+
 ## 中間ファイル
 
-オーケストレーションでは `.orchestrator/` ディレクトリを使用してエージェント間で情報を共有する：
+オーケストレーションでは Phase 0 で作成したセッションディレクトリ `{SESSION_DIR}`（例: `.orchestrator/0001-user-auth`）配下を使用してエージェント間で情報を共有する：
 
 | ファイル | 内容 | 作成者 |
 |---------|------|-------|
-| `.orchestrator/plan.md` | 実装計画 | planner |
-| `.orchestrator/exploration.md` | 探索結果 | explorer |
-| `.orchestrator/implementation-log.md` | 実装ログ（全タスク統合） | orchestrator |
-| `.orchestrator/test-results.md` | テスト結果 | test-runner |
-| `.orchestrator/lint-results.md` | Lint結果 | linter |
+| `{SESSION_DIR}/explorer/result.md` | 探索結果 | explorer |
+| `{SESSION_DIR}/planner/plan.md` | 実装計画 | planner |
+| `{SESSION_DIR}/planner/tasks.md` | タスク一覧 | planner |
+| `{SESSION_DIR}/plan-reviewer/review-{round}.md` | 計画レビュー結果 | plan-reviewer |
+| `{SESSION_DIR}/task-{id}/...` | タスク単位の実装・レビュー・検証結果 | task-manager / implementer 等 |
+| `{SESSION_DIR}/implementation-log.md` | 実装ログ（全タスク統合） | orchestrator |
+| `{SESSION_DIR}/test-runner/result-{round}.md` | テスト結果（Phase 3） | test-runner |
+| `{SESSION_DIR}/linter/result-{round}.md` | Lint結果（Phase 3） | linter |
 
 ## エージェント起動パターン
 
 ### 並列起動（依存関係なし）
 
 ```
-Phase 1: explorer → planner を直列でバックグラウンド起動（planner は探索結果を入力として受け取る）
 Phase 2: blockedBy なしのタスクに対する task-manager を同時にバックグラウンド起動
 Phase 3: test-runner + linter を同時にバックグラウンド起動
 ```

@@ -1,6 +1,6 @@
 {
   "name": "tmux-orchestrator-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "tmuxベースのマルチCLIオーケストレーター（tmuxペインで複数のAI CLIエージェントを並列実行し、ファイルベースIPCで連携する）",
   "author": {
     "name": "DIO0550"

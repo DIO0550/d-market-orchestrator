@@ -34,18 +34,22 @@ disable-model-invocation: true
 
 ### Launcher 起動手順
 
-1. セッション ID を生成:
+1. スクリプトパスを解決:
+   ```bash
+   TEAM_SCRIPTS_DIR="${CLAUDE_SKILL_DIR}/references/scripts"
+   SCRIPTS_DIR="${CLAUDE_SKILL_DIR}/../tmux-orchestration/references/scripts"
+   ```
+
+2. セッション ID を生成:
    ```bash
    bash "$SCRIPTS_DIR/generate-session-id.sh" "{feature-name}"
    ```
    > 出力: `SESSION_ID=0001-feature-name`
 
-2. セッションディレクトリを初期化:
+3. セッションディレクトリを初期化:
    ```bash
    bash "$SCRIPTS_DIR/init-session.sh" ".orchestrator/${SESSION_ID}"
    ```
-
-3. [team-launcher-prompt.md](references/templates/team-launcher-prompt.md) を Read し、パラメータ（SESSION_ID, PANE_COUNT, CLI_TOOL, WORKING_DIR, PARENT_PANE）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
 
 4. 自身のペイン ID を取得:
    ```bash
@@ -53,13 +57,15 @@ disable-model-invocation: true
    ```
    > 出力: `PARENT_PANE={pane-id}`（`.config/parent-pane.txt` にも自動保存）
 
-5. tmux セッション名を取得:
+5. [team-launcher-prompt.md](references/templates/team-launcher-prompt.md) を Read し、パラメータ（`SESSION_ID`, `PANE_COUNT`, `CLI_TOOL`, `WORKING_DIR`, `PARENT_PANE`, `SCRIPTS_DIR`, `TEAM_SCRIPTS_DIR`）を埋め込んで `.orchestrator/${SESSION_ID}/.prompts/launcher-prompt.md` に Write する
+
+6. tmux セッション名を取得:
    ```bash
    bash "$SCRIPTS_DIR/create-and-save-session.sh" "${SESSION_ID}" ".orchestrator/${SESSION_ID}"
    ```
    > 出力: `TMUX_SESSION={session-name}`
 
-6. Launcher を起動:
+7. Launcher を起動:
    ```bash
    bash "$SCRIPTS_DIR/tmux-agent-launch.sh" \
      "{TMUX_SESSION}" "launcher" "claude" \
@@ -67,17 +73,17 @@ disable-model-invocation: true
      ".orchestrator/${SESSION_ID}" "{PARENT_PANE}"
    ```
 
-7. 「Launcher を起動しました。完了通知を待機中...」と出力して **ターンを終了する**
+8. 「Launcher を起動しました。完了通知を待機中...」と出力して **ターンを終了する**
 
-8. `[AGENT_COMPLETE] launcher done` を受信したら:
+9. `[AGENT_COMPLETE] launcher done` を受信したら:
    - `.orchestrator/${SESSION_ID}/.config/pane-registry.json` を Read してペインID一覧を取得
    - `.orchestrator/${SESSION_ID}/.config/tmux-session.txt` を Read して TMUX_SESSION を取得
    - `member-status.json` を初期化（全メンバーを `ready` に設定）
    - タスク委任フェーズへ進む
 
-9. `[AGENT_COMPLETE] launcher error` の場合:
-   - `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
-   - ユーザーにエラーを報告
+10. `[AGENT_COMPLETE] launcher error` の場合:
+    - `.orchestrator/${SESSION_ID}/launcher/error.md` を Read してエラー内容を確認
+    - ユーザーにエラーを報告
 
 ### キャラ情報の永続化
 

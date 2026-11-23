@@ -1,6 +1,6 @@
 {
   "name": "copilot-chat-orchestrator-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Copilot Chatベースのオーケストレータープラグイン（サブエージェント並列起動・タスク分散実行）",
   "author": {
     "name": "DIO0550"
