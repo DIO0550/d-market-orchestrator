@@ -42,7 +42,7 @@ case "$HOOK_TOOL" in
   Bash)
     command -v python3 >/dev/null 2>&1 || exit 0
     cmd=$(printf '%s' "$HOOK_INPUT" | jq -r '.tool_input.command // empty')
-    denied=$(printf '%s' "$cmd" | python3 "$(dirname "$0")/bash-write-targets.py" "$RUN_BASE")
+    denied=$(printf '%s' "$cmd" | python3 -B "$(dirname "$0")/bash-write-targets.py" "$RUN_BASE")
     [ -z "$denied" ] && exit 0
     block "書き換え先が許可されていないコマンドはブロックされました: $(printf '%s' "$denied" | tr '\n' ' ')
 コマンド: ${cmd:0:200}"

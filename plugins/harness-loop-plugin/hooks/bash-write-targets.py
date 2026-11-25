@@ -6,15 +6,15 @@ guard-phase-writes.sh から呼ぶ。標準入力にコマンド、引数に run
 
 正規表現でコマンド全体を見ると、`grep "=> "` や `awk '$2 > 5'` のような引用符の中の `>` を
 書き込みと誤検出し、逆に `echo x >src/a` のような空白無しのリダイレクトを見逃す。そのため
-shlex で引用符を解いてから、リダイレクトの先と書き換え系コマンドの対象引数だけを判定する。
+shlex で引用符を解いてから（bash_commands.py）、リダイレクトの先と書き換え系コマンドの対象引数だけを判定する。
 `python -c` の中で開くファイルのような、コマンドの中身までは追わない（最善努力のガード）。
 """
 
 import re
-import shlex
 import sys
 
-OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "|&", ";;"}
+from bash_commands import command_head, simple_commands
+
 REDIRECTS = {">", ">>", ">|", "&>", "&>>"}
 # 書き換え系コマンドと、対象になる引数の位置（all = オプション以外すべて / last = 最後の 1 つ）
 WRITE_COMMANDS = {
@@ -28,24 +28,14 @@ SAFE_DEVICES = {"/dev/null", "/dev/stdout", "/dev/stderr"}
 
 def main() -> int:
     base = sys.argv[1]
-    command = sys.stdin.read()
     # ヒアドキュメントの本文は書き込み先ではないので、最初の << の行までだけを見る
-    head = []
-    for line in command.splitlines():
-        head.append(line)
-        if "<<" in line:
-            break
-    text = "\n".join(head)
+    text = command_head(sys.stdin.read())
 
     tmp_vars = set(re.findall(r"(\w+)=\"?\$\(\s*mktemp", text))
     in_tmp_cwd = re.search(r"\bcd\s+\"?\$\(\s*mktemp", text) is not None
 
-    try:
-        lexer = shlex.shlex(text.replace("\n", " ; "), posix=True, punctuation_chars=True)
-        lexer.whitespace_split = True
-        lexer.commenters = "#"
-        tokens = list(lexer)
-    except ValueError:
+    commands = simple_commands(text)
+    if commands is None:
         # 引用符の対応が取れないコマンドは判定できない。止めずに通す（最善努力のガード）
         return 0
 
@@ -62,27 +52,13 @@ def main() -> int:
         return in_tmp_cwd and not target.startswith("/")
 
     denied = []
-    for words in split_commands(tokens):
+    for words in commands:
         for target in write_targets(words):
             if not allowed(target):
                 denied.append(target)
     for target in dict.fromkeys(denied):
         print(target)
     return 0
-
-
-def split_commands(tokens):
-    """演算子で区切った単純コマンドごとの語の並びを返す。"""
-    current = []
-    for tok in tokens:
-        if tok in OPERATORS:
-            if current:
-                yield current
-            current = []
-        else:
-            current.append(tok)
-    if current:
-        yield current
 
 
 def write_targets(words):
