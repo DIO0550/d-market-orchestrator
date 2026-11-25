@@ -242,6 +242,47 @@ expect_exit 0 "完了した run ではサブエージェントの git も通す"
 set_state looping
 expect_exit 0 "run の無いセッションには掛からない" $A "$(jq -nc '{session_id:"other", tool_name:"Bash", agent_id:"a-1", tool_input:{command:"git add -A"}}')"
 
+# ── guard-bulk-stage.sh ─────────────────────────────
+B=guard-bulk-stage.sh
+set_state looping
+expect_exit 2 "ループ中は指示役の git add -A をブロック" $B "$(bash_json 'git add -A')"
+expect_exit 2 "git add --all もブロック" $B "$(bash_json 'git add --all')"
+expect_exit 2 "git add -u（追跡中の変更をまとめて載せる）もブロック" $B "$(bash_json 'git add -u')"
+expect_exit 2 "短いオプションをつなげた git add -nA もブロック" $B "$(bash_json 'git add -nA')"
+expect_exit 2 "パス指定の . もブロック" $B "$(bash_json 'git status --porcelain; git add .')"
+expect_exit 2 "-- の後ろの :/ もブロック" $B "$(bash_json 'git add -- :/')"
+expect_exit 2 "大域オプションを挟んだ git -C . add -A もブロック" $B "$(bash_json 'git -C . add -A')"
+expect_exit 2 "git commit -am をブロック" $B "$(bash_json 'git commit -am "loop 1: x"')"
+expect_exit 2 "git commit --all をブロック" $B "$(bash_json 'git commit --all -m x')"
+expect_exit 2 "パス指定の . で追跡中の変更をまとめて載せる git commit もブロック" $B "$(bash_json 'git commit -m x -- .')"
+expect_exit 2 "環境変数の代入を前に置いた git add -A もブロック" $B "$(bash_json 'GIT_TRACE=1 git add -A')"
+expect_exit 2 "パスで呼んだ git もブロック" $B "$(bash_json '/usr/bin/git add -A')"
+expect_exit 0 "ファイルを指定した git add とコミットは通す" $B "$(bash_json 'git add -- src/a.ts src/b.ts && git commit -m "loop 1: add all files"')"
+expect_exit 0 "ディレクトリを指定した git add は通す" $B "$(bash_json 'git add -- src/')"
+expect_exit 0 "-m に続けた値の中の a はオプションとみなさない" $B "$(bash_json 'git commit -m"add x"')"
+expect_exit 0 "-m の値の語（-a）はオプションとみなさない" $B "$(bash_json 'git commit -m -a')"
+expect_exit 0 "--message の値の語（-a）はオプションとみなさない" $B "$(bash_json 'git commit --message -a')"
+for opt in F C c t u S; do
+  expect_exit 0 "git commit -${opt} に続けた値の中の a はオプションとみなさない" $B "$(bash_json "git commit -${opt}a.txt -m x")"
+done
+expect_exit 2 "git add ./ もブロック" $B "$(bash_json 'git add ./')"
+expect_exit 2 "git add * もブロック（シェルが展開する前の字面）" $B "$(bash_json 'git add *')"
+expect_exit 2 "git add --update もブロック" $B "$(bash_json 'git add --update')"
+expect_exit 0 "引用符の中の git add -A は操作とみなさない" $B "$(bash_json 'grep -rn "git add -A" docs')"
+expect_exit 0 "ヒアドキュメント本文の git add . はコマンドとみなさない" $B "$(bash_json "git commit -F - <<'EOF'
+loop 1: x
+
+git add . は使わない
+EOF")"
+expect_exit 0 "git 以外のコマンドの -A は見ない" $B "$(bash_json 'ls -A .')"
+expect_exit 2 "サブエージェントの呼び出しにも掛かる" $B "$(sub_bash_json 'git add -A')"
+set_state pr
+expect_exit 2 "PR のフェーズでもブロック" $B "$(bash_json 'git add .')"
+set_state done
+expect_exit 0 "完了した run には掛からない" $B "$(bash_json 'git add -A')"
+set_state looping
+expect_exit 0 "run の無いセッションには掛からない" $B "$(jq -nc '{session_id:"other", tool_name:"Bash", tool_input:{command:"git add -A"}}')"
+
 # ── guard-parent-edit.sh ─────────────────────────────
 E=guard-parent-edit.sh
 sub_write_json() { jq -nc --arg s "$SID" --arg t "$1" --arg f "$2" '{session_id:$s, tool_name:$t, agent_id:"a-1", agent_type:"harness-loop-plugin:implementer", tool_input:{file_path:$f}}'; }

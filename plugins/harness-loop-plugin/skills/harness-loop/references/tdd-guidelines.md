@@ -47,6 +47,7 @@ REFACTOR → コードを改善する（テストが通ったまま）
 2. tasks.md の Implementation を機能単位に分割し、各単位を Red → Green → Refactor の順で並べる
 3. 機能単位は小さく保つ（1つの振る舞い = 1つの TDD サイクル）
 4. 先に書くテストが後のテストの土台となるよう、シンプルなケースから始める
+5. 種類が feature なら、各単位の RED（テストを書く）を骨組みと一緒に第 1 工程へまとめ、GREEN / REFACTOR を第 2 工程に RED 表の順で並べる（work-types.md「feature」）
 
 ### タスク順序の原則
 

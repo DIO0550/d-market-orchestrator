@@ -1,5 +1,5 @@
 {
-  "description": "harness-loop のフック群。目標の確定前の実装をブロックし、implementation-plan / tasks（d-market-spec の書式）と goal.md の形を検査し、目標の確定後に指示役が run フォルダの外を編集するのと、サブエージェントの中からの git 操作と、完了条件を満たす前の PR をブロックし、確定後に途中で止まらないよう続行を促す。",
+  "description": "harness-loop のフック群。目標の確定前の実装をブロックし、implementation-plan / tasks（d-market-spec の書式）と goal.md の形を検査し、目標の確定後に指示役が run フォルダの外を編集するのと、サブエージェントの中からの git 操作と、変更をまとめてステージする git と、完了条件を満たす前の PR をブロックし、確定後に途中で止まらないよう続行を促す。",
   "hooks": {
     "PreToolUse": [
       {
@@ -29,6 +29,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-subagent-git.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-bulk-stage.sh\""
           }
         ]
       },

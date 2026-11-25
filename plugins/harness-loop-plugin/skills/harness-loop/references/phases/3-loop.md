@@ -16,10 +16,10 @@ run フォルダ: {dir}
 やること: <1 回目は「tasks.md の Implementation」。2 回目以降は、未達の完了条件（goal-checker の根拠付き）・採用した指摘・落ちた検査>
 参照資料: {REF}（tdd-guidelines.md / claim-verification.md / work-types.md）
 種類: <goal.md の種類>
-工程: <種類が bugfix / refactor のときだけ。work-types.md「2 つの工程に分ける」の値>
+工程: <work-types.md「2 つの工程に分ける」の値>
 ```
 
-**種類が `bugfix` / `refactor` なら**、1 回目は [work-types.md](../work-types.md)「2 つの工程に分ける」の手順で implementer を 2 回起動し、どの回もコミットの前にその種類の節の確かめ方を走らせる。
+1 回目は [work-types.md](../work-types.md)「2 つの工程に分ける」の手順で implementer を 2 回起動し（第 1 工程を省くときは 1 回）、どの回もコミットの前にその種類の節の確かめ方を走らせる。
 
 implementer はやることを実装し、`tasks.md` の `□` を `■` にしていく（2 回目以降は「## Loop {n}: 修正」を足してから）。
 
@@ -28,7 +28,7 @@ implementer はやることを実装し、`tasks.md` の `□` を `■` にし�
 - **計画から外れた変更**が返ってきたら、目標の範囲内なら自分で決めて `decisions.md` に書き、次の回のやることに含める。目標の範囲を出るならエスカレーション条件 A
 - **コミットの前に、`git status --porcelain` を「implementer が返した変更ファイル」と「計画のファイル（`implementation-plan.md` の変更案と、この回のやることの対象）」に突き合わせる。** 開始時からあったユーザーの変更は除いて見る
   - `git status` にあって返した一覧に無いファイル（返し漏れ・意図しない書き換え）、一覧にあって計画に無いのに「計画から外れた変更」に理由が無いファイルがあれば、コミットせずに新しい Agent 呼び出しで implementer に戻す（戻す・理由を返す、のどちらかをさせる）。指示役は自分で `git restore` しない
-- 一致したら、返ってきた変更ファイルだけを add してコミットする（`git add -- <ファイル>` → `git commit -m "loop {n}: <要約>"`。`git add -A` / `.` は使わない。run フォルダとユーザーの変更を載せない）。**このコミットが、以降の検証で作業ツリーが変わっていないかを見る基準になる。** 変更が無ければコミットしない
+- 一致したら、返ってきた変更ファイルだけを add してコミットする（`git add -- <ファイル>` → `git commit -m "loop {n}: <要約>"`。`git add -A` / `.` / `git commit -a` は使わない。run フォルダとユーザーの変更を載せない。まとめてステージする git は `guard-bulk-stage.sh` が止める）。**このコミットが、以降の検証で作業ツリーが変わっていないかを見る基準になる。** 変更が無ければコミットしない
 
 ### 3-2. 検証（並列）
 

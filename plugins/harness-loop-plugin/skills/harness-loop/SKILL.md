@@ -35,7 +35,7 @@ allowed-tools: Bash(ls *), Bash(mkdir -p *), Bash(printf *), Bash(echo *), Bash(
 
 - **最初のサブエージェントを起動する前**: [subagents.md](references/subagents.md)（呼び方・model / effort の一覧・トークンの抑え方）
 - **判断に迷ったとき・エスカレーションするとき・`--resume`**: [escalation-and-resume.md](references/escalation-and-resume.md)（エスカレーション条件 A〜D と再開の手順）
-- **`goal.md` の種類が `bugfix` / `refactor` のとき、ループの 1 回目に入る前**: [work-types.md](references/work-types.md)（2 つの工程に分ける手順と、その種類の節。種類の決め方は planner がフェーズ 1 で読む）
+- **ループの 1 回目に入る前**: [work-types.md](references/work-types.md)（2 つの工程に分ける手順と、`goal.md` の種類の節。種類の決め方は planner がフェーズ 1 で読む）
 
 記号: テンプレートは `{TPL}` = `${CLAUDE_PLUGIN_ROOT}/skills/harness-loop/assets/templates/`、参照資料は `{REF}` = 同じく `references/`、run フォルダ（リポジトリのルートからの相対パス）は `{dir}`、依頼に含まれていた Issue 番号は `{ISSUE}`（あれば）。
 
@@ -47,13 +47,13 @@ allowed-tools: Bash(ls *), Bash(mkdir -p *), Bash(printf *), Bash(echo *), Bash(
 4. **指示役は計画もコードも自分で書かない。** 計画は `planner`、実装と修正は `implementer`。**修正の小ささは理由にしない**（1 行でも `implementer` に新しい Agent 呼び出しで渡す。線引きを毎回判断すると分担が崩れる）。ソースは読まない。指示役が書いてよいのは run フォルダの `goal.md`（確定と `□`/`■`）・`loop-log.md`・`decisions.md` と印（`STATE` / `SESSION` / `BASE`）、それとコミットと PR（確定後に run フォルダの外のリポジトリのファイルを Write / Edit すると `guard-parent-edit.sh` が止める）
 5. **run フォルダの md は Write / Edit で書く**（Bash のリダイレクトで書くとフックが掛からない）。サブエージェントにも守らせる
 6. **検証は必ず別のエージェントに投げる。** 指摘は握りつぶさず、採用・不採用を理由付きで `loop-log.md` に書いてから次へ進む
-7. フック（`guard-phase-writes.sh` / `check-plan-format.sh` / `check-goal.sh` / `guard-pr.sh` / `guard-subagent-git.sh` / `guard-parent-edit.sh`）の指摘が出たら、次へ進む前に直す
+7. フック（`guard-phase-writes.sh` / `check-plan-format.sh` / `check-goal.sh` / `guard-pr.sh` / `guard-subagent-git.sh` / `guard-parent-edit.sh` / `guard-bulk-stage.sh`）の指摘が出たら、次へ進む前に直す
 
 ## フェーズ 4: PR
 
 1. `echo pr > {dir}/STATE`（`guard-pr.sh` は STATE が `pr` で、完了条件がすべて `■` のときだけ PR の作成を通す）
 2. `git push -u origin HEAD`
-3. `{TPL}/pr-body.md` を埋めて PR を作る（`gh pr create --base <ベースブランチ> --body-file <一時ファイル>` か GitHub の MCP）。`{ISSUE}` があるときだけ本文に `Closes #{ISSUE}`。種類が `bugfix` なら work-types.md「bugfix」の PR の節に従う
+3. `{TPL}/pr-body.md` を埋めて PR を作る（`gh pr create --base <ベースブランチ> --body-file <一時ファイル>` か GitHub の MCP）。`{ISSUE}` があるときだけ本文に `Closes #{ISSUE}`。種類が `feature` / `bugfix` なら work-types.md のその種類の PR の節に従う
 4. CI の結果を確かめられる環境なら 1 度確かめる。落ちていて原因がこの変更にあるなら、`echo looping > {dir}/STATE` にしてループへ戻る（上限の回数に含める）。この変更と関係の無い失敗なら PR の本文に書く
 5. `echo done > {dir}/STATE`
 6. ユーザーへは PR の URL と要点（満たした完了条件・ループの回数・確認してほしい判断・未対応の指摘）を短く報告する
